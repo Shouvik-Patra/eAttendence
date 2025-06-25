@@ -96,6 +96,7 @@ const ResetPassword = props => {
                                 borderRadius: normalize(10),
                                 alignItems: 'center',
                             }}>
+                                
                             <TextInputWithButton
                                 show={true}
                                 icon={true}
