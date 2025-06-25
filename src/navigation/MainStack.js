@@ -4,7 +4,7 @@ import {createStackNavigator} from '@react-navigation/stack';
 import Splash from '../screens/splash/Splash';
 import Welcome from '../screens/authScreens/Welcome';
 import BottomTabNav from './BottomTabNav';
-import Task from '../screens/tabScreens/Task';
+import Task from '../screens/tabScreens/HolidayList';
 import ActiveTask from '../screens/tabScreens/ActiveTask';
 import Toast from 'react-native-toast-message';
 import Signin from '../screens/authScreens/Signin';

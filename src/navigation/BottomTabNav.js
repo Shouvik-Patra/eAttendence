@@ -12,6 +12,7 @@ import MyProfile from '../screens/tabScreens/MyProfile';
 import {Colors, Images} from '../themes/ThemePath';
 import normalize from '../utils/helpers/normalize';
 import ApplyLeave from '../screens/tabScreens/ApplyLeave';
+import HolidayList from '../screens/tabScreens/HolidayList';
 
 const Tab = createBottomTabNavigator();
 
@@ -54,21 +55,21 @@ const BottomTabNav = () => {
         options={{
           unmountOnBlur: true,
           tabBarIcon: ({focused}) => (
-            <TabIcon focused={focused} source={Images.tab2} />
+            <TabIcon focused={focused} source={Images.tab3} />
           ),
         }}
       />
 
-      {/* <Tab.Screen
-        name="ActiveTask"
-        component={ActiveTask}
+      <Tab.Screen
+        name="HolidayList"
+        component={HolidayList}
         options={{
           unmountOnBlur: true,
           tabBarIcon: ({focused}) => (
-            <TabIcon focused={focused} source={Images.tab3} />
+            <TabIcon focused={focused} source={Images.tab2} />
           ),
         }}
-      /> */}
+      />
 
       <Tab.Screen
         name="MyProfile"
