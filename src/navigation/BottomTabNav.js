@@ -13,6 +13,7 @@ import {Colors, Images} from '../themes/ThemePath';
 import normalize from '../utils/helpers/normalize';
 import ApplyLeave from '../screens/tabScreens/ApplyLeave';
 import HolidayList from '../screens/tabScreens/HolidayList';
+import ActiveTask from '../screens/tabScreens/ActiveTask';
 
 const Tab = createBottomTabNavigator();
 
@@ -55,11 +56,21 @@ const BottomTabNav = () => {
         options={{
           unmountOnBlur: true,
           tabBarIcon: ({focused}) => (
-            <TabIcon focused={focused} source={Images.tab3} />
+            <TabIcon focused={focused} source={Images.tab2} />
           ),
         }}
       />
 
+      <Tab.Screen
+        name="ActiveTask"
+        component={ActiveTask}
+        options={{
+          unmountOnBlur: true,
+          tabBarIcon: ({focused}) => (
+            <TabIcon focused={focused} source={Images.tab3} />
+          ),
+        }}
+      />
       <Tab.Screen
         name="HolidayList"
         component={HolidayList}
@@ -110,10 +121,10 @@ const styles = StyleSheet.create({
     borderTopColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.green,
+    backgroundColor: Colors.red,
     borderTopRightRadius:normalize(20),
     borderTopLeftRadius:normalize(20),
-    height: normalize(60),
+    height: normalize(85),
     position: 'absolute',
     left: 0,
     bottom: 0,
@@ -145,6 +156,6 @@ const styles = StyleSheet.create({
     tintColor:Colors.white
   },
   focusedIcon: {
-    tintColor: '#42C5EA',
+    tintColor: Colors.red,
   },
 });

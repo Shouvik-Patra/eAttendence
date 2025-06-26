@@ -1,12 +1,21 @@
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import React, { useState } from 'react'
+import {
+  Alert,
+  FlatList,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import React, { useState } from 'react';
 import Header from '../../components/Header';
-import { Colors, Fonts } from '../../themes/ThemePath';
+import { Colors, Fonts, Images } from '../../themes/ThemePath';
 import showErrorAlert from '../../utils/helpers/Toast';
 import TextInputWithButton from '../../components/TextInputWithBotton';
 import DatePicker from 'react-native-date-picker';
 import normalize from '../../utils/helpers/normalize';
-
+import Modal from 'react-native-modal';
 const ApplyLeave = () => {
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
@@ -15,8 +24,93 @@ const ApplyLeave = () => {
   const [leaveType, setLeaveType] = useState('full'); // 'full' or 'half'
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isHolidayVisible, setIsHolidayVisible] = useState(false);
 
-  const formatDate = (date) => {
+  const holidays = [
+    {
+      id: '1',
+      name: 'Republic Day',
+      date: 'January 26, 2025',
+      type: 'National',
+    },
+    {
+      id: '2',
+      name: 'Maha Shivratri',
+      date: 'February 26, 2025',
+      type: 'Religious',
+    },
+    { id: '3', name: 'Holi', date: 'March 14, 2025', type: 'Religious' },
+    { id: '4', name: 'Good Friday', date: 'April 18, 2025', type: 'Religious' },
+    { id: '5', name: 'Ram Navami', date: 'April 6, 2025', type: 'Religious' },
+    {
+      id: '6',
+      name: 'Independence Day',
+      date: 'August 15, 2025',
+      type: 'National',
+    },
+    {
+      id: '7',
+      name: 'Janmashtami',
+      date: 'August 16, 2025',
+      type: 'Religious',
+    },
+    {
+      id: '8',
+      name: 'Gandhi Jayanti',
+      date: 'October 2, 2025',
+      type: 'National',
+    },
+    { id: '9', name: 'Dussehra', date: 'October 2, 2025', type: 'Religious' },
+    { id: '10', name: 'Diwali', date: 'October 20, 2025', type: 'Religious' },
+    {
+      id: '11',
+      name: 'Guru Nanak Jayanti',
+      date: 'November 5, 2025',
+      type: 'Religious',
+    },
+    {
+      id: '12',
+      name: 'Christmas Day',
+      date: 'December 25, 2025',
+      type: 'Religious',
+    },
+  ];
+  const renderHeader = () => (
+    <View style={styles.headerContainer}>
+      <View style={styles.headerRow}>
+        <Text style={[styles.headerText, styles.nameColumn]}>Holiday Name</Text>
+        <Text style={[styles.headerText, styles.dateColumn]}>Date</Text>
+        {/* <Text style={[styles.headerText, styles.typeColumn]}>Type</Text> */}
+      </View>
+    </View>
+  );
+
+  const renderHolidayItem = ({ item, index }) => (
+    <View
+      style={[
+        styles.itemContainer,
+        index % 2 === 0 ? styles.evenRow : styles.oddRow,
+      ]}
+    >
+      <Text style={[styles.itemText, styles.nameColumn, styles.holidayName]}>
+        {item.name}
+      </Text>
+      <Text style={[styles.itemText, styles.dateColumn]}>{item.date}</Text>
+      {/* <View style={styles.typeColumn}>
+        <View style={styles.typeBadge}>
+          <Text style={styles.typeBadgeText}>{item.type}</Text>
+        </View>
+      </View> */}
+    </View>
+  );
+
+  const renderFooter = () => (
+    <View style={styles.footerContainer}>
+      <Text style={styles.footerText}>Total holidays: {holidays.length}</Text>
+    </View>
+  );
+
+  const formatDate = date => {
     return date.toLocaleDateString('en-GB', {
       day: '2-digit',
       month: '2-digit',
@@ -34,7 +128,7 @@ const ApplyLeave = () => {
     return daysDiff;
   };
 
-  const handleStartDateConfirm = (selectedDate) => {
+  const handleStartDateConfirm = selectedDate => {
     setShowStartDatePicker(false);
     setStartDate(selectedDate);
     // If end date is before start date, update end date
@@ -43,7 +137,7 @@ const ApplyLeave = () => {
     }
   };
 
-  const handleEndDateConfirm = (selectedDate) => {
+  const handleEndDateConfirm = selectedDate => {
     setShowEndDatePicker(false);
     // Ensure end date is not before start date
     if (selectedDate >= startDate) {
@@ -78,7 +172,10 @@ const ApplyLeave = () => {
     }
 
     if (reason.trim().length < 10) {
-      showErrorAlert('Error', 'Please provide a more detailed reason (minimum 10 characters)');
+      showErrorAlert(
+        'Error',
+        'Please provide a more detailed reason (minimum 10 characters)',
+      );
       return false;
     }
 
@@ -107,7 +204,9 @@ const ApplyLeave = () => {
 
       Alert.alert(
         'Success',
-        `Leave application submitted successfully!\n\nDays: ${calculateLeaveDays()}\nType: ${leaveType === 'full' ? 'Full Day' : 'Half Day'}`,
+        `Leave application submitted successfully!\n\nDays: ${calculateLeaveDays()}\nType: ${
+          leaveType === 'full' ? 'Full Day' : 'Half Day'
+        }`,
         [
           {
             text: 'OK',
@@ -117,19 +216,29 @@ const ApplyLeave = () => {
               setEndDate(new Date());
               setLeaveType('full');
               setReason('');
-            }
-          }
-        ]
+            },
+          },
+        ],
       );
     } catch (error) {
-      showErrorAlert('Error', 'Failed to submit leave application. Please try again.');
+      showErrorAlert(
+        'Error',
+        'Failed to submit leave application. Please try again.',
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.white, justifyContent: 'center', alignItems: 'center' }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: Colors.white,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
       <Header
         HeaderLogo
         Title
@@ -142,7 +251,33 @@ const ApplyLeave = () => {
         }}
       />
 
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={{paddingBottom:100,paddingHorizontal:normalize(20),paddingTop:normalize(20)}}>
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: 100,
+          paddingHorizontal: normalize(20),
+          paddingTop: normalize(20),
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => {
+            setIsHolidayVisible(!isHolidayVisible);
+          }}
+          style={{
+            backgroundColor: Colors.white,
+            padding: 5,
+            justifyContent: 'center',
+            alignItems: 'center',
+            alignSelf: 'flex-end',
+            borderRadius: 8,
+          }}
+        >
+          <Image
+            style={{ tintColor: Colors.skyblue, height: 30, width: 30 }}
+            source={Images.tab2}
+          />
+        </TouchableOpacity>
         {/* Start Date Section */}
         <View style={styles.section}>
           <Text style={styles.label}>Start Date *</Text>
@@ -175,7 +310,12 @@ const ApplyLeave = () => {
               style={styles.radioOption}
               onPress={() => setLeaveType('full')}
             >
-              <View style={[styles.radio, leaveType === 'full' && styles.radioSelected]}>
+              <View
+                style={[
+                  styles.radio,
+                  leaveType === 'full' && styles.radioSelected,
+                ]}
+              >
                 {leaveType === 'full' && <View style={styles.radioDot} />}
               </View>
               <Text style={styles.radioText}>Full Day</Text>
@@ -185,7 +325,12 @@ const ApplyLeave = () => {
               style={styles.radioOption}
               onPress={() => setLeaveType('half')}
             >
-              <View style={[styles.radio, leaveType === 'half' && styles.radioSelected]}>
+              <View
+                style={[
+                  styles.radio,
+                  leaveType === 'half' && styles.radioSelected,
+                ]}
+              >
                 {leaveType === 'half' && <View style={styles.radioDot} />}
               </View>
               <Text style={styles.radioText}>Half Day</Text>
@@ -204,7 +349,8 @@ const ApplyLeave = () => {
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>Total Leave Days</Text>
             <Text style={styles.summaryValue}>
-              {calculateLeaveDays()} {calculateLeaveDays() === 1 ? 'day' : 'days'}
+              {calculateLeaveDays()}{' '}
+              {calculateLeaveDays() === 1 ? 'day' : 'days'}
             </Text>
           </View>
         </View>
@@ -240,7 +386,10 @@ const ApplyLeave = () => {
 
         {/* Submit Button */}
         <TouchableOpacity
-          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+          style={[
+            styles.submitButton,
+            isSubmitting && styles.submitButtonDisabled,
+          ]}
           onPress={handleSubmit}
           disabled={isSubmitting}
         >
@@ -278,17 +427,67 @@ const ApplyLeave = () => {
         confirmText="Confirm"
         cancelText="Cancel"
       />
-    </View>
-  )
-}
 
-export default ApplyLeave
+      <Modal
+        animationIn={'slideInUp'}
+        animationOut={'slideOutDown'}
+        backdropTransitionOutTiming={0}
+        backdropOpacity={0.1}
+        hideModalContentWhileAnimating={true}
+        isVisible={isHolidayVisible}
+        // isVisible={false}
+        style={{ width: '100%', alignSelf: 'center', margin: 0 }}
+        animationInTiming={800}
+        animationOutTiming={1000}
+        onBackdropPress={() => setIsHolidayVisible(!isHolidayVisible)}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableOpacity
+            style={{
+              position: 'absolute',
+              top: -25,
+              right: normalize(0),
+              zIndex: 99,
+            }}
+            onPress={() => {
+              setIsHolidayVisible(!isHolidayVisible);
+            }}>
+            <Image
+              source={Images.cross}
+              style={{height: normalize(60), width: normalize(60), zIndex: 99}}
+            />
+          </TouchableOpacity>
+          <Text style={styles.title}>2025 Holiday Calendar</Text>
+
+          <FlatList
+            data={holidays}
+            keyExtractor={item => item.id}
+            renderItem={renderHolidayItem}
+            ListHeaderComponent={renderHeader}
+            ListFooterComponent={renderFooter}
+            style={styles.flatList}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
+      </Modal>
+    </View>
+  );
+};
+
+export default ApplyLeave;
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+   flex:1,
     backgroundColor: '#34495e',
-    width: '100%'
+    width: '100%',
+  },
+  modalContainer: {
+   height:normalize(550),
+    backgroundColor: '#808080',
+    width: '95%',
+    alignSelf:'center',
+    borderRadius:10
   },
   header: {
     backgroundColor: '#3498db',
@@ -311,7 +510,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: normalize(10),
     paddingTop: 20,
-    paddingBottom:normalize(100)
+    paddingBottom: normalize(100),
   },
   section: {
     marginBottom: 25,
@@ -416,7 +615,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     elevation: 1,
   },
-  
+
   characterCount: {
     fontSize: 12,
     color: '#95a5a6',
@@ -446,4 +645,105 @@ const styles = StyleSheet.create({
   bottomSpace: {
     height: 30,
   },
-})
+
+  titleContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: Colors.white,
+    textAlign: 'center',
+    marginTop: normalize(10),
+  },
+  flatList: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+  },
+  headerContainer: {
+    backgroundColor: '#007bff',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  itemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+  },
+  evenRow: {
+    backgroundColor: '#f8f9fa',
+  },
+  oddRow: {
+    backgroundColor: '#ffffff',
+  },
+  itemText: {
+    fontSize: 14,
+    color: '#495057',
+  },
+  holidayName: {
+    fontWeight: '500',
+    color: '#212529',
+  },
+  nameColumn: {
+    flex: 2,
+  },
+  dateColumn: {
+    flex: 1.5,
+  },
+  typeColumn: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  typeBadge: {
+    backgroundColor: '#d4edda',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#c3e6cb',
+  },
+  typeBadgeText: {
+    color: '#155724',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  footerContainer: {
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    backgroundColor: '#f8f9fa',
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 14,
+    color: '#6c757d',
+  },
+});

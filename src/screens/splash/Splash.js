@@ -6,7 +6,7 @@ const Splash = (props) => {
  useEffect(() => {
   setTimeout(() => {
     props?.navigation.replace('Signin'); 
-  }, 3000);
+  }, 2000);
 }, []);
   return (
    <ImageBackground

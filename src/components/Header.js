@@ -50,9 +50,9 @@ function Header(props) {
             justifyContent: 'space-between',
             alignItems: 'center',
             paddingHorizontal: normalize(15),
-            backgroundColor: 'rgb(21,19,38)',
-            height: normalize(60),
-            // position:'absolute',
+            backgroundColor: Colors.skyblue,//'rgb(21,19,38)',
+            height: normalize(65),
+            paddingTop:10,
             width:'100%',
             // top:0
           }}>

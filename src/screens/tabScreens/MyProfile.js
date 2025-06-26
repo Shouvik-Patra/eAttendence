@@ -14,11 +14,12 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import Header from '../../components/Header';
 import { Colors } from '../../themes/ThemePath';
 import normalize from '../../utils/helpers/normalize';
+import showErrorAlert from '../../utils/helpers/Toast';
 
 const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
-    profilePicture: 'https://via.placeholder.com/150',
+    profilePicture: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cHJvZmlsZSUyMGltYWdlfGVufDB8fDB8fHww',
     name: 'Shouvik Patra',
     dob: '1995-11-11',
     doj: '2020-03-01',
@@ -36,7 +37,7 @@ const ProfilePage = () => {
   const handleSave = () => {
     setProfile({ ...editedProfile });
     setIsEditing(false);
-    Alert.alert('Success', 'Profile updated successfully!');
+   showErrorAlert('Success', 'Profile updated successfully!');
   };
 
   const handleCancel = () => {
@@ -99,7 +100,7 @@ const ProfilePage = () => {
       <Header
         HeaderLogo
         Title
-        placeText={'Holiday List'}
+        placeText={'My Profile'}
         onPress_back_button={() => {
           setModalVisible(true);
         }}
@@ -107,7 +108,11 @@ const ProfilePage = () => {
           props.navigation.navigate('Notification');
         }}
       />
-      <ScrollView style={styles.container}>
+      <ScrollView 
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollViewContent}
+              showsVerticalScrollIndicator={false}
+            >
         <View style={styles.header}>
           <TouchableOpacity
             onPress={isEditing ? selectImage : null}
@@ -115,7 +120,7 @@ const ProfilePage = () => {
             disabled={!isEditing}
           >
             <Image
-              source={{ uri: isEditing ? editedProfile.profilePicture : profile.profilePicture }}
+              source={{ uri: editedProfile.profilePicture }}
               style={styles.profileImage}
             />
             {isEditing && (
@@ -190,6 +195,16 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingBottom: normalize(60)
   },
+    scrollView: {
+      flex: 1,
+      backgroundColor: '#34495e',
+      width:'100%'
+    },
+    scrollViewContent: {
+      // paddingHorizontal: normalize(10),
+      // paddingVertical: normalize(10),
+      paddingBottom: normalize(100), // Extra padding at bottom
+    },
   header: {
     alignItems: 'center',
     // backgroundColor: '#fff',
@@ -199,7 +214,6 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e0e0e0',
   },
   profileImageContainer: {
-    position: 'relative',
     marginBottom: 15,
   },
   profileImage: {
@@ -229,7 +243,7 @@ const styles = StyleSheet.create({
   headerName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: Colors.white,
   },
   content: {
     backgroundColor: '#fff',

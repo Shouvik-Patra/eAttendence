@@ -1,6 +1,6 @@
 export default {
- BASE_URL: 'https://greg-rainbolt-admin.dedicateddevelopers.us/api',
-// BASE_URL: 'https://c7e6-182-79-73-22.ngrok-free.app/api',
+ BASE_URL: 'http://43.205.34.89:8001/v1/api',
+  timeout: 10000,
   TOKEN: 'TOKEN',
   LANGUAGE: 'en',
   CURRENCY: '$',

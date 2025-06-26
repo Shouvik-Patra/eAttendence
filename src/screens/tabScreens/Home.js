@@ -1,15 +1,54 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import React, { useEffect, useRef, useState } from 'react'
+import {
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
 import Header from '../../components/Header';
-import { Colors } from '../../themes/ThemePath';
+import { Colors, Fonts, Images } from '../../themes/ThemePath';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import showErrorAlert from '../../utils/helpers/Toast';
+import { Camera } from 'react-native-vision-camera';
+import normalize from '../../utils/helpers/normalize';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import moment from 'moment';
 
-const Home = (props) => {
+const Home = props => {
   const [isClocked, setIsClocked] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [startTime, setStartTime] = useState(null);
   const intervalRef = useRef(null);
+  const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(null);
+  console.log('capturedImageWithGeotag::', capturedImageWithGeotag);
+
+  // Listen for the returned image from Attendance page
+  useEffect(() => {
+    if (props?.route?.params?.finalImageUri) {
+      setCapturedImageWithGeotag(props.route.params.finalImageUri);
+      // Clear the parameter to avoid re-triggering
+      props?.navigation.setParams({ finalImageUri: undefined });
+
+      // Show success message
+      showErrorAlert('Success', 'Photo captured with geotag successfully!');
+    }
+  }, [props?.route?.params?.finalImageUri]);
+
+  const handleClickPhoto = () => {
+    // Navigate to Attendance page with required location data
+    props?.navigation.navigate('Attendence', {
+      currentAddress: '123 Main Street, City, State', // Replace with actual address
+      latitude: 37.7749, // Replace with actual latitude
+      longitude: -122.4194, // Replace with actual longitude
+    });
+  };
+
+  const clearCapturedImage = () => {
+    setCapturedImageWithGeotag(null);
+  };
 
   // Load saved timer state on component mount
   useEffect(() => {
@@ -34,8 +73,9 @@ const Home = (props) => {
     try {
       const savedState = await AsyncStorage.getItem('timerState');
       if (savedState) {
-        const { isClocked: savedIsClocked, startTime: savedStartTime } = JSON.parse(savedState);
-        
+        const { isClocked: savedIsClocked, startTime: savedStartTime } =
+          JSON.parse(savedState);
+
         if (savedIsClocked && savedStartTime) {
           setIsClocked(true);
           setStartTime(savedStartTime);
@@ -66,7 +106,7 @@ const Home = (props) => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
-    
+
     intervalRef.current = setInterval(() => {
       const currentTime = Date.now();
       const elapsed = Math.floor((currentTime - startTime) / 1000);
@@ -83,6 +123,7 @@ const Home = (props) => {
 
   const handleClockIn = () => {
     const currentTime = Date.now();
+    handleClickPhoto();
     setIsClocked(true);
     setStartTime(currentTime);
     setElapsedTime(0);
@@ -91,159 +132,258 @@ const Home = (props) => {
   };
 
   const handleClockOut = () => {
+    handleClickPhoto();
     setIsClocked(false);
     setStartTime(null);
     stopTimer();
     saveTimerState(false, null);
-    
+
     const finalTime = formatTime(elapsedTime);
     showErrorAlert('Clocked Out', `Total time worked: ${finalTime}`);
     setElapsedTime(0);
   };
 
-  const formatTime = (seconds) => {
+  const formatTime = seconds => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    
+
     return `${hours.toString().padStart(2, '0')}:${minutes
       .toString()
       .padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const checkPermission = async () => {
+    const newCameraPermission = await Camera.requestCameraPermission();
+  };
 
+  useEffect(() => {
+    checkPermission();
+  }, []);
 
   return (
-     <View style={{flex:1,backgroundColor:Colors.white,justifyContent:'center',alignItems:'center'}}>
-       <Header
+    <View style={styles.mainContainer}>
+      <Header
         HeaderLogo
         Title
         placeText={'Home'}
         onPress_back_button={() => {
-          setModalVisible(true);
+          // setModalVisible(true); // Make sure this function exists
         }}
         onPress_right_button={() => {
           props.navigation.navigate('Notification');
         }}
       />
-      <View style={styles.container}>
-      
-      <View style={styles.header}>
-        <Text style={styles.title}>Time Tracker</Text>
-      </View>
-
-      <View style={styles.timerContainer}>
-        <Text style={styles.timerText}>{formatTime(elapsedTime)}</Text>
-        <Text style={styles.statusText}>
-          {isClocked ? 'Currently Clocked In' : 'Not Clocked In'}
-        </Text>
-      </View>
-
-      <View style={styles.buttonContainer}>
-        {!isClocked ? (
-          <TouchableOpacity style={styles.clockInButton} onPress={handleClockIn}>
-            <Text style={styles.buttonText}>Clock In</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={styles.clockOutButton} onPress={handleClockOut}>
-            <Text style={styles.buttonText}>Clock Out</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {isClocked && (
-        <View style={styles.infoContainer}>
-          <Text style={styles.infoText}>
-            Started: {new Date(startTime).toLocaleTimeString()}
-          </Text>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollViewContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* User Info Section */}
+        <View style={styles.userInfoContainer}>
+          <View style={styles.userTextContainer}>
+            <Text style={styles.userName}>
+              Shouvik Patra
+            </Text>
+            <Text style={styles.userAddress}>
+              Uttar Rajyadharpur, Baidyabati, Hooghly, 712222
+            </Text>
+            <Text style={styles.blackText}>
+              Attendence :{' '}
+              <Text style={[styles.redText, {color: isClocked ? Colors.green : Colors.red}]}>
+                {isClocked ? 'Clocked In' : 'Pending'}
+              </Text>
+            </Text>
+            <Text style={styles.blackText}>
+              Today :
+              <Text style={styles.todayText}>
+                {' '}{moment().format('ddd, MMM, D')}.
+              </Text>
+            </Text>
+            <Text style={styles.blackText}>
+              Working Hour :
+              <Text style={styles.redText}>
+                {' '}{formatTime(elapsedTime)}
+              </Text>
+            </Text>
+            <Text style={styles.blackText}>
+              Started :
+              <Text style={styles.redText}>
+                {' '}
+                {startTime
+                  ? new Date(startTime).toLocaleTimeString()
+                  : 'Not started'}
+              </Text>
+            </Text>
+          </View>
+          <View style={styles.imageContainer}>
+            {capturedImageWithGeotag ? (
+              <Image
+                resizeMode="cover"
+                style={styles.userImage}
+                source={{ uri: capturedImageWithGeotag }}
+              />
+            ) : (
+              <Image
+                resizeMode="contain"
+                style={styles.userImagePlaceholder}
+                source={Images.profilepic}
+              />
+            )}
+          </View>
         </View>
-      )}
-    </View>
-     <TouchableOpacity style={{}}>
 
-     </TouchableOpacity>
-    </View>
-  )
-}
+        {/* Map Section */}
+        <View style={styles.mapSection}>
+          <View style={styles.mapContainer}>
+            {/* Uncomment this for actual MapView */}
+            {/* <MapView
+              style={styles.map}
+              initialRegion={{
+                latitude: 22.5726,
+                longitude: 88.3639,
+                latitudeDelta: 0.0922,
+                longitudeDelta: 0.0421,
+              }}
+            >
+              <Marker
+                coordinate={{ latitude: 22.5726, longitude: 88.3639 }}
+                title="Kolkata"
+              />
+            </MapView> */}
+            <Image
+              resizeMode="cover"
+              style={styles.mapImage}
+              source={Images.map}
+            />
+          </View>
+        </View>
 
-export default Home
+        {/* Clock In/Out Button */}
+        <TouchableOpacity
+          style={[styles.clockButton, {
+            backgroundColor: isClocked ? '#FFA500' : Colors.green,
+          }]}
+          onPress={isClocked ? handleClockOut : handleClockIn}
+        >
+          <Text style={styles.clockButtonText}>
+            {isClocked ? 'Clock Out' : 'Clock In'}
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
+  );
+};
+
+export default Home;
 
 const styles = StyleSheet.create({
-
-   container: {
+  mainContainer: {
+    flex: 1,
+    backgroundColor: Colors.white,
+  },
+  scrollView: {
     flex: 1,
     backgroundColor: '#34495e',
+  },
+  scrollViewContent: {
+    paddingHorizontal: normalize(10),
+    paddingVertical: normalize(10),
+    paddingBottom: normalize(100), // Extra padding at bottom
+  },
+  userInfoContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    padding: normalize(10),
+    backgroundColor: Colors.white,
+    borderRadius: normalize(8),
+    marginBottom: normalize(10),
+  },
+  userTextContainer: {
+    width: '60%',
+  },
+  userName: {
+    fontFamily: Fonts.MulishExtraBold,
+    fontSize: 20,
+  },
+  userAddress: {
+    fontFamily: Fonts.MulishSemiBold,
+    fontSize: 16,
+    fontWeight: '500',
+    marginTop: 5,
+  },
+  blackText: {
+    fontFamily: Fonts.MulishSemiBold,
+    fontSize: 16,
+    fontWeight: '700',
+    marginTop: 5,
+    color: Colors.black,
+  },
+  redText: {
+    fontFamily: Fonts.MulishSemiBold,
+    fontSize: 16,
+    fontWeight: '700',
+    marginTop: 5,
+    color: Colors.red,
+  },
+  todayText: {
+    fontFamily: Fonts.MulishSemiBold,
+    fontSize: 16,
+    fontWeight: '700',
+    marginTop: 5,
+    color: Colors.green,
+  },
+  imageContainer: {
+    borderWidth: normalize(2),
+    borderRadius: normalize(15),
+    borderColor: Colors.skyblue,
+    height: normalize(150),
+    width: normalize(110),
+    overflow: 'hidden',
+  },
+  userImage: {
+    height: normalize(150),
+    width: normalize(110),
+  },
+  userImagePlaceholder: {
+    alignSelf: 'center',
+    height: normalize(150),
+    width: normalize(110),
+  },
+  mapSection: {
+    width: '100%',
+    padding: normalize(5),
+    backgroundColor: Colors.white,
+    borderRadius: normalize(8),
+    marginBottom: normalize(15),
+  },
+  mapContainer: {
+    height: normalize(300),
+    width: '100%',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    overflow: 'hidden',
+    borderRadius: 8,
+  },
+  map: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  mapImage: {
+    height: normalize(300),
+    width: '100%',
+  },
+  clockButton: {
     justifyContent: 'center',
     alignItems: 'center',
-    width:'100%'
+    height: normalize(50),
+    borderRadius: normalize(8),
+    marginBottom: normalize(20),
   },
-  header: {
-    position: 'absolute',
-    top: 60,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#ecf0f1',
-    marginBottom: 10,
-  },
-  timerContainer: {
-    alignItems: 'center',
-    marginBottom: 50,
-  },
-  timerText: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#e74c3c',
-    fontFamily: 'monospace',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  statusText: {
-    fontSize: 18,
-    color: '#bdc3c7',
-    textAlign: 'center',
-  },
-  buttonContainer: {
-    marginBottom: 30,
-  },
-  clockInButton: {
-    backgroundColor: '#27ae60',
-    paddingHorizontal: 40,
-    paddingVertical: 15,
-    borderRadius: 25,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  clockOutButton: {
-    backgroundColor: '#e74c3c',
-    paddingHorizontal: 40,
-    paddingVertical: 15,
-    borderRadius: 25,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  buttonText: {
-    color: 'white',
+  clockButtonText: {
+    fontFamily: Fonts.MulishSemiBold,
     fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: '900',
+    color: Colors.white,
   },
-  infoContainer: {
-    position: 'absolute',
-    bottom: 100,
-    alignItems: 'center',
-  },
-  infoText: {
-    fontSize: 16,
-    color: '#95a5a6',
-    textAlign: 'center',
-  },
-})
+});
