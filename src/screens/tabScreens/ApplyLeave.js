@@ -16,8 +16,12 @@ import TextInputWithButton from '../../components/TextInputWithBotton';
 import DatePicker from 'react-native-date-picker';
 import normalize from '../../utils/helpers/normalize';
 import Modal from 'react-native-modal';
+import NetworkCall from '../../api/NetworkCall';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 const ApplyLeave = () => {
   const [startDate, setStartDate] = useState(new Date());
+
+  
   const [endDate, setEndDate] = useState(new Date());
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
@@ -25,7 +29,7 @@ const ApplyLeave = () => {
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isHolidayVisible, setIsHolidayVisible] = useState(false);
-
+  const [loading, setLoading] = useState(false);
   const holidays = [
     {
       id: '1',
@@ -129,6 +133,8 @@ const ApplyLeave = () => {
   };
 
   const handleStartDateConfirm = selectedDate => {
+    console.log(selectedDate);
+    
     setShowStartDatePicker(false);
     setStartDate(selectedDate);
     // If end date is before start date, update end date
@@ -182,54 +188,89 @@ const ApplyLeave = () => {
     return true;
   };
 
+  // const handleSubmit = async () => {
+  //   if (!validateForm()) return;
+
+  //   setIsSubmitting(true);
+
+  //   try {
+  //     // Simulate API call
+  //     await new Promise(resolve => setTimeout(resolve, 2000));
+
+  //     const leaveData = {
+  //       startDate: formatDate(startDate),
+  //       endDate: formatDate(endDate),
+  //       leaveType,
+  //       reason: reason.trim(),
+  //       totalDays: calculateLeaveDays(),
+  //       submittedAt: new Date().toISOString(),
+  //     };
+
+  //     console.log('Leave Application Submitted:', leaveData);
+
+  //     Alert.alert(
+  //       'Success',
+  //       `Leave application submitted successfully!\n\nDays: ${calculateLeaveDays()}\nType: ${
+  //         leaveType === 'full' ? 'Full Day' : 'Half Day'
+  //       }`,
+  //       [
+  //         {
+  //           text: 'OK',
+  //           onPress: () => {
+  //             // Reset form
+  //             setStartDate(new Date());
+  //             setEndDate(new Date());
+  //             setLeaveType('full');
+  //             setReason('');
+  //           },
+  //         },
+  //       ],
+  //     );
+  //   } catch (error) {
+  //     showErrorAlert(
+  //       'Error',
+  //       'Failed to submit leave application. Please try again.',
+  //     );
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
+
   const handleSubmit = async () => {
-    if (!validateForm()) return;
-
-    setIsSubmitting(true);
-
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const token = await AsyncStorage.getItem('token');
+      setLoading(true);
 
-      const leaveData = {
-        startDate: formatDate(startDate),
-        endDate: formatDate(endDate),
-        leaveType,
-        reason: reason.trim(),
-        totalDays: calculateLeaveDays(),
-        submittedAt: new Date().toISOString(),
+      const obj = {
+        start_date: formatDate(startDate),
+        end_date: formatDate(endDate),
+        reason: reason,
       };
+      const headers = {
+        Authorization: `Bearer ${token}`,
+      };
+      console.log('Sending login request with:', obj);
 
-      console.log('Leave Application Submitted:', leaveData);
-
-      Alert.alert(
-        'Success',
-        `Leave application submitted successfully!\n\nDays: ${calculateLeaveDays()}\nType: ${
-          leaveType === 'full' ? 'Full Day' : 'Half Day'
-        }`,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Reset form
-              setStartDate(new Date());
-              setEndDate(new Date());
-              setLeaveType('full');
-              setReason('');
-            },
-          },
-        ],
+      const response = await NetworkCall(
+        '/apply_leave',
+        obj,
+        global.networkTime,
+        true,
+        headers,
       );
+      console.log('Login response::', response);
+
+      if (response?.meta?.code == 200) {
+        showErrorAlert(response?.meta?.message);
+      } else {
+        showErrorAlert(response?.meta?.message);
+      }
     } catch (error) {
-      showErrorAlert(
-        'Error',
-        'Failed to submit leave application. Please try again.',
-      );
+      console.error('Login error:', error);
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
-
   return (
     <View
       style={{
@@ -303,7 +344,7 @@ const ApplyLeave = () => {
         </View>
 
         {/* Leave Type Section */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <Text style={styles.label}>Leave Type *</Text>
           <View style={styles.radioContainer}>
             <TouchableOpacity
@@ -342,7 +383,7 @@ const ApplyLeave = () => {
               Half day option is only applicable for single day leave
             </Text>
           )}
-        </View>
+        </View> */}
 
         {/* Total Days Display */}
         <View style={styles.section}>
@@ -451,10 +492,15 @@ const ApplyLeave = () => {
             }}
             onPress={() => {
               setIsHolidayVisible(!isHolidayVisible);
-            }}>
+            }}
+          >
             <Image
               source={Images.cross}
-              style={{height: normalize(60), width: normalize(60), zIndex: 99}}
+              style={{
+                height: normalize(60),
+                width: normalize(60),
+                zIndex: 99,
+              }}
             />
           </TouchableOpacity>
           <Text style={styles.title}>2025 Holiday Calendar</Text>
@@ -478,16 +524,16 @@ export default ApplyLeave;
 
 const styles = StyleSheet.create({
   container: {
-   flex:1,
+    flex: 1,
     backgroundColor: '#34495e',
     width: '100%',
   },
   modalContainer: {
-   height:normalize(550),
+    height: normalize(550),
     backgroundColor: '#808080',
     width: '95%',
-    alignSelf:'center',
-    borderRadius:10
+    alignSelf: 'center',
+    borderRadius: 10,
   },
   header: {
     backgroundColor: '#3498db',

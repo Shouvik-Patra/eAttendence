@@ -19,15 +19,14 @@ import { Colors, Fonts, Images } from '../../themes/ThemePath';
 import normalize from '../../utils/helpers/normalize';
 import Button from '../../components/Button';
 import TextInputWithButton from '../../components/TextInputWithBotton';
-import { postApi } from '../../utils/helpers/ApiRequest';
-import axios from 'axios';
-import apiService from '../../utils/helpers/ApiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Loader from '../../utils/helpers/Loader';
+import showErrorAlert from '../../utils/helpers/Toast';
+import NetworkCall from '../../api/NetworkCall';
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
 const ResetPassword = props => {
-  const [phone, setPhone] = useState('9876543210');
+  const [phone, setPhone] = useState('8961700989');
   const [secure1, setSecure1] = useState(false);
   const [password1, setPassword1] = useState('Test@1234');
   const [keyboardShown, setKeyboardShown] = useState(false);
@@ -54,30 +53,43 @@ const ResetPassword = props => {
     };
   }, []);
 
-const employeeLogin = async () => {
-    if (!phone || !password1) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
-    setLoading(true);
+  const employeeLogin = async () => {
     try {
-      const response = await apiService.login(phone, password1);
-      console.log("red>>>>>>>>>>>>>",response);
-      
-      Alert.alert('Success', 'Login successful!', [
-        {
-          text: 'OK',
-          onPress: () => props.navigation.replace('Home'),
-        },
-      ]);
+      setLoading(true);
+
+      const obj = {
+        phone: phone,
+        password: password1,
+      };
+
+      console.log('Sending login request with:', obj);
+
+      // const response = await NetworkCall('/employee-login', obj);
+
+      const response = await NetworkCall(
+        '/employee-login',
+        obj,
+        global.networkTime,
+        true,
+        // headers,
+      );
+      console.log('Login response::', response);
+
+      if (response?.meta?.code == 200) {
+        props.navigation.navigate('BottomTabNav');
+        await AsyncStorage.setItem('token', response.data.access_token);
+        // await AsyncStorage.setItem('userData', response.data.name);
+        showErrorAlert(response?.meta?.message);
+      } else {
+        showErrorAlert(response?.meta?.message);
+      }
     } catch (error) {
-      // Error is already handled in apiService, but you can add custom handling here
-      console.error('Login failed:', error);
+      console.error('Login error:', error);
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <ImageBackground
       source={Images.pageBackground}
@@ -192,7 +204,6 @@ const employeeLogin = async () => {
                 textColor={'white'}
                 onPress={() => {
                   employeeLogin();
-                  // props.navigation.navigate('BottomTabNav');
                 }}
               />
             </View>

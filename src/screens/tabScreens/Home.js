@@ -1,6 +1,8 @@
 import {
   Alert,
   Image,
+  PermissionsAndroid,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,6 +18,8 @@ import { Camera } from 'react-native-vision-camera';
 import normalize from '../../utils/helpers/normalize';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import moment from 'moment';
+import Geolocation from '@react-native-community/geolocation';
+import Loader from '../../utils/helpers/Loader';
 
 const Home = props => {
   const [isClocked, setIsClocked] = useState(false);
@@ -23,6 +27,42 @@ const Home = props => {
   const [startTime, setStartTime] = useState(null);
   const intervalRef = useRef(null);
   const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const [location, setLocation] = useState({ latitude: null, longitude: null });
+
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'android') {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    }
+    return true;
+  };
+
+  const getLocation = async () => {
+    setLoading(true);
+    // const hasPermission = await requestLocationPermission();
+    // if (!hasPermission) {
+    //   console.log('Location permission denied');
+    //   return;
+    // }
+    console.log('helooo');
+
+    Geolocation.getCurrentPosition(
+      position => {
+        const { latitude, longitude } = position.coords;
+        setLocation({ latitude, longitude });
+        handleClickPhoto(latitude, longitude);
+      },
+      error => {
+        console.log('Error getting location', error);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
+    );
+  };
+
   console.log('capturedImageWithGeotag::', capturedImageWithGeotag);
 
   // Listen for the returned image from Attendance page
@@ -37,17 +77,19 @@ const Home = props => {
     }
   }, [props?.route?.params?.finalImageUri]);
 
-  const handleClickPhoto = () => {
-    // Navigate to Attendance page with required location data
-    props?.navigation.navigate('Attendence', {
-      currentAddress: '123 Main Street, City, State', // Replace with actual address
-      latitude: 37.7749, // Replace with actual latitude
-      longitude: -122.4194, // Replace with actual longitude
-    });
-  };
+  const handleClickPhoto = (lat, long) => {
+    console.log('>>>', lat, long);
 
-  const clearCapturedImage = () => {
-    setCapturedImageWithGeotag(null);
+    if (lat !== undefined || null) {
+      setLoading(false);
+      props?.navigation.navigate('Attendence', {
+        currentAddress: 'test address', // Replace with actual address
+        latitude: lat, // Replace with actual latitude
+        longitude: long, // Replace with actual longitude
+        pagename: 'Home',
+        status: 'clockin',
+      });
+    }
   };
 
   // Load saved timer state on component mount
@@ -120,29 +162,6 @@ const Home = props => {
       intervalRef.current = null;
     }
   };
-
-  const handleClockIn = () => {
-    const currentTime = Date.now();
-    handleClickPhoto();
-    setIsClocked(true);
-    setStartTime(currentTime);
-    setElapsedTime(0);
-    saveTimerState(true, currentTime);
-    showErrorAlert('Clocked In', 'Timer started successfully!');
-  };
-
-  const handleClockOut = () => {
-    handleClickPhoto();
-    setIsClocked(false);
-    setStartTime(null);
-    stopTimer();
-    saveTimerState(false, null);
-
-    const finalTime = formatTime(elapsedTime);
-    showErrorAlert('Clocked Out', `Total time worked: ${finalTime}`);
-    setElapsedTime(0);
-  };
-
   const formatTime = seconds => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
@@ -158,6 +177,7 @@ const Home = props => {
   };
 
   useEffect(() => {
+    requestLocationPermission();
     checkPermission();
   }, []);
 
@@ -174,7 +194,8 @@ const Home = props => {
           props.navigation.navigate('Notification');
         }}
       />
-      <ScrollView 
+      <Loader visible={loading} />
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
         showsVerticalScrollIndicator={false}
@@ -182,30 +203,32 @@ const Home = props => {
         {/* User Info Section */}
         <View style={styles.userInfoContainer}>
           <View style={styles.userTextContainer}>
-            <Text style={styles.userName}>
-              Shouvik Patra
-            </Text>
+            <Text style={styles.userName}>Shouvik Patra</Text>
             <Text style={styles.userAddress}>
               Uttar Rajyadharpur, Baidyabati, Hooghly, 712222
             </Text>
             <Text style={styles.blackText}>
               Attendence :{' '}
-              <Text style={[styles.redText, {color: isClocked ? Colors.green : Colors.red}]}>
+              <Text
+                style={[
+                  styles.redText,
+                  { color: isClocked ? Colors.green : Colors.red },
+                ]}
+              >
                 {isClocked ? 'Clocked In' : 'Pending'}
               </Text>
             </Text>
             <Text style={styles.blackText}>
               Today :
               <Text style={styles.todayText}>
-                {' '}{moment().format('ddd, MMM, D')}.
+                {' '}
+                {moment().format('ddd, MMM, D')}.
               </Text>
             </Text>
-            <Text style={styles.blackText}>
+            {/* <Text style={styles.blackText}>
               Working Hour :
-              <Text style={styles.redText}>
-                {' '}{formatTime(elapsedTime)}
-              </Text>
-            </Text>
+              <Text style={styles.redText}> {formatTime(elapsedTime)}</Text>
+            </Text> */}
             <Text style={styles.blackText}>
               Started :
               <Text style={styles.redText}>
@@ -261,10 +284,15 @@ const Home = props => {
 
         {/* Clock In/Out Button */}
         <TouchableOpacity
-          style={[styles.clockButton, {
-            backgroundColor: isClocked ? '#FFA500' : Colors.green,
-          }]}
-          onPress={isClocked ? handleClockOut : handleClockIn}
+          style={[
+            styles.clockButton,
+            {
+              backgroundColor: isClocked ? '#FFA500' : Colors.green,
+            },
+          ]}
+          onPress={() => {
+            getLocation();
+          }}
         >
           <Text style={styles.clockButtonText}>
             {isClocked ? 'Clock Out' : 'Clock In'}

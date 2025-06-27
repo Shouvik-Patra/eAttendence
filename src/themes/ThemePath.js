@@ -48,6 +48,7 @@ export const Colors = {
   fontWhite: '#FFFAEC',
   black: '#000000',
   red: '#E94343',
+  orange: '#FFA500',
   green: '#89C438',
   lightYellow: '#CDE3A5',
   skyblue: '#42C5EA',

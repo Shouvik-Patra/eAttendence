@@ -71,7 +71,7 @@ const BottomTabNav = () => {
           ),
         }}
       />
-      <Tab.Screen
+      {/* <Tab.Screen
         name="HolidayList"
         component={HolidayList}
         options={{
@@ -80,7 +80,7 @@ const BottomTabNav = () => {
             <TabIcon focused={focused} source={Images.tab2} />
           ),
         }}
-      />
+      /> */}
 
       <Tab.Screen
         name="MyProfile"

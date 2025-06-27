@@ -193,40 +193,6 @@ class ApiService {
     }
   }
 
-  // File upload method for React Native
-  async uploadFile(endpoint, fileData, onUploadProgress = null) {
-    try {
-      const formData = new FormData();
-      
-      // Handle different file formats
-      if (fileData.uri) {
-        formData.append('file', {
-          uri: fileData.uri,
-          type: fileData.type || 'image/jpeg',
-          name: fileData.name || 'file.jpg',
-        });
-      }
-
-      // Add additional fields if provided
-      if (fileData.additionalFields) {
-        Object.keys(fileData.additionalFields).forEach(key => {
-          formData.append(key, fileData.additionalFields[key]);
-        });
-      }
-
-      const response = await this.api.post(endpoint, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        onUploadProgress: onUploadProgress,
-      });
-
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  }
-
   // Authentication methods
   async login(phone, password) {
     try {
@@ -294,42 +260,138 @@ class ApiService {
     return !!token;
   }
 
-  // Employee methods
-  async getEmployeeProfile(id) {
-    return this.get(getEndpoint(ENDPOINTS.EMPLOYEE.PROFILE, id));
+  // ==================== ATTENDANCE METHODS ====================
+
+  /**
+   * Check-in attendance
+   * @param {Object} checkInData - Check-in data
+   * @param {string} checkInData.check_in - Check-in time (HH:MM:SS format)
+   * @param {string} checkInData.status - Attendance status (e.g., "present")
+   * @param {number} checkInData.latitude - User's latitude
+   * @param {number} checkInData.longitude - User's longitude  
+   * @param {string} checkInData.remarks - Optional remarks
+   * @returns {Promise} API response
+   */
+  async checkIn(checkInData) {
+    try {
+      // Validate required fields
+      if (!checkInData.check_in || !checkInData.status || 
+          checkInData.latitude === undefined || checkInData.longitude === undefined) {
+        throw new Error('Missing required check-in data');
+      }
+
+      const response = await this.post(ENDPOINTS.ATTENDANCE.CLOCKIN, checkInData);
+      console.log('Check-in successful:', response);
+      return response;
+    } catch (error) {
+      console.error('Check-in failed:', error);
+      throw error;
+    }
   }
 
-  async getEmployeeList() {
-    return this.get(ENDPOINTS.EMPLOYEE.LIST);
+  /**
+   * Check-out attendance
+   * @param {Object} checkOutData - Check-out data
+   * @param {string} checkOutData.check_out - Check-out time (HH:MM:SS format)
+   * @param {string} checkOutData.status - Attendance status
+   * @param {number} checkOutData.latitude - User's latitude
+   * @param {number} checkOutData.longitude - User's longitude
+   * @param {string} checkOutData.remarks - Optional remarks
+   * @returns {Promise} API response
+   */
+  async checkOut(checkOutData) {
+    try {
+      // Validate required fields
+      if (!checkOutData.check_out || !checkOutData.status || 
+          checkOutData.latitude === undefined || checkOutData.longitude === undefined) {
+        throw new Error('Missing required check-out data');
+      }
+
+      const response = await this.post(ENDPOINTS.ATTENDANCE.CLOCKOUT, checkOutData);
+      console.log('Check-out successful:', response);
+      return response;
+    } catch (error) {
+      console.error('Check-out failed:', error);
+      throw error;
+    }
   }
 
-  async createEmployee(employeeData) {
-    return this.post(ENDPOINTS.EMPLOYEE.CREATE, employeeData);
+  /**
+   * Helper method to get current time in HH:MM:SS format
+   * @returns {string} Current time in HH:MM:SS format
+   */
+  getCurrentTime() {
+    const now = new Date();
+    return now.toTimeString().split(' ')[0]; // Gets HH:MM:SS part
   }
 
-  async updateEmployee(id, employeeData) {
-    return this.put(getEndpoint(ENDPOINTS.EMPLOYEE.UPDATE, id), employeeData);
+  /**
+   * Helper method to get current location (you'll need to implement location services)
+   * This is a placeholder - you should integrate with react-native-geolocation-service
+   * @returns {Promise<{latitude: number, longitude: number}>}
+   */
+  async getCurrentLocation() {
+    // This is a placeholder - implement actual location service
+    // You'll need to install and configure react-native-geolocation-service
+    return new Promise((resolve, reject) => {
+      // Placeholder coordinates - replace with actual location service
+      resolve({
+        latitude: 23.456789,
+        longitude: 87.654321
+      });
+    });
   }
 
-  async deleteEmployee(id) {
-    return this.delete(getEndpoint(ENDPOINTS.EMPLOYEE.DELETE, id));
+  /**
+   * Convenience method for quick check-in with current time and location
+   * @param {string} status - Attendance status (default: "present")
+   * @param {string} remarks - Optional remarks
+   * @returns {Promise} API response
+   */
+  async quickCheckIn(status = "present", remarks = "Morning check-in") {
+    try {
+      const currentTime = this.getCurrentTime();
+      const location = await this.getCurrentLocation();
+      
+      const checkInData = {
+        check_in: currentTime,
+        status: status,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        remarks: remarks
+      };
+
+      return await this.checkIn(checkInData);
+    } catch (error) {
+      console.error('Quick check-in failed:', error);
+      throw error;
+    }
   }
 
-  // Department methods
-  async getDepartmentList() {
-    return this.get(ENDPOINTS.DEPARTMENT.LIST);
-  }
+  /**
+   * Convenience method for quick check-out with current time and location
+   * @param {string} status - Attendance status (default: "present")
+   * @param {string} remarks - Optional remarks
+   * @returns {Promise} API response
+   */
+  async quickCheckOut(status = "present", remarks = "Evening check-out") {
+    try {
+      const currentTime = this.getCurrentTime();
+      const location = await this.getCurrentLocation();
+      
+      const checkOutData = {
+        check_out: currentTime,
+        status: status,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        remarks: remarks
+      };
 
-  async createDepartment(departmentData) {
-    return this.post(ENDPOINTS.DEPARTMENT.CREATE, departmentData);
-  }
-
-  async updateDepartment(id, departmentData) {
-    return this.put(getEndpoint(ENDPOINTS.DEPARTMENT.UPDATE, id), departmentData);
-  }
-
-  async deleteDepartment(id) {
-    return this.delete(getEndpoint(ENDPOINTS.DEPARTMENT.DELETE, id));
+      return await this.checkOut(checkOutData);
+    } catch (error) {
+      console.error('Quick check-out failed:', error);
+      throw error;
+    }
   }
 }
 

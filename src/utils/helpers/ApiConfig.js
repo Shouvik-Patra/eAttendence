@@ -24,12 +24,17 @@ export const ENDPOINTS = {
   // Authentication endpoints
   AUTH: {
     LOGIN: '/employee-login',
-    LOGOUT: '/employee-logout',
-    REFRESH: '/refresh-token',
-    FORGOT_PASSWORD: '/forgot-password',
-    RESET_PASSWORD: '/reset-password'
+    // LOGOUT: '/employee-logout',
+    // REFRESH: '/refresh-token',
+    // FORGOT_PASSWORD: '/forgot-password',
+    // RESET_PASSWORD: '/reset-password'
   },
 
+  // Attendence endpoints
+  ATTENDANCE: {
+    CLOCKIN: '/check_in',
+    CLOCKOUT: '/check_out',
+  },
   // Employee endpoints
   EMPLOYEE: {
     PROFILE: '/employee-profile',

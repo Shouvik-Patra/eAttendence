@@ -13,6 +13,10 @@ import ViewShot from 'react-native-view-shot';
 import ImageCompressor from 'react-native-compressor';
 import { Images } from '../../themes/ThemePath';
 import normalize from '../../utils/helpers/normalize';
+import showErrorAlert from '../../utils/helpers/Toast';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import moment from 'moment';
+import NetworkCall from '../../api/NetworkCall';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -108,6 +112,125 @@ const Attendence = props => {
     }
   };
 
+const onClockIn = async (capturedimage) => {
+    try {
+      // Get token from AsyncStorage
+      const token = await AsyncStorage.getItem('token');
+
+      if (!token) {
+        showErrorAlert('Authentication token not found. Please login again.');
+        props.navigation.navigate('Signin');
+        return;
+      }
+
+      // Create FormData exactly like Postman
+      const formData = new FormData();
+      formData.append('check_in', '09:30:00');
+      formData.append('status', 'present');
+      formData.append('check_in_latitude', '22.5726');
+      formData.append('check_in_longitude', '88.3639');
+      formData.append('check_in_address', 'Kolkata,wb');
+      formData.append('remarks', 'Checked in successfully');
+
+      // Add photo if provided
+      // if (capturedimage) {
+      //   formData.append('check_in_photo', {
+      //     uri: capturedimage,
+      //     type: 'image/jpeg',
+      //     name: 'photo.jpg'
+      //   });
+      // }
+
+      // Headers - only Authorization like in Postman
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+      };
+
+      console.log('Sending request...');
+
+      const response = await NetworkCall(
+        '/check_in',
+        formData,
+        60000, // 60 second timeout
+        true,
+        headers,
+      );
+      
+      console.log('Clock-in response:', response);
+
+      if (response?.meta?.code == 200) {
+        showErrorAlert(response?.meta?.message || 'Clock-in successful');
+      } else {
+        showErrorAlert(response?.meta?.message || 'Clock-in failed');
+      }
+    } catch (error) {
+      console.log('Clock-in error:', error.message);
+      showErrorAlert(error.message || 'Clock-in failed. Please try again.');
+    }
+  };
+  const onClockOut = async (capturedimage) => {
+    try {
+      // setLoading(true);
+
+      // Get token from AsyncStorage
+      const token = await AsyncStorage.getItem('token');
+
+      if (!token) {
+        showErrorAlert('Authentication token not found. Please login again.');
+        props.navigation.navigate('Signin'); // Navigate to login screen
+        return;
+      }
+
+      // Create FormData object
+      const formData = new FormData();
+      formData.append('check_in', moment().format('HH:mm:ss'));
+      formData.append('status', 'present');
+      formData.append('check_in_latitude', '22.5726');
+      formData.append('check_in_longitude', '88.3639');
+      formData.append('check_in_address', 'Kolkata,wb');
+      formData.append('remarks', 'Checked in successfully');
+
+      // For photo, you can append either a file or a URI
+      // If you have a photo file/URI, uncomment and modify this line:
+      // formData.append('check_in_photo', {
+      //   uri: Platform.OS === 'android'
+      //                 ? capturedImageWithGeotag
+      //                 : capturedImageWithGeotag.replace('file://', ''), // your photo URI
+      //   type: 'image/jpeg', // or 'image/png'
+      //   name: 'photo.png'
+      // });
+
+      // If you have a static photo file name (as in your example)
+      formData.append('check_in_photo', capturedimage);
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        // Add any other headers you need
+      };
+      console.log('formdata::::::', formData);
+
+      const response = await NetworkCall(
+        '/check_in',
+        formData,
+        global.networkTime,
+        true,
+        headers,
+      );
+      console.log('Clock-in response::', response);
+
+      // if (response?.meta?.code == 200) {
+      //   showErrorAlert(response?.meta?.message);
+      //   // Handle successful clock-in response
+      //   // You might want to update UI or navigate somewhere
+      // } else {
+      //   showErrorAlert(response?.meta?.message);
+      // }
+    } catch (error) {
+      console.error('Clock-in error:', error);
+      showErrorAlert('Clock-in failed. Please try again.');
+    } finally {
+      // setLoading(false);
+    }
+  };
   const handleSubmit = async () => {
     if (viewShotRef.current && !isSubmitting) {
       setIsSubmitting(true);
@@ -126,11 +249,16 @@ const Attendence = props => {
             output: 'jpg',
           },
         );
+        {
+          props?.route?.params?.status == 'clockin' ?
 
+          onClockIn(compressedImagePath):onClockIn(compressedImagePath)
+        }
         console.log(
           'Final compressed square image with geotag:',
           compressedImagePath,
         );
+
         {
           props?.route?.params?.pagename == 'Home'
             ? props?.navigation.navigate('BottomTabNav', {
@@ -426,6 +554,7 @@ const styles = StyleSheet.create({
   },
   instructionText: {
     color: 'white',
+    opacity:0.5,
     fontSize: 16,
     fontWeight: 'bold',
     backgroundColor: 'rgba(0, 0, 0, 0.6)',

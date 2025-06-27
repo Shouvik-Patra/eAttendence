@@ -12,14 +12,17 @@ import {
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import Header from '../../components/Header';
-import { Colors } from '../../themes/ThemePath';
+import { Colors, Images } from '../../themes/ThemePath';
 import normalize from '../../utils/helpers/normalize';
 import showErrorAlert from '../../utils/helpers/Toast';
+import { StackActions } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
+
   const [profile, setProfile] = useState({
-    profilePicture: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cHJvZmlsZSUyMGltYWdlfGVufDB8fDB8fHww',
+    profilePicture: Images.profilepic,
     name: 'Shouvik Patra',
     dob: '1995-11-11',
     doj: '2020-03-01',
@@ -33,11 +36,18 @@ const ProfilePage = () => {
     setEditedProfile({ ...profile });
     setIsEditing(true);
   };
+  const handleLogout = async () => {
+      const token = await AsyncStorage.getItem('token');
+console.log(token);
+
+    // await AsyncStorage.clear();
+    props.navigation.navigate('Signin');
+  };
 
   const handleSave = () => {
     setProfile({ ...editedProfile });
     setIsEditing(false);
-   showErrorAlert('Success', 'Profile updated successfully!');
+    showErrorAlert('Success', 'Profile updated successfully!');
   };
 
   const handleCancel = () => {
@@ -53,7 +63,7 @@ const ProfilePage = () => {
       maxWidth: 2000,
     };
 
-    launchImageLibrary(options, (response) => {
+    launchImageLibrary(options, response => {
       if (response.didCancel || response.error) {
         return;
       }
@@ -67,7 +77,7 @@ const ProfilePage = () => {
     });
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = dateString => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
@@ -76,7 +86,13 @@ const ProfilePage = () => {
     });
   };
 
-  const ProfileField = ({ label, value, editable = true, multiline = false, onChangeText }) => (
+  const ProfileField = ({
+    label,
+    value,
+    editable = true,
+    multiline = false,
+    onChangeText,
+  }) => (
     <View style={styles.fieldContainer}>
       <Text style={styles.fieldLabel}>{label}</Text>
       {isEditing && editable ? (
@@ -96,7 +112,14 @@ const ProfilePage = () => {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.white, justifyContent: 'center', alignItems: 'center' }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: Colors.white,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
       <Header
         HeaderLogo
         Title
@@ -108,11 +131,11 @@ const ProfilePage = () => {
           props.navigation.navigate('Notification');
         }}
       />
-      <ScrollView 
-              style={styles.scrollView}
-              contentContainerStyle={styles.scrollViewContent}
-              showsVerticalScrollIndicator={false}
-            >
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollViewContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
           <TouchableOpacity
             onPress={isEditing ? selectImage : null}
@@ -120,7 +143,7 @@ const ProfilePage = () => {
             disabled={!isEditing}
           >
             <Image
-              source={{ uri: editedProfile.profilePicture }}
+              source={editedProfile.profilePicture}
               style={styles.profileImage}
             />
             {isEditing && (
@@ -138,26 +161,34 @@ const ProfilePage = () => {
           <ProfileField
             label="Full Name"
             value={isEditing ? editedProfile.name : profile.name}
-            onChangeText={(text) => setEditedProfile({ ...editedProfile, name: text })}
+            onChangeText={text =>
+              setEditedProfile({ ...editedProfile, name: text })
+            }
           />
 
           <ProfileField
             label="Date of Birth"
             value={isEditing ? editedProfile.dob : profile.dob}
-            onChangeText={(text) => setEditedProfile({ ...editedProfile, dob: text })}
+            onChangeText={text =>
+              setEditedProfile({ ...editedProfile, dob: text })
+            }
           />
 
           <ProfileField
             label="Date of Joining"
             value={isEditing ? editedProfile.doj : profile.doj}
-            onChangeText={(text) => setEditedProfile({ ...editedProfile, doj: text })}
+            onChangeText={text =>
+              setEditedProfile({ ...editedProfile, doj: text })
+            }
           />
 
           <ProfileField
             label="Address"
             value={isEditing ? editedProfile.address : profile.address}
             multiline={true}
-            onChangeText={(text) => setEditedProfile({ ...editedProfile, address: text })}
+            onChangeText={text =>
+              setEditedProfile({ ...editedProfile, address: text })
+            }
           />
 
           <ProfileField
@@ -170,7 +201,10 @@ const ProfilePage = () => {
         <View style={styles.buttonContainer}>
           {isEditing ? (
             <View style={styles.editButtonsContainer}>
-              <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={handleCancel}
+              >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
@@ -178,9 +212,20 @@ const ProfilePage = () => {
               </TouchableOpacity>
             </View>
           ) : (
-            <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-              <Text style={styles.editButtonText}>Edit Profile</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+                <Text style={styles.editButtonText}>Edit Profile</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.editButton,
+                  { marginTop: normalize(10), backgroundColor: Colors.orange },
+                ]}
+                onPress={handleLogout}
+              >
+                <Text style={styles.editButtonText}>Logout</Text>
+              </TouchableOpacity>
+            </>
           )}
         </View>
       </ScrollView>
@@ -193,18 +238,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#34495e',
     width: '100%',
-    paddingBottom: normalize(60)
+    paddingBottom: normalize(60),
   },
-    scrollView: {
-      flex: 1,
-      backgroundColor: '#34495e',
-      width:'100%'
-    },
-    scrollViewContent: {
-      // paddingHorizontal: normalize(10),
-      // paddingVertical: normalize(10),
-      paddingBottom: normalize(100), // Extra padding at bottom
-    },
+  scrollView: {
+    flex: 1,
+    backgroundColor: '#34495e',
+    width: '100%',
+  },
+  scrollViewContent: {
+    // paddingHorizontal: normalize(10),
+    // paddingVertical: normalize(10),
+    paddingBottom: normalize(100), // Extra padding at bottom
+  },
   header: {
     alignItems: 'center',
     // backgroundColor: '#fff',
