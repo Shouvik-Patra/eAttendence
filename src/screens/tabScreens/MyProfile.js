@@ -17,8 +17,12 @@ import normalize from '../../utils/helpers/normalize';
 import showErrorAlert from '../../utils/helpers/Toast';
 import { StackActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useDispatch, useSelector } from 'react-redux';
+import { logoutRequest } from '../../redux/reducer/AuthReducer';
 
 const ProfilePage = () => {
+  const dispatch = useDispatch();
+  const AuthReducer = useSelector(state => state.AuthReducer);
   const [isEditing, setIsEditing] = useState(false);
 
   const [profile, setProfile] = useState({
@@ -35,13 +39,6 @@ const ProfilePage = () => {
   const handleEdit = () => {
     setEditedProfile({ ...profile });
     setIsEditing(true);
-  };
-  const handleLogout = async () => {
-      const token = await AsyncStorage.getItem('token');
-console.log(token);
-
-    // await AsyncStorage.clear();
-    props.navigation.navigate('Signin');
   };
 
   const handleSave = () => {
@@ -221,7 +218,9 @@ console.log(token);
                   styles.editButton,
                   { marginTop: normalize(10), backgroundColor: Colors.orange },
                 ]}
-                onPress={handleLogout}
+                onPress={() => {
+                  dispatch(logoutRequest());
+                }}
               >
                 <Text style={styles.editButtonText}>Logout</Text>
               </TouchableOpacity>

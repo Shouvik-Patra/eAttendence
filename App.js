@@ -1,16 +1,19 @@
 import {StatusBar, StyleSheet} from 'react-native';
 import React, {useEffect} from 'react';
 import MainStack from './src/navigation/MainStack';
+import { useDispatch } from 'react-redux';
+import { getTokenRequest } from './src/redux/reducer/AuthReducer';
 
 const App = () => {
-
+  const dispatch = useDispatch();
+  useEffect(() => {
+    dispatch(getTokenRequest());
+  }, []);
   return (
     <>
-      <StatusBar
-        backgroundColor="transparent"
-        translucent={true}
-        // barStyle="dark-content"
-        barStyle="light-content"
+      <StatusBar  
+        animated={true}
+        backgroundColor="black"
       />
     
       <MainStack />

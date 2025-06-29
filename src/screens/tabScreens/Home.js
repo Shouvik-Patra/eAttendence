@@ -20,8 +20,16 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import moment from 'moment';
 import Geolocation from '@react-native-community/geolocation';
 import Loader from '../../utils/helpers/Loader';
-
+import connectionrequest from '../../utils/helpers/NetInfo';
+import { userDetailsRequest } from '../../redux/reducer/ProfileReducer';
+import { useDispatch, useSelector } from 'react-redux';
+import { useIsFocused } from '@react-navigation/native';
+let status = '';
 const Home = props => {
+  const dispatch = useDispatch();
+  const AuthReducer = useSelector(state => state.AuthReducer);
+  const ProfileReducer = useSelector(state => state.ProfileReducer);
+  const isFocused = useIsFocused();
   const [isClocked, setIsClocked] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [startTime, setStartTime] = useState(null);
@@ -43,13 +51,6 @@ const Home = props => {
 
   const getLocation = async () => {
     setLoading(true);
-    // const hasPermission = await requestLocationPermission();
-    // if (!hasPermission) {
-    //   console.log('Location permission denied');
-    //   return;
-    // }
-    console.log('helooo');
-
     Geolocation.getCurrentPosition(
       position => {
         const { latitude, longitude } = position.coords;
@@ -57,13 +58,14 @@ const Home = props => {
         handleClickPhoto(latitude, longitude);
       },
       error => {
+        setLoading(false);
         console.log('Error getting location', error);
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 },
     );
   };
 
-  console.log('capturedImageWithGeotag::', capturedImageWithGeotag);
+  console.log('capturedImageWithGeotag::', ProfileReducer?.userDetailsResponse);
 
   // Listen for the returned image from Attendance page
   useEffect(() => {
@@ -76,20 +78,26 @@ const Home = props => {
       showErrorAlert('Success', 'Photo captured with geotag successfully!');
     }
   }, [props?.route?.params?.finalImageUri]);
-
+  useEffect(() => {
+    connectionrequest()
+      .then(() => {
+        dispatch(userDetailsRequest());
+      })
+      .catch(err => {
+        console.log(err);
+        showErrorAlert('Please connect to internet');
+      });
+  }, [isFocused]);
   const handleClickPhoto = (lat, long) => {
     console.log('>>>', lat, long);
-
-    if (lat !== undefined || null) {
-      setLoading(false);
-      props?.navigation.navigate('Attendence', {
-        currentAddress: 'test address', // Replace with actual address
-        latitude: lat, // Replace with actual latitude
-        longitude: long, // Replace with actual longitude
-        pagename: 'Home',
-        status: 'clockin',
-      });
-    }
+    setLoading(false);
+    props?.navigation.navigate('Attendence', {
+      currentAddress: 'test address', 
+      latitude: lat, 
+      longitude: long, 
+      pagename: 'Home',
+      status: ProfileReducer?.userDetailsResponse?.is_attendance_given == 1 ? 'clockout':'clockin',
+    });
   };
 
   // Load saved timer state on component mount
@@ -181,6 +189,20 @@ const Home = props => {
     checkPermission();
   }, []);
 
+  if (status == '' || ProfileReducer.status != status) {
+    switch (ProfileReducer.status) {
+      case 'Profile/clockinRequest':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/clockinSuccess':
+        status = ProfileReducer.status;
+        setFormTypeData(ProfileReducer?.formListResponse?.data);
+        break;
+      case 'Profile/formListFailure':
+        status = ProfileReducer.status;
+        break;
+    }
+  }
   return (
     <View style={styles.mainContainer}>
       <Header
@@ -203,7 +225,9 @@ const Home = props => {
         {/* User Info Section */}
         <View style={styles.userInfoContainer}>
           <View style={styles.userTextContainer}>
-            <Text style={styles.userName}>Shouvik Patra</Text>
+            <Text style={styles.userName}>
+              {ProfileReducer?.userDetailsResponse?.name}
+            </Text>
             <Text style={styles.userAddress}>
               Uttar Rajyadharpur, Baidyabati, Hooghly, 712222
             </Text>
@@ -212,10 +236,18 @@ const Home = props => {
               <Text
                 style={[
                   styles.redText,
-                  { color: isClocked ? Colors.green : Colors.red },
+                  {
+                    color:
+                      ProfileReducer?.userDetailsResponse
+                        ?.is_attendance_given == 1
+                        ? Colors.green
+                        : Colors.red,
+                  },
                 ]}
               >
-                {isClocked ? 'Clocked In' : 'Pending'}
+                {ProfileReducer?.userDetailsResponse?.is_attendance_given == 1
+                  ? 'Clocked In'
+                  : 'Pending'}
               </Text>
             </Text>
             <Text style={styles.blackText}>
@@ -229,7 +261,7 @@ const Home = props => {
               Working Hour :
               <Text style={styles.redText}> {formatTime(elapsedTime)}</Text>
             </Text> */}
-            <Text style={styles.blackText}>
+            {/* <Text style={styles.blackText}>
               Started :
               <Text style={styles.redText}>
                 {' '}
@@ -237,7 +269,7 @@ const Home = props => {
                   ? new Date(startTime).toLocaleTimeString()
                   : 'Not started'}
               </Text>
-            </Text>
+            </Text> */}
           </View>
           <View style={styles.imageContainer}>
             {capturedImageWithGeotag ? (
@@ -287,7 +319,7 @@ const Home = props => {
           style={[
             styles.clockButton,
             {
-              backgroundColor: isClocked ? '#FFA500' : Colors.green,
+              backgroundColor: ProfileReducer?.userDetailsResponse?.is_attendance_given == 1 ? '#FFA500' : Colors.green,
             },
           ]}
           onPress={() => {
@@ -295,7 +327,7 @@ const Home = props => {
           }}
         >
           <Text style={styles.clockButtonText}>
-            {isClocked ? 'Clock Out' : 'Clock In'}
+            {ProfileReducer?.userDetailsResponse?.is_attendance_given == 1 ? 'Clock Out' : 'Clock In'}
           </Text>
         </TouchableOpacity>
       </ScrollView>

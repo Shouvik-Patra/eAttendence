@@ -8,7 +8,7 @@ export async function getApi(url, header) {
     headers: {
       Accept: header.Accept,
       'Content-Type': header.contenttype,
-      'x-access-token': header.accesstoken,
+      'Authorization': header.accesstoken,
       // Authorization: `Bearer ${header.accesstoken ?? ''}`,
     },
   });
@@ -36,7 +36,7 @@ export async function postApi(url, payload, header) {
     headers: {
       Accept: header.Accept,
       'Content-Type': header.contenttype,
-      'x-access-token': header.accesstoken,
+      'Authorization': header.accesstoken,
       // Authorization: `Bearer ${header.accesstoken ?? ''}`,
     },
   });

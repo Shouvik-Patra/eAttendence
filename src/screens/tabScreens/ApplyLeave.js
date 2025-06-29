@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import React, { useState } from 'react';
+import moment from 'moment';
 import Header from '../../components/Header';
 import { Colors, Fonts, Images } from '../../themes/ThemePath';
 import showErrorAlert from '../../utils/helpers/Toast';
@@ -18,10 +19,9 @@ import normalize from '../../utils/helpers/normalize';
 import Modal from 'react-native-modal';
 import NetworkCall from '../../api/NetworkCall';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const ApplyLeave = () => {
   const [startDate, setStartDate] = useState(new Date());
-
-  
   const [endDate, setEndDate] = useState(new Date());
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
@@ -30,6 +30,7 @@ const ApplyLeave = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isHolidayVisible, setIsHolidayVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+
   const holidays = [
     {
       id: '1',
@@ -79,12 +80,12 @@ const ApplyLeave = () => {
       type: 'Religious',
     },
   ];
+
   const renderHeader = () => (
     <View style={styles.headerContainer}>
       <View style={styles.headerRow}>
         <Text style={[styles.headerText, styles.nameColumn]}>Holiday Name</Text>
         <Text style={[styles.headerText, styles.dateColumn]}>Date</Text>
-        {/* <Text style={[styles.headerText, styles.typeColumn]}>Type</Text> */}
       </View>
     </View>
   );
@@ -100,11 +101,6 @@ const ApplyLeave = () => {
         {item.name}
       </Text>
       <Text style={[styles.itemText, styles.dateColumn]}>{item.date}</Text>
-      {/* <View style={styles.typeColumn}>
-        <View style={styles.typeBadge}>
-          <Text style={styles.typeBadgeText}>{item.type}</Text>
-        </View>
-      </View> */}
     </View>
   );
 
@@ -115,11 +111,11 @@ const ApplyLeave = () => {
   );
 
   const formatDate = date => {
-    return date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
+    return moment(date).format('YYYY-MM-DD');
+  };
+
+  const formatDateForDisplay = date => {
+    return moment(date).format('DD/MM/YYYY');
   };
 
   const calculateLeaveDays = () => {
@@ -161,80 +157,6 @@ const ApplyLeave = () => {
     setShowEndDatePicker(false);
   };
 
-  const validateForm = () => {
-    if (!startDate || !endDate) {
-      showErrorAlert('Error', 'Please select both start and end dates');
-      return false;
-    }
-
-    if (endDate < startDate) {
-      showErrorAlert('Error', 'End date cannot be before start date');
-      return false;
-    }
-
-    if (!reason.trim()) {
-      showErrorAlert('Error', 'Please enter a reason for leave');
-      return false;
-    }
-
-    if (reason.trim().length < 10) {
-      showErrorAlert(
-        'Error',
-        'Please provide a more detailed reason (minimum 10 characters)',
-      );
-      return false;
-    }
-
-    return true;
-  };
-
-  // const handleSubmit = async () => {
-  //   if (!validateForm()) return;
-
-  //   setIsSubmitting(true);
-
-  //   try {
-  //     // Simulate API call
-  //     await new Promise(resolve => setTimeout(resolve, 2000));
-
-  //     const leaveData = {
-  //       startDate: formatDate(startDate),
-  //       endDate: formatDate(endDate),
-  //       leaveType,
-  //       reason: reason.trim(),
-  //       totalDays: calculateLeaveDays(),
-  //       submittedAt: new Date().toISOString(),
-  //     };
-
-  //     console.log('Leave Application Submitted:', leaveData);
-
-  //     Alert.alert(
-  //       'Success',
-  //       `Leave application submitted successfully!\n\nDays: ${calculateLeaveDays()}\nType: ${
-  //         leaveType === 'full' ? 'Full Day' : 'Half Day'
-  //       }`,
-  //       [
-  //         {
-  //           text: 'OK',
-  //           onPress: () => {
-  //             // Reset form
-  //             setStartDate(new Date());
-  //             setEndDate(new Date());
-  //             setLeaveType('full');
-  //             setReason('');
-  //           },
-  //         },
-  //       ],
-  //     );
-  //   } catch (error) {
-  //     showErrorAlert(
-  //       'Error',
-  //       'Failed to submit leave application. Please try again.',
-  //     );
-  //   } finally {
-  //     setIsSubmitting(false);
-  //   }
-  // };
 
   const handleSubmit = async () => {
     try {
@@ -249,7 +171,7 @@ const ApplyLeave = () => {
       const headers = {
         Authorization: `Bearer ${token}`,
       };
-      console.log('Sending login request with:', obj);
+      console.log('Sending request with:', obj);
 
       const response = await NetworkCall(
         '/apply_leave',
@@ -258,7 +180,7 @@ const ApplyLeave = () => {
         true,
         headers,
       );
-      console.log('Login response::', response);
+      console.log('apply_leave response::', response);
 
       if (response?.meta?.code == 200) {
         showErrorAlert(response?.meta?.message);
@@ -271,6 +193,7 @@ const ApplyLeave = () => {
       setLoading(false);
     }
   };
+
   return (
     <View
       style={{
@@ -319,6 +242,7 @@ const ApplyLeave = () => {
             source={Images.tab2}
           />
         </TouchableOpacity>
+        
         {/* Start Date Section */}
         <View style={styles.section}>
           <Text style={styles.label}>Start Date *</Text>
@@ -326,7 +250,7 @@ const ApplyLeave = () => {
             style={styles.dateButton}
             onPress={() => setShowStartDatePicker(true)}
           >
-            <Text style={styles.dateText}>{formatDate(startDate)}</Text>
+            <Text style={styles.dateText}>{formatDateForDisplay(startDate)}</Text>
             <Text style={styles.dateIcon}>📅</Text>
           </TouchableOpacity>
         </View>
@@ -338,52 +262,10 @@ const ApplyLeave = () => {
             style={styles.dateButton}
             onPress={() => setShowEndDatePicker(true)}
           >
-            <Text style={styles.dateText}>{formatDate(endDate)}</Text>
+            <Text style={styles.dateText}>{formatDateForDisplay(endDate)}</Text>
             <Text style={styles.dateIcon}>📅</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Leave Type Section */}
-        {/* <View style={styles.section}>
-          <Text style={styles.label}>Leave Type *</Text>
-          <View style={styles.radioContainer}>
-            <TouchableOpacity
-              style={styles.radioOption}
-              onPress={() => setLeaveType('full')}
-            >
-              <View
-                style={[
-                  styles.radio,
-                  leaveType === 'full' && styles.radioSelected,
-                ]}
-              >
-                {leaveType === 'full' && <View style={styles.radioDot} />}
-              </View>
-              <Text style={styles.radioText}>Full Day</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.radioOption}
-              onPress={() => setLeaveType('half')}
-            >
-              <View
-                style={[
-                  styles.radio,
-                  leaveType === 'half' && styles.radioSelected,
-                ]}
-              >
-                {leaveType === 'half' && <View style={styles.radioDot} />}
-              </View>
-              <Text style={styles.radioText}>Half Day</Text>
-            </TouchableOpacity>
-          </View>
-
-          {leaveType === 'half' && calculateLeaveDays() > 1 && (
-            <Text style={styles.warningText}>
-              Half day option is only applicable for single day leave
-            </Text>
-          )}
-        </View> */}
 
         {/* Total Days Display */}
         <View style={styles.section}>
@@ -398,14 +280,14 @@ const ApplyLeave = () => {
 
         {/* Reason Section */}
         <View style={styles.section}>
-          <Text style={styles.label}>Reason for Leave *</Text>
+          <Text style={styles.label}>Reason for Leave </Text>
 
           <TextInputWithButton
             show={true}
             icon={true}
             height={normalize(45)}
             inputWidth={'100%'}
-            textColor={Colors.textInputColor}
+            textColor={Colors.white}
             placeholder={'Reason'}
             placeholderTextColor={Colors.black}
             paddingLeft={normalize(25)}
@@ -476,7 +358,6 @@ const ApplyLeave = () => {
         backdropOpacity={0.1}
         hideModalContentWhileAnimating={true}
         isVisible={isHolidayVisible}
-        // isVisible={false}
         style={{ width: '100%', alignSelf: 'center', margin: 0 }}
         animationInTiming={800}
         animationOutTiming={1000}
@@ -661,7 +542,6 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     elevation: 1,
   },
-
   characterCount: {
     fontSize: 12,
     color: '#95a5a6',
@@ -691,7 +571,6 @@ const styles = StyleSheet.create({
   bottomSpace: {
     height: 30,
   },
-
   titleContainer: {
     paddingHorizontal: 20,
     paddingVertical: 16,

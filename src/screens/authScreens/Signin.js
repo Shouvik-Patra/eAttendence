@@ -1,7 +1,5 @@
 import {
-  Alert,
   Dimensions,
-  Image,
   ImageBackground,
   Keyboard,
   KeyboardAvoidingView,
@@ -10,8 +8,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
@@ -19,16 +15,21 @@ import { Colors, Fonts, Images } from '../../themes/ThemePath';
 import normalize from '../../utils/helpers/normalize';
 import Button from '../../components/Button';
 import TextInputWithButton from '../../components/TextInputWithBotton';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Loader from '../../utils/helpers/Loader';
 import showErrorAlert from '../../utils/helpers/Toast';
-import NetworkCall from '../../api/NetworkCall';
-const windowWidth = Dimensions.get('window').width;
+import { useDispatch, useSelector } from 'react-redux';
+import { signInRequest } from '../../redux/reducer/AuthReducer';
+import connectionrequest from '../../utils/helpers/NetInfo';
 const windowHeight = Dimensions.get('window').height;
-const ResetPassword = props => {
+let status = '';
+const Signin = props => {
+  const dispatch = useDispatch();
+  const AuthReducer = useSelector(state => state.AuthReducer);
+  console.log('login>>', AuthReducer);
+
   const [phone, setPhone] = useState('8961700989');
   const [secure1, setSecure1] = useState(false);
-  const [password1, setPassword1] = useState('Test@1234');
+  const [password, setPassword] = useState('Test@1234');
   const [keyboardShown, setKeyboardShown] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -53,43 +54,44 @@ const ResetPassword = props => {
     };
   }, []);
 
-  const employeeLogin = async () => {
-    try {
-      setLoading(true);
-
-      const obj = {
+  const employeeLogin = () => {
+    setLoading(true);
+    if (phone === '') {
+      showErrorAlert('Please Enter phone number');
+    } else if (password == '') {
+      showErrorAlert('Please Enter Password');
+    } else {
+      let obj = {
         phone: phone,
-        password: password1,
+        password: password,
       };
-
-      console.log('Sending login request with:', obj);
-
-      // const response = await NetworkCall('/employee-login', obj);
-
-      const response = await NetworkCall(
-        '/employee-login',
-        obj,
-        global.networkTime,
-        true,
-        // headers,
-      );
-      console.log('Login response::', response);
-
-      if (response?.meta?.code == 200) {
-        props.navigation.navigate('BottomTabNav');
-        await AsyncStorage.setItem('token', response.data.access_token);
-        // await AsyncStorage.setItem('userData', response.data.name);
-        showErrorAlert(response?.meta?.message);
-      } else {
-        showErrorAlert(response?.meta?.message);
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-    } finally {
-      setLoading(false);
+      console.log('objobjobjobjobj', obj);
+      connectionrequest()
+        .then(() => {
+          dispatch(signInRequest(obj));
+        })
+        .catch(err => {
+          showErrorAlert('Please connect to internet');
+        });
     }
   };
+  if (status == '' || AuthReducer.status != status) {
+    switch (AuthReducer.status) {
+      case 'Auth/signinRequest':
+        status = AuthReducer.status;
+        break;
+      case 'Auth/signinSuccess':
+        status = AuthReducer.status;
+        // setUserDetails(AuthReducer?.signinResponse?.data);
+         setLoading(false);
+        props.navigation.navigate('BottomTabNav');
+        break;
+      case 'Auth/signinFailure':
+        status = AuthReducer.status;
 
+        break;
+    }
+  }
   return (
     <ImageBackground
       source={Images.pageBackground}
@@ -178,10 +180,10 @@ const ResetPassword = props => {
                 editable={true}
                 fontFamily={Fonts.MulishRegular}
                 isheadertext={true}
-                value={password1}
+                value={password}
                 fontSize={normalize(14)}
                 headertxtsize={normalize(13)}
-                onChangeText={e => setPassword1(e)}
+                onChangeText={e => setPassword(e)}
                 isRightIconVisible
                 rightimage={Images.eyeclose}
                 rightimageheight={normalize(15)}
@@ -214,7 +216,7 @@ const ResetPassword = props => {
   );
 };
 
-export default ResetPassword;
+export default Signin;
 
 const styles = StyleSheet.create({
   onbordingStyle: {

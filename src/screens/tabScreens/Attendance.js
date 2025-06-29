@@ -17,6 +17,12 @@ import showErrorAlert from '../../utils/helpers/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import moment from 'moment';
 import NetworkCall from '../../api/NetworkCall';
+import connectionrequest from '../../utils/helpers/NetInfo';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  clockinRequest,
+  clockoutRequest,
+} from '../../redux/reducer/ProfileReducer';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -25,6 +31,9 @@ const SQUARE_SIZE = SCREEN_WIDTH * 0.8; // 80% of screen width
 const SQUARE_TOP = (SCREEN_HEIGHT - SQUARE_SIZE) / 2 - 50; // Center with slight offset
 
 const Attendence = props => {
+  const dispatch = useDispatch();
+  const AuthReducer = useSelector(state => state.AuthReducer);
+  const ProfileReducer = useSelector(state => state.ProfileReducer);
   // Camera state
   const [cameraPosition, setCameraPosition] = useState('front');
   const device = useCameraDevice(cameraPosition);
@@ -112,125 +121,54 @@ const Attendence = props => {
     }
   };
 
-const onClockIn = async (capturedimage) => {
-    try {
-      // Get token from AsyncStorage
-      const token = await AsyncStorage.getItem('token');
+  function onClockIn(capturedimage) {
+    let obj = {
+      check_in: '09:30:00',
+      status: 'present',
+      check_in_latitude: '88.3639',
+      check_in_longitude: '88.3639',
+      check_in_address: 'Kolkata,wb',
+      remarks: 'Checked in successfully',
+      check_in_photo: capturedimage,
+    };
+    const formData = new FormData();
+    formData.append('check_in', moment().format('HH:mm:ss'));
+    formData.append('status', 'present');
+    formData.append('check_in_latitude', latitude);
+    formData.append('check_in_longitude', longitude);
+    formData.append('check_in_address', 'Kolkata,wb');
+    formData.append('remarks', 'Checked in successfully');
+    formData.append('check_in_photo', capturedimage);
 
-      if (!token) {
-        showErrorAlert('Authentication token not found. Please login again.');
-        props.navigation.navigate('Signin');
-        return;
-      }
+    connectionrequest()
+      .then(() => {
+        dispatch(clockinRequest(obj));
+      })
+      .catch(err => {
+        console.log(err);
+        showErrorAlert('Please connect to internet');
+      });
+  }
+  function onClockOut(capturedimage) {
+    let obj = {
+      check_out: moment().format('HH:mm:ss'),
+      // status: 'present',
+      check_out_latitude: latitude,
+      check_out_longitude: longitude,
+      check_out_address: 'Kolkata,wb',
+      // remarks: 'Checked out successfully',
+      check_out_photo: capturedimage,
+    };
 
-      // Create FormData exactly like Postman
-      const formData = new FormData();
-      formData.append('check_in', '09:30:00');
-      formData.append('status', 'present');
-      formData.append('check_in_latitude', '22.5726');
-      formData.append('check_in_longitude', '88.3639');
-      formData.append('check_in_address', 'Kolkata,wb');
-      formData.append('remarks', 'Checked in successfully');
-
-      // Add photo if provided
-      // if (capturedimage) {
-      //   formData.append('check_in_photo', {
-      //     uri: capturedimage,
-      //     type: 'image/jpeg',
-      //     name: 'photo.jpg'
-      //   });
-      // }
-
-      // Headers - only Authorization like in Postman
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-      };
-
-      console.log('Sending request...');
-
-      const response = await NetworkCall(
-        '/check_in',
-        formData,
-        60000, // 60 second timeout
-        true,
-        headers,
-      );
-      
-      console.log('Clock-in response:', response);
-
-      if (response?.meta?.code == 200) {
-        showErrorAlert(response?.meta?.message || 'Clock-in successful');
-      } else {
-        showErrorAlert(response?.meta?.message || 'Clock-in failed');
-      }
-    } catch (error) {
-      console.log('Clock-in error:', error.message);
-      showErrorAlert(error.message || 'Clock-in failed. Please try again.');
-    }
-  };
-  const onClockOut = async (capturedimage) => {
-    try {
-      // setLoading(true);
-
-      // Get token from AsyncStorage
-      const token = await AsyncStorage.getItem('token');
-
-      if (!token) {
-        showErrorAlert('Authentication token not found. Please login again.');
-        props.navigation.navigate('Signin'); // Navigate to login screen
-        return;
-      }
-
-      // Create FormData object
-      const formData = new FormData();
-      formData.append('check_in', moment().format('HH:mm:ss'));
-      formData.append('status', 'present');
-      formData.append('check_in_latitude', '22.5726');
-      formData.append('check_in_longitude', '88.3639');
-      formData.append('check_in_address', 'Kolkata,wb');
-      formData.append('remarks', 'Checked in successfully');
-
-      // For photo, you can append either a file or a URI
-      // If you have a photo file/URI, uncomment and modify this line:
-      // formData.append('check_in_photo', {
-      //   uri: Platform.OS === 'android'
-      //                 ? capturedImageWithGeotag
-      //                 : capturedImageWithGeotag.replace('file://', ''), // your photo URI
-      //   type: 'image/jpeg', // or 'image/png'
-      //   name: 'photo.png'
-      // });
-
-      // If you have a static photo file name (as in your example)
-      formData.append('check_in_photo', capturedimage);
-      const headers = {
-        Authorization: `Bearer ${token}`,
-        // Add any other headers you need
-      };
-      console.log('formdata::::::', formData);
-
-      const response = await NetworkCall(
-        '/check_in',
-        formData,
-        global.networkTime,
-        true,
-        headers,
-      );
-      console.log('Clock-in response::', response);
-
-      // if (response?.meta?.code == 200) {
-      //   showErrorAlert(response?.meta?.message);
-      //   // Handle successful clock-in response
-      //   // You might want to update UI or navigate somewhere
-      // } else {
-      //   showErrorAlert(response?.meta?.message);
-      // }
-    } catch (error) {
-      console.error('Clock-in error:', error);
-      showErrorAlert('Clock-in failed. Please try again.');
-    } finally {
-      // setLoading(false);
-    }
-  };
+    connectionrequest()
+      .then(() => {
+        dispatch(clockoutRequest(obj));
+      })
+      .catch(err => {
+        console.log(err);
+        showErrorAlert('Please connect to internet');
+      });
+  }
   const handleSubmit = async () => {
     if (viewShotRef.current && !isSubmitting) {
       setIsSubmitting(true);
@@ -250,9 +188,9 @@ const onClockIn = async (capturedimage) => {
           },
         );
         {
-          props?.route?.params?.status == 'clockin' ?
-
-          onClockIn(compressedImagePath):onClockIn(compressedImagePath)
+          props?.route?.params?.status == 'clockin'
+            ? onClockIn(compressedImagePath)
+            : onClockOut(compressedImagePath);
         }
         console.log(
           'Final compressed square image with geotag:',
@@ -554,7 +492,7 @@ const styles = StyleSheet.create({
   },
   instructionText: {
     color: 'white',
-    opacity:0.5,
+    opacity: 0.5,
     fontSize: 16,
     fontWeight: 'bold',
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
