@@ -20,10 +20,11 @@ import NetworkCall from '../../api/NetworkCall';
 import connectionrequest from '../../utils/helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
 import {
+  addTaskRequest,
   clockinRequest,
   clockoutRequest,
 } from '../../redux/reducer/ProfileReducer';
-
+let status = '';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Calculate square dimensions for face capture
@@ -45,9 +46,11 @@ const Attendence = props => {
   const currentAddress = props?.route?.params?.currentAddress;
   const latitude = props?.route.params?.latitude;
   const longitude = props?.route.params?.longitude;
+  const task_id = props?.route.params?.task_id;
 
   // UI state
   const [previewImage, setPreviewImage] = useState('');
+  const [finalImage, setFinalImage] = useState('');
   const [showFullScreenPreview, setShowFullScreenPreview] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState('');
   const [showOverlay, setShowOverlay] = useState(false);
@@ -122,6 +125,8 @@ const Attendence = props => {
   };
 
   function onClockIn(capturedimage) {
+    const imageName = capturedimage.split('/').pop();
+    const imageType = 'image/jpeg';
     let obj = {
       check_in: '09:30:00',
       status: 'present',
@@ -136,13 +141,20 @@ const Attendence = props => {
     formData.append('status', 'present');
     formData.append('check_in_latitude', latitude);
     formData.append('check_in_longitude', longitude);
-    formData.append('check_in_address', 'Kolkata,wb');
+    formData.append('check_in_address', 'test address');
     formData.append('remarks', 'Checked in successfully');
-    formData.append('check_in_photo', capturedimage);
+    formData.append('check_in_photo', {
+      uri:
+        Platform.OS === 'android'
+          ? capturedimage
+          : capturedimage.replace('file://', ''),
+      name: imageName,
+      type: imageType,
+    });
 
     connectionrequest()
       .then(() => {
-        dispatch(clockinRequest(obj));
+        dispatch(clockinRequest(formData));
       })
       .catch(err => {
         console.log(err);
@@ -150,6 +162,8 @@ const Attendence = props => {
       });
   }
   function onClockOut(capturedimage) {
+    const imageName = capturedimage.split('/').pop();
+    const imageType = 'image/jpeg';
     let obj = {
       check_out: moment().format('HH:mm:ss'),
       // status: 'present',
@@ -160,57 +174,106 @@ const Attendence = props => {
       check_out_photo: capturedimage,
     };
 
+    const formData = new FormData();
+    formData.append('check_out', moment().format('HH:mm:ss'));
+    formData.append('check_out_latitude', latitude);
+    formData.append('check_out_longitude', longitude);
+    formData.append('check_in_longitude', longitude);
+    formData.append('check_in_address', 'test address');
+    formData.append('photo', {
+      uri:
+        Platform.OS === 'android'
+          ? capturedimage
+          : capturedimage.replace('file://', ''),
+      name: imageName,
+      type: imageType,
+    });
+
     connectionrequest()
       .then(() => {
-        dispatch(clockoutRequest(obj));
+        dispatch(clockoutRequest(formData));
       })
       .catch(err => {
         console.log(err);
         showErrorAlert('Please connect to internet');
       });
   }
+
+  function onAddNewTask(capturedimage) {
+    const imageName = capturedimage.split('/').pop();
+    const imageType = 'image/jpeg';
+    const formData = new FormData();
+
+    formData.append('task_id', task_id);
+
+    formData.append('date', moment(new Date()).format('YYYY-MM-DD'));
+
+    formData.append('time', moment().format('HH:mm:ss'));
+
+    formData.append('latitude', latitude);
+
+    formData.append('longitude', longitude);
+
+    formData.append('address', 'test address');
+    formData.append('photo', {
+      uri:
+        Platform.OS === 'android'
+          ? capturedimage
+          : capturedimage.replace('file://', ''),
+      name: imageName,
+      type: imageType,
+    });
+    console.log('7777');
+
+    connectionrequest()
+      .then(() => {
+        console.log('formdata>>>>>>>', formData);
+
+        dispatch(addTaskRequest(formData));
+      })
+      .catch(err => {
+        console.log(err);
+        showErrorAlert('Please connect to internet');
+      });
+  }
+
   const handleSubmit = async () => {
     if (viewShotRef.current && !isSubmitting) {
       setIsSubmitting(true);
 
       try {
+        let finalImagePath;
         // Capture the square view with overlay
-        const capturedUri = await viewShotRef.current.capture();
 
         // Compress the captured image
-        const compressedImagePath = await ImageCompressor.Image.compress(
-          capturedUri,
-          {
-            compressionMethod: 'auto',
-            quality: 0.8,
-            input: 'uri',
-            output: 'jpg',
-          },
-        );
-        {
-          props?.route?.params?.status == 'clockin'
-            ? onClockIn(compressedImagePath)
-            : onClockOut(compressedImagePath);
+        const capturedUri = await viewShotRef.current.capture();
+        finalImagePath = await ImageCompressor.Image.compress(capturedUri, {
+          compressionMethod: 'auto',
+          quality: 0.8,
+          input: 'uri',
+          output: 'jpg',
+        });
+        setFinalImage(finalImagePath)
+        // Handle clock in/out for attendance
+        if (props?.route?.params?.status == 'clockin') {
+          onClockIn(finalImagePath);
+        } else if (props?.route?.params?.status == 'clockout') {
+          onClockOut(finalImagePath);
+        } else {
+          onAddNewTask(finalImagePath);
         }
         console.log(
           'Final compressed square image with geotag:',
-          compressedImagePath,
+          finalImagePath,
         );
 
-        {
-          props?.route?.params?.pagename == 'Home'
-            ? props?.navigation.navigate('BottomTabNav', {
-                screen: 'Home',
-                params: {
-                  finalImageUri: compressedImagePath,
-                },
-              })
-            : props?.navigation.navigate('BottomTabNav', {
-                screen: 'ActiveTask',
-                params: {
-                  finalImageUri: compressedImagePath,
-                },
-              });
+        if (props?.route?.params?.pagename == 'MyProfile') {
+          props?.navigation.navigate('BottomTabNav', {
+            screen: 'MyProfile',
+            params: {
+              finalImageUri: finalImagePath,
+            },
+          });
         }
       } catch (error) {
         console.error('Error processing final image:', error);
@@ -218,7 +281,58 @@ const Attendence = props => {
       }
     }
   };
+  if (status == '' || ProfileReducer.status != status) {
+    switch (ProfileReducer.status) {
+      case 'Profile/clockinRequest':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/clockinSuccess':
+        status = ProfileReducer.status;
 
+        props?.navigation.navigate('BottomTabNav', {
+          screen: 'Home',
+          params: {
+            finalImageUri: finalImage,
+          },
+        });
+        break;
+      case 'Profile/clockinFailure':
+        status = ProfileReducer.status;
+        break;
+
+      case 'Profile/clockoutRequest':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/clockoutSuccess':
+        status = ProfileReducer.status;
+        props?.navigation.navigate('BottomTabNav', {
+          screen: 'Home',
+          params: {
+            finalImageUri: finalImage,
+          },
+        });
+        break;
+      case 'Profile/clockoutFailure':
+        status = ProfileReducer.status;
+        break;
+
+      case 'Profile/addTaskRequest':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/addTaskSuccess':
+        status = ProfileReducer.status;
+        props?.navigation.navigate('BottomTabNav', {
+          screen: 'ActiveTask',
+          params: {
+            finalImageUri: finalImage,
+          },
+        });
+        break;
+      case 'Profile/addTaskFailure':
+        status = ProfileReducer.status;
+        break;
+    }
+  }
   const cancelCapture = () => {
     props?.navigation.goBack();
   };
@@ -280,15 +394,18 @@ const Attendence = props => {
 
             {/* Dark overlay for bottom with info */}
             <View style={styles.overlayBottom}>
-              <View style={styles.infoContainer}>
-                <Text style={styles.dateTimeText}>{currentDateTime}</Text>
-                <Text style={styles.addressText} numberOfLines={2}>
-                  {currentAddress}
-                </Text>
-                <Text style={styles.coordsText}>
-                  Lat: {locationData.latitude} | Long: {locationData.longitude}
-                </Text>
-              </View>
+              {props?.route?.params?.pagename != 'MyProfile' && (
+                <View style={styles.infoContainer}>
+                  <Text style={styles.dateTimeText}>{currentDateTime}</Text>
+                  <Text style={styles.addressText} numberOfLines={2}>
+                    {currentAddress}
+                  </Text>
+                  <Text style={styles.coordsText}>
+                    Lat: {locationData.latitude} | Long:{' '}
+                    {locationData.longitude}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
         </>
@@ -314,7 +431,7 @@ const Attendence = props => {
             />
 
             {/* Overlay with location details */}
-            {showOverlay && (
+            {showOverlay && props?.route?.params?.pagename != 'MyProfile' && (
               <View style={styles.previewOverlay}>
                 <View style={styles.previewInfoContainer}>
                   <Text style={styles.previewDateTime}>{currentDateTime}</Text>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -15,15 +15,24 @@ import Header from '../../components/Header';
 import { Colors, Images } from '../../themes/ThemePath';
 import normalize from '../../utils/helpers/normalize';
 import showErrorAlert from '../../utils/helpers/Toast';
-import { StackActions } from '@react-navigation/native';
+import { StackActions, useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutRequest } from '../../redux/reducer/AuthReducer';
-
-const ProfilePage = () => {
+import {
+  profileUpdateRequest,
+  userDetailsRequest,
+} from '../../redux/reducer/ProfileReducer';
+import connectionrequest from '../../utils/helpers/NetInfo';
+let status = '';
+const MyProfile = props => {
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
+  const ProfileReducer = useSelector(state => state.ProfileReducer);
+
+  const isFocused = useIsFocused();
   const [isEditing, setIsEditing] = useState(false);
+  console.log('++++++', ProfileReducer?.userDetailsResponse?.photo);
 
   const [profile, setProfile] = useState({
     profilePicture: Images.profilepic,
@@ -33,45 +42,29 @@ const ProfilePage = () => {
     address: 'Uttar Rajyadharpur, Hooghly',
     phoneNumber: '8961700942',
   });
+  const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(null);
+  console.log('capturedImageWithGeotag>>', capturedImageWithGeotag);
 
   const [editedProfile, setEditedProfile] = useState({ ...profile });
+  // Listen for the returned image from Attendance page
+  useEffect(() => {
+    if (props?.route?.params?.finalImageUri) {
+      setCapturedImageWithGeotag(props.route.params.finalImageUri);
+      // Clear the parameter to avoid re-triggering
+      props?.navigation.setParams({ finalImageUri: undefined });
 
+      // Show success message
+      showErrorAlert('Success', 'Photo captured with geotag successfully!');
+    }
+  }, [props?.route?.params?.finalImageUri]);
   const handleEdit = () => {
     setEditedProfile({ ...profile });
     setIsEditing(true);
   };
 
-  const handleSave = () => {
-    setProfile({ ...editedProfile });
-    setIsEditing(false);
-    showErrorAlert('Success', 'Profile updated successfully!');
-  };
-
   const handleCancel = () => {
     setEditedProfile({ ...profile });
     setIsEditing(false);
-  };
-
-  const selectImage = () => {
-    const options = {
-      mediaType: 'photo',
-      includeBase64: false,
-      maxHeight: 2000,
-      maxWidth: 2000,
-    };
-
-    launchImageLibrary(options, response => {
-      if (response.didCancel || response.error) {
-        return;
-      }
-
-      if (response.assets && response.assets[0]) {
-        setEditedProfile({
-          ...editedProfile,
-          profilePicture: response.assets[0].uri,
-        });
-      }
-    });
   };
 
   const formatDate = dateString => {
@@ -82,7 +75,79 @@ const ProfilePage = () => {
       day: 'numeric',
     });
   };
+  const handleClickPhoto = () => {
+    console.log('heloo');
 
+    props?.navigation.navigate('Attendence', {
+      pagename: 'MyProfile',
+    });
+  };
+
+  function onUpdateProfile() {
+    const imageName = capturedImageWithGeotag.split('/').pop(); // extract file name
+    const imageType = 'image/jpeg'; // or dynamically detect
+ 
+    let obj = {
+      name: 'Shouvik Patra',
+      email: 'shouvik@yopmail.com',
+      photo: capturedImageWithGeotag ? capturedImageWithGeotag : null,
+    };
+    const formData = new FormData();
+    formData.append('name', 'Shouvik Patra');
+    formData.append('email', 'shouvik@yopmail.com');
+    formData.append('photo', {
+      uri:
+        Platform.OS === 'android'
+          ? capturedImageWithGeotag
+          : capturedImageWithGeotag.replace('file://', ''),
+      name: imageName,
+      type: imageType,
+    });
+
+    connectionrequest()
+      .then(() => {
+        dispatch(profileUpdateRequest(formData));
+      })
+      .catch(err => {
+        console.log(err);
+        showErrorAlert('Please connect to internet');
+      });
+  }
+  function userDetails() {
+    connectionrequest()
+      .then(() => {
+        dispatch(userDetailsRequest());
+      })
+      .catch(err => {
+        console.log(err);
+        showErrorAlert('Please connect to internet');
+      });
+  }
+
+  if (status == '' || ProfileReducer.status != status) {
+    switch (ProfileReducer.status) {
+      case 'Profile/clockinRequest':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/clockinSuccess':
+        status = ProfileReducer.status;
+        // setFormTypeData(ProfileReducer?.formListResponse?.data);
+        break;
+      case 'Profile/clockinSuccessFailure':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/profileUpdateRequest':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/profileUpdateSuccess':
+        status = ProfileReducer.status;
+        userDetails()
+        break;
+      case 'Profile/profileUpdateFailure':
+        status = ProfileReducer.status;
+        break;
+    }
+  }
   const ProfileField = ({
     label,
     value,
@@ -135,14 +200,23 @@ const ProfilePage = () => {
       >
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={isEditing ? selectImage : null}
+            onPress={isEditing ? handleClickPhoto : null}
             style={styles.profileImageContainer}
             disabled={!isEditing}
           >
-            <Image
-              source={editedProfile.profilePicture}
-              style={styles.profileImage}
-            />
+            {ProfileReducer?.userDetailsResponse?.photo ? (
+              <Image
+                resizeMode="cover"
+                style={styles.profileImage}
+                source={{ uri: ProfileReducer?.userDetailsResponse?.photo }}
+              />
+            ) : (
+              <Image
+                source={editedProfile.profilePicture}
+                style={styles.profileImage}
+              />
+            )}
+
             {isEditing && (
               <View style={styles.editImageOverlay}>
                 <Text style={styles.editImageText}>Tap to change</Text>
@@ -204,7 +278,12 @@ const ProfilePage = () => {
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={() => {
+                  onUpdateProfile();
+                }}
+              >
                 <Text style={styles.saveButtonText}>Save</Text>
               </TouchableOpacity>
             </View>
@@ -383,4 +462,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProfilePage;
+export default MyProfile;

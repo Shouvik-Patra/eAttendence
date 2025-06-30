@@ -19,15 +19,33 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import moment from 'moment';
 import { Dropdown } from 'react-native-element-dropdown';
 import Modal from 'react-native-modal';
+import { useDispatch, useSelector } from 'react-redux';
+import { useIsFocused } from '@react-navigation/native';
+import Geolocation from '@react-native-community/geolocation';
+import {
+  complitedTaskListRequest,
+  taskListRequest,
+} from '../../redux/reducer/ProfileReducer';
+import connectionrequest from '../../utils/helpers/NetInfo';
+import Loader from '../../utils/helpers/Loader';
+let status = '';
 const ActiveTask = props => {
+  const dispatch = useDispatch();
+  const AuthReducer = useSelector(state => state.AuthReducer);
+  const ProfileReducer = useSelector(state => state.ProfileReducer);
+
+  const isFocused = useIsFocused();
   const [isClocked, setIsClocked] = useState(false);
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [startTime, setStartTime] = useState(null);
-  const intervalRef = useRef(null);
   const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(null);
   const [addTaskModal, setAddTaskModal] = useState(false);
-  console.log('capturedImageWithGeotag::', capturedImageWithGeotag);
+  const [TaskList, setTaskList] = useState([]);
+  const [complitedTaskData, setComplitedTaskData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [isFocusTask, setIsFocusTask] = useState(false);
+  const [selectedTask, setSelectedTask] = useState('');
+  console.log('selectedTask>>>>>selectedTask', complitedTaskData);
 
+  const [location, setLocation] = useState({ latitude: null, longitude: null });
   // Listen for the returned image from Attendance page
   useEffect(() => {
     if (props?.route?.params?.finalImageUri) {
@@ -39,150 +57,54 @@ const ActiveTask = props => {
       showErrorAlert('Success', 'Photo captured with geotag successfully!');
     }
   }, [props?.route?.params?.finalImageUri]);
-
-  const handleClickPhoto = () => {
-    // Navigate to Attendance page with required location data
-    props?.navigation.navigate('Attendence', {
-      currentAddress: '123 Main Street, City, State', // Replace with actual address
-      latitude: 37.7749, // Replace with actual latitude
-      longitude: -122.4194, // Replace with actual longitude
-    });
-  };
-
-  const clearCapturedImage = () => {
-    setCapturedImageWithGeotag(null);
-  };
-
-  // Load saved timer state on component mount
-  useEffect(() => {
-    loadTimerState();
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, []);
-
-  // Start/stop timer based on clock state
-  useEffect(() => {
-    if (isClocked && startTime) {
-      startTimer();
-    } else {
-      stopTimer();
-    }
-  }, [isClocked, startTime]);
-
-  const loadTimerState = async () => {
-    try {
-      const savedState = await AsyncStorage.getItem('timerState');
-      if (savedState) {
-        const { isClocked: savedIsClocked, startTime: savedStartTime } =
-          JSON.parse(savedState);
-
-        if (savedIsClocked && savedStartTime) {
-          setIsClocked(true);
-          setStartTime(savedStartTime);
-          // Calculate elapsed time since the app was closed
-          const currentTime = Date.now();
-          const elapsed = Math.floor((currentTime - savedStartTime) / 1000);
-          setElapsedTime(elapsed);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading timer state:', error);
-    }
-  };
-
-  const saveTimerState = async (clockedState, timeStarted) => {
-    try {
-      const state = {
-        isClocked: clockedState,
-        startTime: timeStarted,
-      };
-      await AsyncStorage.setItem('timerState', JSON.stringify(state));
-    } catch (error) {
-      console.error('Error saving timer state:', error);
-    }
-  };
-
-  const startTimer = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-
-    intervalRef.current = setInterval(() => {
-      const currentTime = Date.now();
-      const elapsed = Math.floor((currentTime - startTime) / 1000);
-      setElapsedTime(elapsed);
-    }, 1000);
-  };
-
-  const stopTimer = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  };
-
-  const handleClockIn = () => {
-    const currentTime = Date.now();
-    handleClickPhoto();
-    setIsClocked(true);
-    setStartTime(currentTime);
-    setElapsedTime(0);
-    saveTimerState(true, currentTime);
-    showErrorAlert('Clocked In', 'Timer started successfully!');
-  };
-
-  const handleClockOut = () => {
-    handleClickPhoto();
-    setIsClocked(false);
-    setStartTime(null);
-    stopTimer();
-    saveTimerState(false, null);
-
-    const finalTime = formatTime(elapsedTime);
-    showErrorAlert('Clocked Out', `Total time worked: ${finalTime}`);
-    setElapsedTime(0);
-  };
-
-  const formatTime = seconds => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-
-    return `${hours.toString().padStart(2, '0')}:${minutes
-      .toString()
-      .padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const checkPermission = async () => {
-    const newCameraPermission = await Camera.requestCameraPermission();
-  };
-
-  useEffect(() => {
-    checkPermission();
-  }, []);
-
-  const TaskList = [
-    { label: 'Field Visit 1', value: 'fv1' },
-    { label: 'Field Visit 2', value: 'fv2' },
-    { label: 'Field Visit 3', value: 'fv3' },
-  ];
-  const [isFocusTask, setIsFocusTask] = useState(false);
-  const [selectedTask, setSelectedTask] = useState('');
-  const handleLanguageSelect = async item => {
+  const handleTaskSelect = async item => {
     setSelectedTask(item.value);
     await AsyncStorage.setItem('language', item.value);
     setIsFocusTask(false);
+  };
+  useEffect(() => {
+    connectionrequest()
+      .then(() => {
+        dispatch(taskListRequest());
+        dispatch(complitedTaskListRequest());
+      })
+      .catch(err => {
+        console.log(err);
+        showErrorAlert('Please connect to internet');
+      });
+  }, [isFocused]);
+  const getLocation = async () => {
+    setLoading(true);
+    Geolocation.getCurrentPosition(
+      position => {
+        const { latitude, longitude } = position.coords;
+        setLocation({ latitude, longitude });
+        handleClickPhoto(latitude, longitude);
+      },
+      error => {
+        setLoading(false);
+        console.log('Error getting location', error);
+      },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 },
+    );
+  };
+  const handleClickPhoto = (lat, long) => {
+    console.log('>>>', lat, long);
+    setLoading(false);
+    props?.navigation.navigate('Attendence', {
+      currentAddress: 'test address',
+      latitude: lat,
+      longitude: long,
+      pagename: 'ActiveTask',
+      status: 'task',
+      task_id: selectedTask,
+    });
   };
 
   const renderTaskList = ({ item, index }) => (
     <View style={styles.userInfoContainer}>
       <View style={styles.userTextContainer}>
-        <Text style={styles.userAddress}>
-          Uttar Rajyadharpur, Baidyabati, Hooghly, 712222
-        </Text>
+        <Text style={styles.userAddress}>{item?.address}</Text>
         <Text style={styles.blackText}>
           latitude :{' '}
           <Text
@@ -191,7 +113,7 @@ const ActiveTask = props => {
               { color: isClocked ? Colors.green : Colors.red },
             ]}
           >
-            22.95541
+            {item?.latitude}
           </Text>
         </Text>
         <Text style={styles.blackText}>
@@ -202,16 +124,37 @@ const ActiveTask = props => {
               { color: isClocked ? Colors.green : Colors.red },
             ]}
           >
-            88.115151
+            {item?.longitude}
+          </Text>
+        </Text>
+        <Text style={styles.blackText}>
+          Created at :{' '}
+          <Text
+            style={[
+              styles.redText,
+              { color: isClocked ? Colors.green : Colors.red },
+            ]}
+          >
+            {/* {moment. item?.created_at} */}
+            {moment(item?.created_at).local().format('ddd, MMM D, YYYY • h:mm A')}
           </Text>
         </Text>
       </View>
       <View style={styles.imageContainer}>
-        <Image
-          resizeMode="contain"
-          style={styles.userImagePlaceholder}
-          source={Images.profilepic}
-        />
+        {item?.photo ? (
+          <Image
+            resizeMode="cover"
+            style={styles.userImagePlaceholder}
+            source={{ uri: item?.photo }}
+           
+          />
+        ) : (
+          <Image
+            resizeMode="contain"
+            style={styles.userImagePlaceholder}
+             source={Images.profilepic}
+          />
+        )}
       </View>
     </View>
   );
@@ -238,26 +181,64 @@ const ActiveTask = props => {
       <Text style={styles.newTask}>Add New Task</Text>
     </TouchableOpacity>
   );
+
+  if (status == '' || ProfileReducer.status != status) {
+    switch (ProfileReducer.status) {
+      case 'Profile/taskListRequest':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/taskListSuccess':
+        status = ProfileReducer.status;
+        setTaskList(ProfileReducer?.taskListResponse);
+        break;
+      case 'Profile/taskListFailure':
+        status = ProfileReducer.status;
+        break;
+
+      case 'Profile/complitedTaskListRequest':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/complitedTaskListSuccess':
+        status = ProfileReducer.status;
+        console.log('heloooo, bro>>>', ProfileReducer?.complitedTaskResponse);
+
+        setComplitedTaskData(ProfileReducer?.complitedTaskResponse);
+        break;
+      case 'Profile/complitedTaskListFailure':
+        status = ProfileReducer.status;
+        break;
+
+      case 'Profile/addTaskRequest':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/addTaskSuccess':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/addTaskFailure':
+        status = ProfileReducer.status;
+        break;
+    }
+  }
+
   return (
     <View style={styles.mainContainer}>
       <Header
         HeaderLogo
         Title
         placeText={'Active Task'}
-        onPress_back_button={() => {
-          // setModalVisible(true); // Make sure this function exists
-        }}
+        onPress_back_button={() => {}}
         onPress_right_button={() => {
           props.navigation.navigate('Notification');
         }}
       />
+      <Loader visible={loading} />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
         showsVerticalScrollIndicator={false}
       >
         <FlatList
-          data={TaskList}
+          data={complitedTaskData}
           keyExtractor={item => item.id}
           renderItem={renderTaskList}
           // ListHeaderComponent={renderHeader}
@@ -303,33 +284,37 @@ const ActiveTask = props => {
               iconStyle={styles.iconStyle}
               containerStyle={styles.dropdownListContainer}
               itemTextStyle={styles.dropdownItemText}
-              data={TaskList}
+              data={TaskList?.map(task => ({
+                label: task.title, // This will be displayed in dropdown
+                value: task.id, // This will be the selected value
+                ...task, // Keep original data for reference
+              }))}
               maxHeight={300}
-              labelField="label"
-              valueField="value"
+              labelField="label" // Display the title
+              valueField="value" // Use the ID as value
               placeholder={!isFocusTask ? 'Select Task' : '...'}
               searchPlaceholder="Search..."
-              value={selectedTask}
+              value={selectedTask} // This will be the ID
               onFocus={() => setIsFocusTask(true)}
               onBlur={() => setIsFocusTask(false)}
-              onChange={handleLanguageSelect}
+              onChange={handleTaskSelect}
               renderLeftIcon={() => <Text style={styles.icon}>📋</Text>}
             />
           </View>
 
           <TouchableOpacity
-          style={[
-            styles.clockButton,
-            {
-              backgroundColor: isClocked ? '#FFA500' : Colors.green,
-            },
-          ]}
-          onPress={isClocked ? handleClockOut : handleClockIn}
-        >
-          <Text style={styles.clockButtonText}>
-            {isClocked ? 'Clock Out' : 'Verify My Visit'}
-          </Text>
-        </TouchableOpacity>
+            style={[
+              styles.clockButton,
+              {
+                backgroundColor: Colors.orange,
+              },
+            ]}
+            onPress={() => {
+              getLocation();
+            }}
+          >
+            <Text style={styles.clockButtonText}>Verify My Visit</Text>
+          </TouchableOpacity>
         </View>
       </Modal>
     </View>

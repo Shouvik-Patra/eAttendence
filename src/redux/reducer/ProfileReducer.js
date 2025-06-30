@@ -7,6 +7,10 @@ const initialState = {
   userDetailsResponse: {},
   clockinResponse: {},
   clockoutResponse: {},
+  profileUpdateResponse: {},
+  taskListResponse: {},
+  complitedTaskResponse: {},
+  addTaskResponse: {},
 };
 
 const ProfileSlice = createSlice({
@@ -48,6 +52,53 @@ const ProfileSlice = createSlice({
       state.error = action.error;
       state.status = action.type;
     },
+
+    profileUpdateRequest(state, action) {
+      state.status = action.type;
+    },
+    profileUpdateSuccess(state, action) {
+      state.profileUpdateResponse = action.payload;
+      state.status = action.type;
+    },
+    profileUpdateFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
+
+    taskListRequest(state, action) {
+      state.status = action.type;
+    },
+    taskListSuccess(state, action) {
+      state.taskListResponse = action.payload;
+      state.status = action.type;
+    },
+    taskListFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
+
+    complitedTaskListRequest(state, action) {
+      state.status = action.type;
+    },
+    complitedTaskListSuccess(state, action) {
+      state.complitedTaskResponse = action.payload;
+      state.status = action.type;
+    },
+    complitedTaskListFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
+    addTaskRequest(state, action) {
+      state.status = action.type;
+    },
+    addTaskSuccess(state, action) {
+      state.addTaskResponse = action.payload;
+      state.status = action.type;
+    },
+    addTaskFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
   },
 });
 
@@ -63,6 +114,23 @@ export const {
   clockoutRequest,
   clockoutSuccess,
   clockoutFailure,
+
+  profileUpdateRequest,
+  profileUpdateSuccess,
+  profileUpdateFailure,
+
+  taskListRequest,
+  taskListSuccess,
+  taskListFailure,
+
+  complitedTaskListRequest,
+  complitedTaskListSuccess,
+  complitedTaskListFailure,
+
+  addTaskRequest,
+  addTaskSuccess,
+  addTaskFailure,
+  
 } = ProfileSlice.actions;
 
 export default ProfileSlice.reducer;

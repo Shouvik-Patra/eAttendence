@@ -30,10 +30,6 @@ const Home = props => {
   const AuthReducer = useSelector(state => state.AuthReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
   const isFocused = useIsFocused();
-  const [isClocked, setIsClocked] = useState(false);
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [startTime, setStartTime] = useState(null);
-  const intervalRef = useRef(null);
   const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -65,7 +61,7 @@ const Home = props => {
     );
   };
 
-  console.log('capturedImageWithGeotag::', ProfileReducer?.userDetailsResponse);
+  // console.log('capturedImageWithGeotag::', ProfileReducer?.userDetailsResponse);
 
   // Listen for the returned image from Attendance page
   useEffect(() => {
@@ -100,85 +96,7 @@ const Home = props => {
     });
   };
 
-  // Load saved timer state on component mount
-  useEffect(() => {
-    loadTimerState();
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, []);
 
-  // Start/stop timer based on clock state
-  useEffect(() => {
-    if (isClocked && startTime) {
-      startTimer();
-    } else {
-      stopTimer();
-    }
-  }, [isClocked, startTime]);
-
-  const loadTimerState = async () => {
-    try {
-      const savedState = await AsyncStorage.getItem('timerState');
-      if (savedState) {
-        const { isClocked: savedIsClocked, startTime: savedStartTime } =
-          JSON.parse(savedState);
-
-        if (savedIsClocked && savedStartTime) {
-          setIsClocked(true);
-          setStartTime(savedStartTime);
-          // Calculate elapsed time since the app was closed
-          const currentTime = Date.now();
-          const elapsed = Math.floor((currentTime - savedStartTime) / 1000);
-          setElapsedTime(elapsed);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading timer state:', error);
-    }
-  };
-
-  const saveTimerState = async (clockedState, timeStarted) => {
-    try {
-      const state = {
-        isClocked: clockedState,
-        startTime: timeStarted,
-      };
-      await AsyncStorage.setItem('timerState', JSON.stringify(state));
-    } catch (error) {
-      console.error('Error saving timer state:', error);
-    }
-  };
-
-  const startTimer = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-
-    intervalRef.current = setInterval(() => {
-      const currentTime = Date.now();
-      const elapsed = Math.floor((currentTime - startTime) / 1000);
-      setElapsedTime(elapsed);
-    }, 1000);
-  };
-
-  const stopTimer = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  };
-  const formatTime = seconds => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-
-    return `${hours.toString().padStart(2, '0')}:${minutes
-      .toString()
-      .padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
 
   const checkPermission = async () => {
     const newCameraPermission = await Camera.requestCameraPermission();
@@ -196,9 +114,9 @@ const Home = props => {
         break;
       case 'Profile/clockinSuccess':
         status = ProfileReducer.status;
-        setFormTypeData(ProfileReducer?.formListResponse?.data);
+        // setFormTypeData(ProfileReducer?.formListResponse?.data);
         break;
-      case 'Profile/formListFailure':
+      case 'Profile/clockinSuccessFailure':
         status = ProfileReducer.status;
         break;
     }
@@ -247,7 +165,7 @@ const Home = props => {
               >
                 {ProfileReducer?.userDetailsResponse?.is_attendance_given == 1
                   ? 'Clocked In'
-                  : 'Pending'}
+                  : 'Clocked Out'}
               </Text>
             </Text>
             <Text style={styles.blackText}>
@@ -315,7 +233,7 @@ const Home = props => {
         </View>
 
         {/* Clock In/Out Button */}
-        <TouchableOpacity
+        {ProfileReducer?.userDetailsResponse?.attendance_status_text != "Clocked Out" &&<TouchableOpacity
           style={[
             styles.clockButton,
             {
@@ -329,7 +247,7 @@ const Home = props => {
           <Text style={styles.clockButtonText}>
             {ProfileReducer?.userDetailsResponse?.is_attendance_given == 1 ? 'Clock Out' : 'Clock In'}
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity>}
       </ScrollView>
     </View>
   );
