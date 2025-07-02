@@ -40,26 +40,12 @@ export function* signinSaga(action) {
     );
     console.log('response', response);
     if (response?.data?.meta?.code == 200) {
-      yield put(signInSuccess(response.data.data));
+      yield put(signInSuccess(response?.data?.data));
       yield call(AsyncStorage.setItem, constants.TOKEN, response?.data?.data?.access_token);
       yield put(getTokenSuccess(response?.data?.data?.access_token));
-      // if (action.payload?.remember_me) {
-      //   yield call(
-      //     AsyncStorage.setItem,
-      //     constants.TOKEN,
-      //     // response.data.token,
-      //     JSON.stringify({
-      //       phone: action.payload.phone,
-      //       password: action.payload.password,
-      //     }),
-      //   );
-      // } else {
-      //   console.log('====================================');
-      //   yield call(AsyncStorage.removeItem, constants.LOGIN_CREDENTIAL);
-      // }
     } else {
-      yield put(signInFailure(response.data));
-      showErrorAlert(response.data.meta.message);
+      yield put(signInFailure(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
     // Toast('Something went wrong')

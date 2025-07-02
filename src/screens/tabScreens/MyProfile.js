@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import Header from '../../components/Header';
-import { Colors, Images } from '../../themes/ThemePath';
+import { Colors, Fonts, Images } from '../../themes/ThemePath';
 import normalize from '../../utils/helpers/normalize';
 import showErrorAlert from '../../utils/helpers/Toast';
 import { StackActions, useIsFocused } from '@react-navigation/native';
@@ -24,6 +24,8 @@ import {
   userDetailsRequest,
 } from '../../redux/reducer/ProfileReducer';
 import connectionrequest from '../../utils/helpers/NetInfo';
+import Loader from '../../utils/helpers/Loader';
+import TextInputWithButton from '../../components/TextInputWithBotton';
 let status = '';
 const MyProfile = props => {
   const dispatch = useDispatch();
@@ -31,18 +33,22 @@ const MyProfile = props => {
   const ProfileReducer = useSelector(state => state.ProfileReducer);
 
   const isFocused = useIsFocused();
-  const [isEditing, setIsEditing] = useState(false);
-  console.log('++++++', ProfileReducer?.userDetailsResponse?.photo);
+  const [name, setName] = useState(ProfileReducer?.userDetailsResponse?.name ? ProfileReducer?.userDetailsResponse?.name : '');
+  const [email, setEmail] = useState(ProfileReducer?.userDetailsResponse?.email ? ProfileReducer?.userDetailsResponse?.email : '');
+  const [phone, setPhone] = useState(ProfileReducer?.userDetailsResponse?.phone ? ProfileReducer?.userDetailsResponse?.phone : '');
+  const [address, setAddress] = useState(ProfileReducer?.userDetailsResponse?.address ? ProfileReducer?.userDetailsResponse?.phone : '');
+  const [isEditing, setIsEditing] = useState(props?.route?.params?.isEditing || false);
+  const [loading, setLoading] = useState(false);
 
   const [profile, setProfile] = useState({
     profilePicture: Images.profilepic,
-    name: 'Shouvik Patra',
+    name: ProfileReducer?.userDetailsResponse?.name ? ProfileReducer?.userDetailsResponse?.name :'',
     dob: '1995-11-11',
     doj: '2020-03-01',
     address: 'Uttar Rajyadharpur, Hooghly',
     phoneNumber: '8961700942',
   });
-  const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(null);
+  const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(ProfileReducer?.userDetailsResponse?.photo ? ProfileReducer?.userDetailsResponse?.photo : null);
   console.log('capturedImageWithGeotag>>', capturedImageWithGeotag);
 
   const [editedProfile, setEditedProfile] = useState({ ...profile });
@@ -58,23 +64,15 @@ const MyProfile = props => {
     }
   }, [props?.route?.params?.finalImageUri]);
   const handleEdit = () => {
-    setEditedProfile({ ...profile });
+    // setEditedProfile({ ...profile });
     setIsEditing(true);
   };
 
   const handleCancel = () => {
-    setEditedProfile({ ...profile });
+    // setEditedProfile({ ...profile });
     setIsEditing(false);
   };
 
-  const formatDate = dateString => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
   const handleClickPhoto = () => {
     console.log('heloo');
 
@@ -84,22 +82,23 @@ const MyProfile = props => {
   };
 
   function onUpdateProfile() {
-    const imageName = capturedImageWithGeotag.split('/').pop(); // extract file name
+    const imageName = capturedImageWithGeotag?.split('/').pop(); // extract file name
     const imageType = 'image/jpeg'; // or dynamically detect
- 
-    let obj = {
-      name: 'Shouvik Patra',
-      email: 'shouvik@yopmail.com',
-      photo: capturedImageWithGeotag ? capturedImageWithGeotag : null,
-    };
+
+    // let obj = {
+    //   name: 'Shouvik Patra',
+    //   email: 'shouvik@yopmail.com',
+    //   photo: capturedImageWithGeotag ? capturedImageWithGeotag : null,
+    // };
     const formData = new FormData();
-    formData.append('name', 'Shouvik Patra');
-    formData.append('email', 'shouvik@yopmail.com');
+    formData.append('name', name);
+    formData.append('email', email);
+    formData.append('address', address);
     formData.append('photo', {
       uri:
         Platform.OS === 'android'
           ? capturedImageWithGeotag
-          : capturedImageWithGeotag.replace('file://', ''),
+          : capturedImageWithGeotag?.replace('file://', ''),
       name: imageName,
       type: imageType,
     });
@@ -126,52 +125,58 @@ const MyProfile = props => {
 
   if (status == '' || ProfileReducer.status != status) {
     switch (ProfileReducer.status) {
-      case 'Profile/clockinRequest':
+      case 'Profile/userDetailsRequest':
         status = ProfileReducer.status;
+        setLoading(true)
         break;
-      case 'Profile/clockinSuccess':
+      case 'Profile/userDetailsSuccess':
         status = ProfileReducer.status;
-        // setFormTypeData(ProfileReducer?.formListResponse?.data);
+        setLoading(false)
         break;
-      case 'Profile/clockinSuccessFailure':
+      case 'Profile/userDetailsFailure':
         status = ProfileReducer.status;
+        setLoading(false)
         break;
+
       case 'Profile/profileUpdateRequest':
         status = ProfileReducer.status;
+        setLoading(true)
         break;
       case 'Profile/profileUpdateSuccess':
         status = ProfileReducer.status;
-        userDetails()
+        setLoading(false)
+        userDetails();
         break;
       case 'Profile/profileUpdateFailure':
         status = ProfileReducer.status;
+        setLoading(false)
         break;
     }
   }
-  const ProfileField = ({
-    label,
-    value,
-    editable = true,
-    multiline = false,
-    onChangeText,
-  }) => (
-    <View style={styles.fieldContainer}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      {isEditing && editable ? (
-        <TextInput
-          style={[styles.input, multiline && styles.multilineInput]}
-          value={value}
-          onChangeText={onChangeText}
-          multiline={multiline}
-          numberOfLines={multiline ? 3 : 1}
-        />
-      ) : (
-        <Text style={[styles.fieldValue, !editable && styles.nonEditableField]}>
-          {label.includes('Date') ? formatDate(value) : value}
-        </Text>
-      )}
-    </View>
-  );
+  // const ProfileField = ({
+  //   label,
+  //   value,
+  //   editable = true,
+  //   multiline = false,
+  //   onChangeText,
+  // }) => (
+  //   <View style={styles.fieldContainer}>
+  //     <Text style={styles.fieldLabel}>{label}</Text>
+  //     {isEditing && editable ? (
+  //       <TextInput
+  //         style={[styles.input, multiline && styles.multilineInput]}
+  //         value={value}
+  //         onChangeText={onChangeText}
+  //         multiline={multiline}
+  //         numberOfLines={multiline ? 3 : 1}
+  //       />
+  //     ) : (
+  //       <Text style={[styles.fieldValue, !editable && styles.nonEditableField]}>
+  //         {label.includes('Date') ? formatDate(value) : value}
+  //       </Text>
+  //     )}
+  //   </View>
+  // );
 
   return (
     <View
@@ -193,6 +198,7 @@ const MyProfile = props => {
           props.navigation.navigate('Notification');
         }}
       />
+      <Loader visible={loading} />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
@@ -212,23 +218,23 @@ const MyProfile = props => {
               />
             ) : (
               <Image
-                source={editedProfile.profilePicture}
+                source={{uri:capturedImageWithGeotag}}
                 style={styles.profileImage}
               />
             )}
 
-            {isEditing && (
+            {isEditing  || props?.route?.params?.isEditing && (
               <View style={styles.editImageOverlay}>
                 <Text style={styles.editImageText}>Tap to change</Text>
               </View>
             )}
           </TouchableOpacity>
           <Text style={styles.headerName}>
-            {isEditing ? editedProfile.name : profile.name}
+            {ProfileReducer?.userDetailsResponse?.name ? ProfileReducer?.userDetailsResponse?.name :""}
           </Text>
         </View>
 
-        <View style={styles.content}>
+        {/* <View style={styles.content}>
           <ProfileField
             label="Full Name"
             value={isEditing ? editedProfile.name : profile.name}
@@ -267,10 +273,93 @@ const MyProfile = props => {
             value={profile.phoneNumber}
             editable={false}
           />
-        </View>
+        </View> */}
+
+        {isEditing ?
+          <View style={styles.content}>
+            <TextInputWithButton
+              show={true}
+              icon={true}
+              height={normalize(45)}
+              inputWidth={'100%'}
+              marginTop={normalize(25)}
+              textColor={Colors.textInputColor}
+              InputHeaderText={'Full Name'}
+              placeholder={'Enter full name'}
+              placeholderTextColor={Colors.black}
+              paddingLeft={normalize(25)}
+              borderColor={Colors.inputGreyBorder}
+              borderRadius={normalize(5)}
+              editable={true}
+              fontFamily={Fonts.MulishRegular}
+              isheadertext={true}
+              value={name}
+              fontSize={normalize(14)}
+              headertxtsize={normalize(13)}
+              onChangeText={e => setName(e)}
+              tintColor={Colors.tintGrey}
+            />
+            <TextInputWithButton
+              show={true}
+              icon={true}
+              height={normalize(45)}
+              inputWidth={'100%'}
+              marginTop={normalize(25)}
+              textColor={Colors.textInputColor}
+              InputHeaderText={'Email'}
+              placeholder={'Enter email'}
+              placeholderTextColor={Colors.black}
+              paddingLeft={normalize(25)}
+              borderColor={Colors.inputGreyBorder}
+              borderRadius={normalize(5)}
+              editable={true}
+              fontFamily={Fonts.MulishRegular}
+              isheadertext={true}
+              value={email}
+              fontSize={normalize(14)}
+              headertxtsize={normalize(13)}
+              onChangeText={e => setEmail(e)}
+              tintColor={Colors.tintGrey}
+            />
+            <TextInputWithButton
+              show={true}
+              icon={true}
+              height={normalize(45)}
+              inputWidth={'100%'}
+              marginTop={normalize(25)}
+              textColor={Colors.textInputColor}
+              InputHeaderText={'Address'}
+              placeholder={'Enter Address'}
+              placeholderTextColor={Colors.black}
+              paddingLeft={normalize(25)}
+              borderColor={Colors.inputGreyBorder}
+              borderRadius={normalize(5)}
+              editable={true}
+              fontFamily={Fonts.MulishRegular}
+              isheadertext={true}
+              value={address}
+              fontSize={normalize(14)}
+              headertxtsize={normalize(13)}
+              onChangeText={e => setAddress(e)}
+              tintColor={Colors.tintGrey}
+            />
+           
+          </View>
+          :
+          <View style={styles.content}>
+            <Text style={styles.fieldValue}>
+              {name}
+            </Text>
+            <Text style={styles.fieldValue}>
+              {phone}
+            </Text>
+            <Text style={styles.fieldValue}>
+              {email}
+            </Text>
+          </View>}
 
         <View style={styles.buttonContainer}>
-          {isEditing ? (
+          {isEditing  ? (
             <View style={styles.editButtonsContainer}>
               <TouchableOpacity
                 style={styles.cancelButton}
@@ -397,6 +486,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e0e0e0',
+    marginTop: 15
   },
   nonEditableField: {
     backgroundColor: '#f0f0f0',

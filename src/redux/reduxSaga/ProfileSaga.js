@@ -13,16 +13,18 @@ import {
   profileUpdateFailure,
   taskListSuccess,
   taskListFailure,
-
-  complitedTaskListRequest,
-complitedTaskListSuccess,
-complitedTaskListFailure,
-addTaskSuccess,
-addTaskFailure,
+  complitedTaskListSuccess,
+  complitedTaskListFailure,
+  addTaskSuccess,
+  addTaskFailure,
+  applyLeaveSuccess,
+  applyLeaveFailure,
+    municipalityRegisterSuccess,
+  municipalityRegisterFailure,
+  municipalityRegisterListFailure,
+  municipalityRegisterListSuccess,
 } from '../reducer/ProfileReducer';
-import { getTokenSuccess, logoutSuccess } from '../reducer/AuthReducer';
 import showErrorAlert from '../../utils/helpers/Toast';
-import constants from '../../utils/helpers/constants';
 let getItem = state => state.AuthReducer;
 
 //User Profile Details
@@ -40,15 +42,7 @@ export function* userDetailsSaga(action) {
 
     if (response?.data?.meta?.code == 200) {
       yield put(userDetailsSuccess(response?.data?.data));
-    }
-    // else if (
-    //   response.data.message == 'There was a problem finding the user.'
-    // ) {
-    //   yield call(AsyncStorage.removeItem, constants.TOKEN);
-    //   yield put(getTokenSuccess(null));
-    //   yield put(logoutSuccess());
-    // }
-    else {
+    } else {
       yield put(userDetailsFailure(response?.data?.data));
       showErrorAlert(response?.data?.meta?.message);
     }
@@ -57,8 +51,6 @@ export function* userDetailsSaga(action) {
     yield put(userDetailsFailure(error));
   }
 }
-
-
 
 export function* clockinSaga(action) {
   let items = yield select(getItem);
@@ -70,12 +62,7 @@ export function* clockinSaga(action) {
       accesstoken: items?.getTokenResponse,
     };
 
-    const response = yield call(
-      postApi,
-      'check_in',
-      action.payload,
-      Header,
-    );
+    const response = yield call(postApi, 'check_in', action.payload, Header);
     if (response?.data?.meta?.code == 200) {
       yield put(clockinSuccess(response?.data?.data));
       showErrorAlert(response?.data?.meta?.message);
@@ -88,8 +75,6 @@ export function* clockinSaga(action) {
     // showErrorAlert(error?.response?.data?.meta?.message);
   }
 }
-
-
 
 export function* clockoutSaga(action) {
   let items = yield select(getItem);
@@ -104,7 +89,7 @@ export function* clockoutSaga(action) {
 
     console.log('Header>>>>>>>>>>>>>>>>', Header, action.payload);
     const response = yield call(postApi, 'check_out', action.payload, Header);
-    console.log('response>>>>>>>>>>>', response);
+    console.log('clockoutSaga ::response>>>>>>>>>>>', response);
 
     if (response?.data?.meta?.code == 200) {
       yield put(clockoutSuccess(response?.data?.data));
@@ -166,8 +151,7 @@ export function* taskListSaga(action) {
 
     if (response?.data?.meta?.code == 200) {
       yield put(taskListSuccess(response?.data?.data));
-    }
-    else {
+    } else {
       yield put(taskListFailure(response?.data?.data));
       showErrorAlert(response?.data?.meta?.message);
     }
@@ -189,8 +173,7 @@ export function* complitedTaskListSaga(action) {
 
     if (response?.data?.meta?.code == 200) {
       yield put(complitedTaskListSuccess(response?.data?.data));
-    }
-    else {
+    } else {
       yield put(complitedTaskListFailure(response?.data?.data));
       showErrorAlert(response?.data?.meta?.message);
     }
@@ -231,6 +214,86 @@ export function* addTaskSaga(action) {
     // showErrorAlert(error?.response?.data?.meta?.message);
   }
 }
+export function* applyleaveSaga(action) {
+  let items = yield select(getItem);
+
+  try {
+    let Header = {
+      Accept: 'application/json',
+      contenttype: 'application/json',
+      accesstoken: items?.getTokenResponse,
+    };
+
+    const response = yield call(postApi, 'apply_leave', action.payload, Header);
+    console.log('response>>>>>>>>>>>', response);
+
+    if (response?.data?.meta?.code == 200) {
+      yield put(applyLeaveSuccess(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    } else {
+      yield put(applyLeaveFailure(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    }
+  } catch (error) {
+    yield put(applyLeaveFailure(error));
+    // showErrorAlert(error?.response?.data?.meta?.message);
+  }
+}
+export function* municipalityRegisterSaga(action) {
+  let items = yield select(getItem);
+
+  try {
+    let Header = {
+      Accept: 'application/json',
+      contenttype: 'multipart/form-data',
+      accesstoken: items?.getTokenResponse,
+    };
+
+    const response = yield call(
+      postApi,
+      'createMunicipality',
+      action.payload,
+      Header,
+    );
+    console.log('response>>>>>>>>>>>', response);
+
+    if (response?.data?.meta?.code == 200) {
+      yield put(municipalityRegisterSuccess(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    } else {
+      yield put(municipalityRegisterFailure(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    }
+  } catch (error) {
+    console.log('helooo>>>', error);
+
+    yield put(municipalityRegisterFailure(error));
+    // showErrorAlert(error?.response?.data?.meta?.message);
+  }
+}
+
+export function* municipalityRegisterListSaga(action) {
+  let items = yield select(getItem);
+
+  let header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: items?.getTokenResponse,
+  };
+  try {
+    let response = yield call(getApi, 'getMunicipalityList', header);
+
+    if (response?.data?.meta?.code == 200) {
+      yield put(municipalityRegisterListSuccess(response?.data?.data));
+    } else {
+      yield put(municipalityRegisterListFailure(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    }
+  } catch (error) {
+    console.log('add address error:', error);
+    yield put(municipalityRegisterListFailure(error));
+  }
+}
 const watchFunction = [
   (function* () {
     yield takeLatest('Profile/userDetailsRequest', userDetailsSaga);
@@ -252,6 +315,15 @@ const watchFunction = [
   })(),
   (function* () {
     yield takeLatest('Profile/addTaskRequest', addTaskSaga);
+  })(),
+  (function* () {
+    yield takeLatest('Profile/municipalityRegisterRequest', municipalityRegisterSaga);
+  })(),
+  (function* () {
+    yield takeLatest('Profile/applyLeaveRequest', applyleaveSaga);
+  })(),
+  (function* () {
+    yield takeLatest('Profile/municipalityRegisterListRequest', municipalityRegisterListSaga);
   })(),
 ];
 

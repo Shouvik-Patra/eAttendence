@@ -1,4 +1,4 @@
-import { ImageBackground, StyleSheet, Text, View } from 'react-native';
+import { Image, ImageBackground, StyleSheet, Text, View } from 'react-native';
 import React, { useEffect } from 'react';
 import { Images } from '../../themes/ThemePath';
 
@@ -10,10 +10,19 @@ const Splash = props => {
   // }, []);
   return (
     <ImageBackground
-      style={{ flex: 1 }}
+      style={{ flex: 1,justifyContent:'center',alignItems:'center' }}
       source={Images.pageBackground}
       resizeMode="cover"
-    />
+    >
+      <Image
+        source={Images.appicon}
+        style={{
+          height: normalize(150),
+          width: normalize(150),
+        }}
+        resizeMode="contain"
+      />
+    </ImageBackground>
   );
 };
 

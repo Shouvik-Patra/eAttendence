@@ -24,6 +24,7 @@ import connectionrequest from '../../utils/helpers/NetInfo';
 import { userDetailsRequest } from '../../redux/reducer/ProfileReducer';
 import { useDispatch, useSelector } from 'react-redux';
 import { useIsFocused } from '@react-navigation/native';
+import { LocationGeocoder } from '../../components/LocationGeocoder';
 let status = '';
 const Home = props => {
   const dispatch = useDispatch();
@@ -33,7 +34,11 @@ const Home = props => {
   const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const [location, setLocation] = useState({ latitude: null, longitude: null });
+  const [location, setLocation] = useState({
+    latitude: 22.5726,
+    longitude: 88.3639,
+  });
+  console.log('my location', location);
 
   const requestLocationPermission = async () => {
     if (Platform.OS === 'android') {
@@ -60,8 +65,22 @@ const Home = props => {
       { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 },
     );
   };
+  const getCurrentLocation = async () => {
+    // setLoading(true);
+    Geolocation.getCurrentPosition(
+      position => {
+        const { latitude, longitude } = position.coords;
+        setLocation({ latitude, longitude });
+        setLoading(false);
+      },
+      error => {
+        setLoading(false);
+        console.log('Error getting location', error);
+      },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 },
+    );
+  };
 
-  // console.log('capturedImageWithGeotag::', ProfileReducer?.userDetailsResponse);
 
   // Listen for the returned image from Attendance page
   useEffect(() => {
@@ -75,6 +94,7 @@ const Home = props => {
     }
   }, [props?.route?.params?.finalImageUri]);
   useEffect(() => {
+    getCurrentLocation();
     connectionrequest()
       .then(() => {
         dispatch(userDetailsRequest());
@@ -83,20 +103,23 @@ const Home = props => {
         console.log(err);
         showErrorAlert('Please connect to internet');
       });
-  }, [isFocused]);
-  const handleClickPhoto = (lat, long) => {
+  }, []);
+  const handleClickPhoto = async (lat, long) => {
     console.log('>>>', lat, long);
+    const result = await LocationGeocoder(lat, long);
+    const actualAddress = result?.address || 'Unknown Address';
     setLoading(false);
     props?.navigation.navigate('Attendence', {
-      currentAddress: 'test address', 
-      latitude: lat, 
-      longitude: long, 
+      currentAddress: actualAddress,
+      latitude: lat,
+      longitude: long,
       pagename: 'Home',
-      status: ProfileReducer?.userDetailsResponse?.is_attendance_given == 1 ? 'clockout':'clockin',
+      status:
+        ProfileReducer?.userDetailsResponse?.is_attendance_given == 1
+          ? 'clockout'
+          : 'clockin',
     });
   };
-
-
 
   const checkPermission = async () => {
     const newCameraPermission = await Camera.requestCameraPermission();
@@ -165,7 +188,7 @@ const Home = props => {
               >
                 {ProfileReducer?.userDetailsResponse?.is_attendance_given == 1
                   ? 'Clocked In'
-                  : 'Clocked Out'}
+                  : 'Pending...'}
               </Text>
             </Text>
             <Text style={styles.blackText}>
@@ -209,45 +232,60 @@ const Home = props => {
         {/* Map Section */}
         <View style={styles.mapSection}>
           <View style={styles.mapContainer}>
-            {/* Uncomment this for actual MapView */}
-            {/* <MapView
-              style={styles.map}
-              initialRegion={{
-                latitude: 22.5726,
-                longitude: 88.3639,
-                latitudeDelta: 0.0922,
-                longitudeDelta: 0.0421,
-              }}
-            >
-              <Marker
-                coordinate={{ latitude: 22.5726, longitude: 88.3639 }}
-                title="Kolkata"
-              />
-            </MapView> */}
-            <Image
-              resizeMode="cover"
-              style={styles.mapImage}
-              source={Images.map}
-            />
+            {location?.latitude && location?.longitude ? (
+              <MapView
+                style={styles.map}
+                initialRegion={{
+                  latitude: location.latitude,
+                  longitude: location.longitude,
+                  latitudeDelta: 0.009,
+                  longitudeDelta: 0.004,
+                }}
+                showsUserLocation={true}
+                showsMyLocationButton={true}
+                provider={PROVIDER_GOOGLE}
+              >
+                <Marker
+                  coordinate={{
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                  }}
+                  title="My Location"
+                  description="Current Position"
+                />
+              </MapView>
+            ) : (
+              <Text style={{ textAlign: 'center', padding: 10 }}>
+                Fetching location...
+              </Text>
+            )}
           </View>
         </View>
 
         {/* Clock In/Out Button */}
-        {ProfileReducer?.userDetailsResponse?.attendance_status_text != "Clocked Out" &&<TouchableOpacity
-          style={[
-            styles.clockButton,
-            {
-              backgroundColor: ProfileReducer?.userDetailsResponse?.is_attendance_given == 1 ? '#FFA500' : Colors.green,
-            },
-          ]}
-          onPress={() => {
-            getLocation();
-          }}
-        >
-          <Text style={styles.clockButtonText}>
-            {ProfileReducer?.userDetailsResponse?.is_attendance_given == 1 ? 'Clock Out' : 'Clock In'}
-          </Text>
-        </TouchableOpacity>}
+        {ProfileReducer?.userDetailsResponse?.attendance_status_text !=
+          'Clocked Out' && (
+            <TouchableOpacity
+              style={[
+                styles.clockButton,
+                {
+                  backgroundColor:
+                    ProfileReducer?.userDetailsResponse?.is_attendance_given == 1
+                      ? '#FFA500'
+                      : Colors.green,
+                },
+              ]}
+              onPress={() => {
+                getLocation();
+              }}
+            >
+              <Text style={styles.clockButtonText}>
+                {ProfileReducer?.userDetailsResponse?.is_attendance_given == 1
+                  ? 'Clock Out'
+                  : 'Clock In'}
+              </Text>
+            </TouchableOpacity>
+          )}
       </ScrollView>
     </View>
   );

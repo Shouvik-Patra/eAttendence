@@ -1,5 +1,6 @@
 import {
   Dimensions,
+  Image,
   ImageBackground,
   Keyboard,
   KeyboardAvoidingView,
@@ -27,9 +28,9 @@ const Signin = props => {
   const AuthReducer = useSelector(state => state.AuthReducer);
   console.log('login>>', AuthReducer);
 
-  const [phone, setPhone] = useState('8961700989');
+  const [phone, setPhone] = useState('kolkata');//9641132495//basirhat@aswass.in
   const [secure1, setSecure1] = useState(false);
-  const [password, setPassword] = useState('Test@1234');
+  const [password, setPassword] = useState('123456');//12345
   const [keyboardShown, setKeyboardShown] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -55,14 +56,15 @@ const Signin = props => {
   }, []);
 
   const employeeLogin = () => {
+    global.user_type ='admin'
     setLoading(true);
     if (phone === '') {
-      showErrorAlert('Please Enter phone number');
+      showErrorAlert('Please Enter username');
     } else if (password == '') {
       showErrorAlert('Please Enter Password');
     } else {
       let obj = {
-        phone: phone,
+        username: phone,
         password: password,
       };
       console.log('objobjobjobjobj', obj);
@@ -77,18 +79,17 @@ const Signin = props => {
   };
   if (status == '' || AuthReducer.status != status) {
     switch (AuthReducer.status) {
-      case 'Auth/signinRequest':
+      case 'Auth/signInRequest':
         status = AuthReducer.status;
         break;
-      case 'Auth/signinSuccess':
+      case 'Auth/signInSuccess':
         status = AuthReducer.status;
-        // setUserDetails(AuthReducer?.signinResponse?.data);
-         setLoading(false);
+        setLoading(false);
         props.navigation.navigate('BottomTabNav');
         break;
-      case 'Auth/signinFailure':
+      case 'Auth/signInFailure':
         status = AuthReducer.status;
-
+        setLoading(false);
         break;
     }
   }
@@ -102,8 +103,24 @@ const Signin = props => {
       <SafeAreaView style={{ flex: 1, width: '100%' }}>
         <View style={{ width: '100%', paddingHorizontal: normalize(10) }}>
           <View style={styles.headerContain}>
-            <Text style={styles.headerText1}>Login</Text>
-            <Text style={styles.headerText2}>Lorem ipsum dolor sit amet</Text>
+            <Image
+              resizeMode="contain"
+              style={{
+                alignSelf: 'center',
+                height: normalize(100),
+                width: normalize(100),
+                marginTop:-30
+              }}
+              source={Images.wb_logo}
+            />
+
+            <Text style={[styles.headerText2,{fontSize:18,fontWeight:'bold'}]}>
+              State Urban Development Agency
+            </Text>
+            <Text style={styles.headerText2}>
+              Under Department of Urban Development & Municipal Affairs
+            </Text>
+            <Text style={[styles.headerText2,{fontSize:16,fontWeight:'bold'}]}>Government of West Bengal</Text>
           </View>
         </View>
 
@@ -133,13 +150,14 @@ const Signin = props => {
             <View
               style={{
                 width: '100%',
-                height: normalize(370),
+                height: normalize(350),
                 alignSelf: 'center',
                 backgroundColor: Colors.white,
                 borderRadius: normalize(10),
                 alignItems: 'center',
               }}
             >
+              <Text style={styles.headerText1}>Login</Text>
               <TextInputWithButton
                 show={true}
                 icon={true}
@@ -240,14 +258,13 @@ const styles = StyleSheet.create({
     // fontFamily: Fonts.MulishRegular,
     fontSize: normalize(22),
     marginTop: normalize(15),
-    color: Colors.fontWhite,
+    color: Colors.darkblue,
     fontWeight: '900',
     textAlign: 'center',
   },
   headerText2: {
-    fontFamily: Fonts.MulishRegular,
+    fontFamily: Fonts.MulishSemiBold,
     fontSize: normalize(12),
-    marginTop: normalize(10),
     color: Colors.fontWhite,
 
     textAlign: 'center',

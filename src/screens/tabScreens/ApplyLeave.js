@@ -17,9 +17,11 @@ import TextInputWithButton from '../../components/TextInputWithBotton';
 import DatePicker from 'react-native-date-picker';
 import normalize from '../../utils/helpers/normalize';
 import Modal from 'react-native-modal';
-import NetworkCall from '../../api/NetworkCall';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import connectionrequest from '../../utils/helpers/NetInfo';
+import { useDispatch, useSelector } from 'react-redux';
+import { applyLeaveRequest } from '../../redux/reducer/ProfileReducer';
+import Loader from '../../utils/helpers/Loader';
+let status = '';
 const ApplyLeave = () => {
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
@@ -30,7 +32,9 @@ const ApplyLeave = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isHolidayVisible, setIsHolidayVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const dispatch = useDispatch();
+  const AuthReducer = useSelector(state => state.AuthReducer);
+  const ProfileReducer = useSelector(state => state.ProfileReducer);
   const holidays = [
     {
       id: '1',
@@ -122,15 +126,15 @@ const ApplyLeave = () => {
     const timeDiff = endDate.getTime() - startDate.getTime();
     const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
 
-    if (leaveType === 'half' && daysDiff === 1) {
-      return 0.5;
-    }
+    // if (leaveType === 'half' && daysDiff === 1) {
+    //   return 0.5;
+    // }
     return daysDiff;
   };
 
   const handleStartDateConfirm = selectedDate => {
     console.log(selectedDate);
-    
+
     setShowStartDatePicker(false);
     setStartDate(selectedDate);
     // If end date is before start date, update end date
@@ -156,44 +160,50 @@ const ApplyLeave = () => {
   const handleEndDateCancel = () => {
     setShowEndDatePicker(false);
   };
+  function handleSubmit() {
+    const obj = {
+      start_date: formatDate(startDate),
+      end_date: formatDate(endDate),
+      reason: reason,
+    };
+    // const formData = new FormData();
 
+    // formData.append('start_date', formatDate(startDate));
 
-  const handleSubmit = async () => {
-    try {
-      const token = await AsyncStorage.getItem('token');
-      setLoading(true);
+    // formData.append('end_date', formatDate(endDate));
 
-      const obj = {
-        start_date: formatDate(startDate),
-        end_date: formatDate(endDate),
-        reason: reason,
-      };
-      const headers = {
-        Authorization: `Bearer ${token}`,
-      };
-      console.log('Sending request with:', obj);
+    // formData.append('reason', reason);
 
-      const response = await NetworkCall(
-        '/apply_leave',
-        obj,
-        global.networkTime,
-        true,
-        headers,
-      );
-      console.log('apply_leave response::', response);
+    connectionrequest()
+      .then(() => {
+        console.log('applyLeaveRequest:obj>>>>>>>', obj);
 
-      if (response?.meta?.code == 200) {
-        showErrorAlert(response?.meta?.message);
-      } else {
-        showErrorAlert(response?.meta?.message);
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-    } finally {
-      setLoading(false);
+        dispatch(applyLeaveRequest(obj));
+      })
+      .catch(err => {
+        console.log(err);
+        showErrorAlert('Please connect to internet');
+      });
+  }
+
+  if (status == '' || ProfileReducer.status != status) {
+    switch (ProfileReducer.status) {
+      case 'Profile/applyLeaveRequest':
+        status = ProfileReducer.status;
+        setLoading(true);
+        break;
+      case 'Profile/applyLeaveSuccess':
+        status = ProfileReducer.status;
+        setLoading(false);
+
+        break;
+      case 'Profile/applyLeaveFailure':
+        status = ProfileReducer.status;
+        setLoading(false);
+
+        break;
     }
-  };
-
+  }
   return (
     <View
       style={{
@@ -214,7 +224,7 @@ const ApplyLeave = () => {
           props.navigation.navigate('Notification');
         }}
       />
-
+      <Loader visible={loading} />
       <ScrollView
         style={styles.container}
         showsVerticalScrollIndicator={false}
@@ -242,7 +252,7 @@ const ApplyLeave = () => {
             source={Images.tab2}
           />
         </TouchableOpacity>
-        
+
         {/* Start Date Section */}
         <View style={styles.section}>
           <Text style={styles.label}>Start Date *</Text>
@@ -250,7 +260,9 @@ const ApplyLeave = () => {
             style={styles.dateButton}
             onPress={() => setShowStartDatePicker(true)}
           >
-            <Text style={styles.dateText}>{formatDateForDisplay(startDate)}</Text>
+            <Text style={styles.dateText}>
+              {formatDateForDisplay(startDate)}
+            </Text>
             <Text style={styles.dateIcon}>📅</Text>
           </TouchableOpacity>
         </View>
@@ -313,7 +325,9 @@ const ApplyLeave = () => {
             styles.submitButton,
             isSubmitting && styles.submitButtonDisabled,
           ]}
-          onPress={handleSubmit}
+          onPress={() => {
+            handleSubmit();
+          }}
           disabled={isSubmitting}
         >
           <Text style={styles.submitButtonText}>

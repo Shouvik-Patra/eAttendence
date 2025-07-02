@@ -2,6 +2,7 @@ import {
   Alert,
   FlatList,
   Image,
+  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
@@ -28,6 +29,7 @@ import {
 } from '../../redux/reducer/ProfileReducer';
 import connectionrequest from '../../utils/helpers/NetInfo';
 import Loader from '../../utils/helpers/Loader';
+import { LocationGeocoder } from '../../components/LocationGeocoder';
 let status = '';
 const ActiveTask = props => {
   const dispatch = useDispatch();
@@ -43,7 +45,6 @@ const ActiveTask = props => {
   const [loading, setLoading] = useState(false);
   const [isFocusTask, setIsFocusTask] = useState(false);
   const [selectedTask, setSelectedTask] = useState('');
-  console.log('selectedTask>>>>>selectedTask', complitedTaskData);
 
   const [location, setLocation] = useState({ latitude: null, longitude: null });
   // Listen for the returned image from Attendance page
@@ -52,9 +53,6 @@ const ActiveTask = props => {
       setCapturedImageWithGeotag(props.route.params.finalImageUri);
       // Clear the parameter to avoid re-triggering
       props?.navigation.setParams({ finalImageUri: undefined });
-
-      // Show success message
-      showErrorAlert('Success', 'Photo captured with geotag successfully!');
     }
   }, [props?.route?.params?.finalImageUri]);
   const handleTaskSelect = async item => {
@@ -88,11 +86,12 @@ const ActiveTask = props => {
       { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 },
     );
   };
-  const handleClickPhoto = (lat, long) => {
-    console.log('>>>', lat, long);
+  const handleClickPhoto = async (lat, long) => {
+    const result = await LocationGeocoder(lat, long);
+    const actualAddress = result?.address || 'Unknown Address';
     setLoading(false);
     props?.navigation.navigate('Attendence', {
-      currentAddress: 'test address',
+      currentAddress: actualAddress,
       latitude: lat,
       longitude: long,
       pagename: 'ActiveTask',
@@ -136,7 +135,9 @@ const ActiveTask = props => {
             ]}
           >
             {/* {moment. item?.created_at} */}
-            {moment(item?.created_at).local().format('ddd, MMM D, YYYY • h:mm A')}
+            {moment(item?.created_at)
+              .local()
+              .format('ddd, MMM D, YYYY • h:mm A')}
           </Text>
         </Text>
       </View>
@@ -146,13 +147,12 @@ const ActiveTask = props => {
             resizeMode="cover"
             style={styles.userImagePlaceholder}
             source={{ uri: item?.photo }}
-           
           />
         ) : (
           <Image
             resizeMode="contain"
             style={styles.userImagePlaceholder}
-             source={Images.profilepic}
+            source={Images.profilepic}
           />
         )}
       </View>
@@ -170,15 +170,35 @@ const ActiveTask = props => {
         marginBottom: normalize(10),
       }}
       onPress={() => {
-        setAddTaskModal(!addTaskModal);
+        if (
+          ProfileReducer?.userDetailsResponse?.attendance_status_text ==
+          'Clocked Out'
+        ) {
+          Alert.alert('You are not allowed to add task', 'You Clocked Out');
+        } else if (
+          ProfileReducer?.userDetailsResponse?.attendance_status_text ==
+          'Not Marked'
+        ) {
+          Alert.alert(
+            'You are not allowed to add task',
+            'Please Clock In first',
+          );
+        } else {
+          setAddTaskModal(!addTaskModal);
+        }
       }}
     >
       <Image
         resizeMode="contain"
         style={{ height: 50, width: 50 }}
-        source={Images.lock}
+        source={
+          ProfileReducer?.userDetailsResponse?.attendance_status_text ==
+          'Clocked In'
+            ? Images.addTask
+            : Images.lock
+        }
       />
-      <Text style={styles.newTask}>Add New Task</Text>
+      <Text style={styles.newTask}>Add New visit</Text>
     </TouchableOpacity>
   );
 
@@ -186,36 +206,50 @@ const ActiveTask = props => {
     switch (ProfileReducer.status) {
       case 'Profile/taskListRequest':
         status = ProfileReducer.status;
+        setLoading(true);
         break;
       case 'Profile/taskListSuccess':
         status = ProfileReducer.status;
+
         setTaskList(ProfileReducer?.taskListResponse);
+        setLoading(false);
+
         break;
       case 'Profile/taskListFailure':
         status = ProfileReducer.status;
+        setLoading(false);
+        showErrorAlert('Something went wrong!')
         break;
 
       case 'Profile/complitedTaskListRequest':
         status = ProfileReducer.status;
+        setLoading(true);
         break;
       case 'Profile/complitedTaskListSuccess':
         status = ProfileReducer.status;
-        console.log('heloooo, bro>>>', ProfileReducer?.complitedTaskResponse);
-
+        setLoading(false);
         setComplitedTaskData(ProfileReducer?.complitedTaskResponse);
         break;
       case 'Profile/complitedTaskListFailure':
         status = ProfileReducer.status;
+        showErrorAlert('Something went wrong! ')
+
+        setLoading(false);
         break;
 
       case 'Profile/addTaskRequest':
         status = ProfileReducer.status;
+        setLoading(true);
         break;
       case 'Profile/addTaskSuccess':
         status = ProfileReducer.status;
+        setLoading(false);
         break;
       case 'Profile/addTaskFailure':
         status = ProfileReducer.status;
+        showErrorAlert('Task add fail due to Network issue, Try again!')
+
+        setLoading(false);
         break;
     }
   }
@@ -225,7 +259,7 @@ const ActiveTask = props => {
       <Header
         HeaderLogo
         Title
-        placeText={'Active Task'}
+        placeText={'Field Visit'}
         onPress_back_button={() => {}}
         onPress_right_button={() => {
           props.navigation.navigate('Notification');
@@ -238,12 +272,14 @@ const ActiveTask = props => {
         showsVerticalScrollIndicator={false}
       >
         <FlatList
-          data={complitedTaskData}
+          data={
+            ProfileReducer?.complitedTaskResponse
+              ? ProfileReducer?.complitedTaskResponse
+              : []
+          }
           keyExtractor={item => item.id}
           renderItem={renderTaskList}
-          // ListHeaderComponent={renderHeader}
           ListFooterComponent={renderFooter}
-          // style={styles.flatList}
           showsVerticalScrollIndicator={false}
         />
       </ScrollView>
@@ -255,12 +291,39 @@ const ActiveTask = props => {
         hideModalContentWhileAnimating={true}
         isVisible={addTaskModal}
         // isVisible={false}
-        style={{ width: '100%', alignSelf: 'center', margin: 0 }}
+        // style={{ width: '100%', alignSelf: 'center', }}
         animationInTiming={800}
         animationOutTiming={1000}
         onBackdropPress={() => setAddTaskModal(!addTaskModal)}
       >
-        <View style={styles.modalContainer}>
+        <ImageBackground
+          resizeMode="stretch"
+          source={Images.pageBackground}
+          style={styles.modalContainer}
+        >
+          <TouchableOpacity
+            style={styles.close}
+            onPress={() => {
+              setAddTaskModal(!addTaskModal);
+            }}
+          >
+            <Image
+              resizeMode="contain"
+              source={Images.close}
+              style={{ height: normalize(10), width: normalize(10) }}
+            />
+          </TouchableOpacity>
+          <Text
+            style={{
+              textAlign: 'center',
+              fontFamily: Fonts.MulishExtraBold,
+              fontSize: 24,
+              color: Colors.white,
+              marginBottom: normalize(50),
+            }}
+          >
+            Verify Your Visit
+          </Text>
           <Text
             style={{
               textAlign: 'left',
@@ -270,7 +333,7 @@ const ActiveTask = props => {
               marginBottom: 5,
             }}
           >
-            Select Task for today
+            Select visit for today
           </Text>
           <View style={styles.dropdownContainer}>
             <Dropdown
@@ -292,7 +355,7 @@ const ActiveTask = props => {
               maxHeight={300}
               labelField="label" // Display the title
               valueField="value" // Use the ID as value
-              placeholder={!isFocusTask ? 'Select Task' : '...'}
+              placeholder={!isFocusTask ? 'Select field' : '...'}
               searchPlaceholder="Search..."
               value={selectedTask} // This will be the ID
               onFocus={() => setIsFocusTask(true)}
@@ -315,7 +378,7 @@ const ActiveTask = props => {
           >
             <Text style={styles.clockButtonText}>Verify My Visit</Text>
           </TouchableOpacity>
-        </View>
+        </ImageBackground>
       </Modal>
     </View>
   );
@@ -328,14 +391,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.white,
   },
-  modalContainer: {
-    height: normalize(550),
-    backgroundColor: '#808080',
-    width: '95%',
-    alignSelf: 'center',
-    borderRadius: 10,
+  close: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: Colors.white,
+    borderRadius: 50,
+    padding: 5,
+    height: normalize(20),
+    width: normalize(20),
     justifyContent: 'center',
-    padding: normalize(15),
+    alignItems: 'center',
+  },
+  modalContainer: {
+    height: normalize(400),
+    justifyContent: 'center',
+    padding: normalize(20),
+    borderRadius: normalize(8),
+    overflow: 'hidden',
+    zIndex: 98,
   },
   scrollView: {
     flex: 1,
@@ -449,6 +523,7 @@ const styles = StyleSheet.create({
   },
   dropdownContainer: {
     alignItems: 'center',
+    width: '100%',
     marginBottom: 20,
   },
   dropdown: {

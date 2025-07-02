@@ -11,6 +11,9 @@ const initialState = {
   taskListResponse: {},
   complitedTaskResponse: {},
   addTaskResponse: {},
+  applyLeaveResponse: {},
+  municipalityRegisterResponse: {},
+  municipalityRegisterListResponse: {},
 };
 
 const ProfileSlice = createSlice({
@@ -99,6 +102,41 @@ const ProfileSlice = createSlice({
       state.error = action.error;
       state.status = action.type;
     },
+
+    applyLeaveRequest(state, action) {
+      state.status = action.type;
+    },
+    applyLeaveSuccess(state, action) {
+      state.applyLeaveResponse = action.payload;
+      state.status = action.type;
+    },
+    applyLeaveFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
+    municipalityRegisterRequest(state, action) {
+      state.status = action.type;
+    },
+    municipalityRegisterSuccess(state, action) {
+      state.applyLeaveResponse = action.payload;
+      state.status = action.type;
+    },
+    municipalityRegisterFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
+
+    municipalityRegisterListRequest(state, action) {
+      state.status = action.type;
+    },
+    municipalityRegisterListSuccess(state, action) {
+      state.municipalityRegisterListResponse = action.payload;
+      state.status = action.type;
+    },
+    municipalityRegisterListFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
   },
 });
 
@@ -130,6 +168,18 @@ export const {
   addTaskRequest,
   addTaskSuccess,
   addTaskFailure,
+
+  applyLeaveRequest,
+  applyLeaveSuccess,
+  applyLeaveFailure,
+
+  municipalityRegisterRequest,
+  municipalityRegisterSuccess,
+  municipalityRegisterFailure,
+
+  municipalityRegisterListRequest,
+  municipalityRegisterListSuccess,
+  municipalityRegisterListFailure,
   
 } = ProfileSlice.actions;
 

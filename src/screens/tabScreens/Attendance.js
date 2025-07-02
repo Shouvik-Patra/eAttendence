@@ -16,13 +16,13 @@ import normalize from '../../utils/helpers/normalize';
 import showErrorAlert from '../../utils/helpers/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import moment from 'moment';
-import NetworkCall from '../../api/NetworkCall';
 import connectionrequest from '../../utils/helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   addTaskRequest,
   clockinRequest,
   clockoutRequest,
+  municipalityRegisterRequest,
 } from '../../redux/reducer/ProfileReducer';
 let status = '';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -47,6 +47,7 @@ const Attendence = props => {
   const latitude = props?.route.params?.latitude;
   const longitude = props?.route.params?.longitude;
   const task_id = props?.route.params?.task_id;
+  const office_no = props?.route.params?.task_id;
 
   // UI state
   const [previewImage, setPreviewImage] = useState('');
@@ -127,21 +128,12 @@ const Attendence = props => {
   function onClockIn(capturedimage) {
     const imageName = capturedimage.split('/').pop();
     const imageType = 'image/jpeg';
-    let obj = {
-      check_in: '09:30:00',
-      status: 'present',
-      check_in_latitude: '88.3639',
-      check_in_longitude: '88.3639',
-      check_in_address: 'Kolkata,wb',
-      remarks: 'Checked in successfully',
-      check_in_photo: capturedimage,
-    };
     const formData = new FormData();
     formData.append('check_in', moment().format('HH:mm:ss'));
     formData.append('status', 'present');
     formData.append('check_in_latitude', latitude);
     formData.append('check_in_longitude', longitude);
-    formData.append('check_in_address', 'test address');
+    formData.append('check_in_address', locationData?.address);
     formData.append('remarks', 'Checked in successfully');
     formData.append('check_in_photo', {
       uri:
@@ -164,23 +156,12 @@ const Attendence = props => {
   function onClockOut(capturedimage) {
     const imageName = capturedimage.split('/').pop();
     const imageType = 'image/jpeg';
-    let obj = {
-      check_out: moment().format('HH:mm:ss'),
-      // status: 'present',
-      check_out_latitude: latitude,
-      check_out_longitude: longitude,
-      check_out_address: 'Kolkata,wb',
-      // remarks: 'Checked out successfully',
-      check_out_photo: capturedimage,
-    };
-
     const formData = new FormData();
     formData.append('check_out', moment().format('HH:mm:ss'));
     formData.append('check_out_latitude', latitude);
     formData.append('check_out_longitude', longitude);
-    formData.append('check_in_longitude', longitude);
-    formData.append('check_in_address', 'test address');
-    formData.append('photo', {
+    formData.append('check_out_address', locationData?.address);
+    formData.append('check_out_photo', {
       uri:
         Platform.OS === 'android'
           ? capturedimage
@@ -199,6 +180,7 @@ const Attendence = props => {
       });
   }
 
+
   function onAddNewTask(capturedimage) {
     const imageName = capturedimage.split('/').pop();
     const imageType = 'image/jpeg';
@@ -214,7 +196,7 @@ const Attendence = props => {
 
     formData.append('longitude', longitude);
 
-    formData.append('address', 'test address');
+    formData.append('address', locationData?.address);
     formData.append('photo', {
       uri:
         Platform.OS === 'android'
@@ -230,6 +212,44 @@ const Attendence = props => {
         console.log('formdata>>>>>>>', formData);
 
         dispatch(addTaskRequest(formData));
+      })
+      .catch(err => {
+        console.log(err);
+        showErrorAlert('Please connect to internet');
+      });
+  }
+  function onMuRegister(capturedimage) {
+    console.log("Hi sir>>>>");
+    
+    // props?.navigation.navigate('BottomTabNav', {
+    //         screen: 'MuRegister',
+    //         params: {
+    //           finalImageUri: capturedimage,
+    //           isEditing: true,
+    //         },
+    //       });
+    const imageName = capturedimage.split('/').pop();
+    const imageType = 'image/jpeg';
+    const formData = new FormData();
+    formData.append('user_id', ProfileReducer?.userDetailsResponse?.id);
+    formData.append('municipality', ProfileReducer?.userDetailsResponse?.municipality);
+    formData.append('office_no', office_no);
+    formData.append('latitude', latitude);
+    formData.append('longitude', longitude);
+    formData.append('address', locationData?.address);
+    formData.append('photo', {
+      uri:
+        Platform.OS === 'android'
+          ? capturedimage
+          : capturedimage.replace('file://', ''),
+      name: imageName,
+      type: imageType,
+    });
+
+    connectionrequest()
+      .then(() => {
+        console.log('formdata>>>>>>>', formData);
+        dispatch(municipalityRegisterRequest(formData));
       })
       .catch(err => {
         console.log(err);
@@ -254,12 +274,24 @@ const Attendence = props => {
           output: 'jpg',
         });
         setFinalImage(finalImagePath)
+        if (props?.route?.params?.pagename == 'MyProfile') {
+          props?.navigation.navigate('BottomTabNav', {
+            screen: 'MyProfile',
+            params: {
+              finalImageUri: finalImagePath,
+              isEditing: true,
+            },
+          });
+          return
+        }
         // Handle clock in/out for attendance
         if (props?.route?.params?.status == 'clockin') {
           onClockIn(finalImagePath);
         } else if (props?.route?.params?.status == 'clockout') {
           onClockOut(finalImagePath);
-        } else {
+        } else if (props?.route?.params?.status == 'MuRegister') {
+          onMuRegister(finalImagePath);
+        }else {
           onAddNewTask(finalImagePath);
         }
         console.log(
@@ -267,14 +299,7 @@ const Attendence = props => {
           finalImagePath,
         );
 
-        if (props?.route?.params?.pagename == 'MyProfile') {
-          props?.navigation.navigate('BottomTabNav', {
-            screen: 'MyProfile',
-            params: {
-              finalImageUri: finalImagePath,
-            },
-          });
-        }
+
       } catch (error) {
         console.error('Error processing final image:', error);
         setIsSubmitting(false);
@@ -298,6 +323,14 @@ const Attendence = props => {
         break;
       case 'Profile/clockinFailure':
         status = ProfileReducer.status;
+        showErrorAlert('Clock In fail due to Network issue, Try again!')
+
+        props?.navigation.navigate('BottomTabNav', {
+          screen: 'Home',
+          params: {
+            finalImageUri: finalImage,
+          },
+        });
         break;
 
       case 'Profile/clockoutRequest':
@@ -314,6 +347,14 @@ const Attendence = props => {
         break;
       case 'Profile/clockoutFailure':
         status = ProfileReducer.status;
+        showErrorAlert('Clock Out fail due to Network issue, Try again!')
+
+        props?.navigation.navigate('BottomTabNav', {
+          screen: 'Home',
+          params: {
+            finalImageUri: finalImage,
+          },
+        });
         break;
 
       case 'Profile/addTaskRequest':
@@ -330,6 +371,38 @@ const Attendence = props => {
         break;
       case 'Profile/addTaskFailure':
         status = ProfileReducer.status;
+        showErrorAlert('Task add fail due to Network issue, Try again!')
+
+        props?.navigation.navigate('BottomTabNav', {
+          screen: 'ActiveTask',
+          params: {
+            finalImageUri: finalImage,
+          },
+        });
+        break;
+
+      case 'Profile/municipalityRegisterRequest':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/municipalityRegisterSuccess':
+        status = ProfileReducer.status;
+        props?.navigation.navigate('BottomTabNav', {
+          screen: 'MuRegister',
+          params: {
+            finalImageUri: finalImage,
+          },
+        });
+        break;
+      case 'Profile/municipalityRegisterFailure':
+        status = ProfileReducer.status;
+        showErrorAlert('Task add fail due to Network issue, Try again!')
+
+        props?.navigation.navigate('BottomTabNav', {
+          screen: 'MuRegister',
+          params: {
+            finalImageUri: finalImage,
+          },
+        });
         break;
     }
   }
@@ -385,7 +458,7 @@ const Attendence = props => {
                 {/* Instruction text */}
                 <View style={styles.instructionContainer}>
                   <Text style={styles.instructionText}>
-                    Position your face in the frame
+                   {props?.route?.params?.status == 'MuRegister' ? "Capture image with municipality board": "Position your face in the frame"}
                   </Text>
                 </View>
               </View>

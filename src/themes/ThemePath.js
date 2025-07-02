@@ -1,5 +1,6 @@
 export const Images = {
   pageBackground: require('../assets/images/pageBG.png'),
+  appicon: require('../assets/images/E-Attendance.png'),
   drawerNav: require('../assets/images/drawerNav.png'),
   eyeclose: require('../assets/images/eyeclose.png'),
   eyeopen: require('../assets/images/eyeopen.png'),
@@ -9,6 +10,7 @@ export const Images = {
   tab2: require('../assets/images/tab2.png'),
   tab3: require('../assets/images/tab3.png'),
   tab4: require('../assets/images/tab4.png'),
+  tab5: require('../assets/images/tab5.png'),
 
   backbutton1: require('../assets/images/backbutton1.png'),
   downArrow: require('../assets/images/downArrow.png'),
@@ -37,10 +39,12 @@ export const Images = {
   logout: require('../assets/images/exit.png'),
   camera: require('../assets/images/camera.png'),
   noTask: require('../assets/images/noTask.png'),
-  refreshicon: require('../assets/images/refreshicon.png'),
+  refreshicon: require('../assets/images/flip.png'),
   roadmap: require('../assets/images/roadmap.png'),
   language: require('../assets/images/language.png'),
   call: require('../assets/images/call.png'),
+  wb_logo: require('../assets/images/wb_logo.png'),
+  addTask: require('../assets/images/addTask.png'),
 };
 
 export const Colors = {

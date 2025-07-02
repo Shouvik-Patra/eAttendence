@@ -14,7 +14,7 @@ const AuthSlice = createSlice({
   initialState,
   reducers: {
     //TOKEN
-    getTokenRequest(state, action) {
+   getTokenRequest(state, action) {
       state.isLoading = true;
       state.status = action.type;
     },

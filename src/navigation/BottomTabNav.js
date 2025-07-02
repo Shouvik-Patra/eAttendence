@@ -6,18 +6,19 @@ import {
   StyleSheet,
   Platform,
 } from 'react-native';
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Home from '../screens/tabScreens/Home';
 import MyProfile from '../screens/tabScreens/MyProfile';
-import {Colors, Images} from '../themes/ThemePath';
+import { Colors, Images } from '../themes/ThemePath';
 import normalize from '../utils/helpers/normalize';
 import ApplyLeave from '../screens/tabScreens/ApplyLeave';
 import HolidayList from '../screens/tabScreens/HolidayList';
 import ActiveTask from '../screens/tabScreens/ActiveTask';
+import MuRegister from '../screens/tabScreens/MuRegister';
 
 const Tab = createBottomTabNavigator();
 
-const TabIcon = ({focused, source}) => (
+const TabIcon = ({ focused, source }) => (
   <View style={[styles.tabIconContainer, focused && styles.focusedTabIcon]}>
     <Image
       style={[styles.tabIcon, focused && styles.focusedIcon]}
@@ -29,49 +30,98 @@ const TabIcon = ({focused, source}) => (
 
 const BottomTabNav = () => {
   return (
-    <Tab.Navigator
-      initialRouteName="Home"
-      screenOptions={{
-        unmountOnBlur: true,
-        tabBarHideOnKeyboard: true,
-        tabBarShowLabel: false,
-        headerShown: false,
-        tabBarStyle: styles.tabBarStyle,
-      }}>
-      
-      <Tab.Screen
-        name="Home"
-        component={Home}
-        options={{
-          unmountOnBlur: true,
-          tabBarIcon: ({focused}) => (
-            <TabIcon focused={focused} source={Images.tab1} />
-          ),
-        }}
-      />
-      
-      <Tab.Screen
-        name="Leave"
-        component={ApplyLeave}
-        options={{
-          unmountOnBlur: true,
-          tabBarIcon: ({focused}) => (
-            <TabIcon focused={focused} source={Images.tab2} />
-          ),
-        }}
-      />
+    <>
+      {global.user_type = 'admin' ?
 
-      <Tab.Screen
-        name="ActiveTask"
-        component={ActiveTask}
-        options={{
-          unmountOnBlur: true,
-          tabBarIcon: ({focused}) => (
-            <TabIcon focused={focused} source={Images.tab3} />
-          ),
-        }}
-      />
-      {/* <Tab.Screen
+
+        <Tab.Navigator
+          initialRouteName="MuRegister"
+          screenOptions={{
+            unmountOnBlur: true,
+            tabBarHideOnKeyboard: true,
+            tabBarShowLabel: false,
+            headerShown: false,
+            tabBarStyle: styles.tabBarStyle,
+          }}>
+          <Tab.Screen
+            name="MuRegister"
+            component={MuRegister}
+            options={{
+              unmountOnBlur: true,
+              tabBarIcon: ({ focused }) => (
+                <TabIcon focused={focused} source={Images.tab5} />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="MyProfile"
+            component={MyProfile}
+            listeners={({ navigation }) => ({
+              blur: () => navigation.setParams({ screen: undefined }),
+            })}
+            options={{
+              unmountOnBlur: true,
+              tabBarIcon: ({ focused }) => (
+                <TabIcon focused={focused} source={Images.tab4} />
+              ),
+            }}
+          />
+        </Tab.Navigator>
+        :
+
+        <Tab.Navigator
+          initialRouteName="Home"
+          screenOptions={{
+            unmountOnBlur: true,
+            tabBarHideOnKeyboard: true,
+            tabBarShowLabel: false,
+            headerShown: false,
+            tabBarStyle: styles.tabBarStyle,
+          }}>
+
+          <Tab.Screen
+            name="Home"
+            component={Home}
+            options={{
+              unmountOnBlur: true,
+              tabBarIcon: ({ focused }) => (
+                <TabIcon focused={focused} source={Images.tab1} />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="MuRegister"
+            component={MuRegister}
+            options={{
+              unmountOnBlur: true,
+              tabBarIcon: ({ focused }) => (
+                <TabIcon focused={focused} source={Images.tab5} />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Leave"
+            component={ApplyLeave}
+            options={{
+              unmountOnBlur: true,
+              tabBarIcon: ({ focused }) => (
+                <TabIcon focused={focused} source={Images.tab2} />
+              ),
+            }}
+          />
+
+
+          <Tab.Screen
+            name="ActiveTask"
+            component={ActiveTask}
+            options={{
+              unmountOnBlur: true,
+              tabBarIcon: ({ focused }) => (
+                <TabIcon focused={focused} source={Images.tab3} />
+              ),
+            }}
+          />
+          {/* <Tab.Screen
         name="HolidayList"
         component={HolidayList}
         options={{
@@ -82,21 +132,21 @@ const BottomTabNav = () => {
         }}
       /> */}
 
-      <Tab.Screen
-        name="MyProfile"
-        component={MyProfile}
-        listeners={({navigation}) => ({
-          blur: () => navigation.setParams({screen: undefined}),
-        })}
-        options={{
-          unmountOnBlur: true,
-          tabBarIcon: ({focused}) => (
-            <TabIcon focused={focused} source={Images.tab4} />
-          ),
-        }}
-      />
-      
-      {/* <Tab.Screen
+          <Tab.Screen
+            name="MyProfile"
+            component={MyProfile}
+            listeners={({ navigation }) => ({
+              blur: () => navigation.setParams({ screen: undefined }),
+            })}
+            options={{
+              unmountOnBlur: true,
+              tabBarIcon: ({ focused }) => (
+                <TabIcon focused={focused} source={Images.tab4} />
+              ),
+            }}
+          />
+
+          {/* <Tab.Screen
         name="Earning"
         component={Earning}
         listeners={({navigation}) => ({
@@ -109,7 +159,8 @@ const BottomTabNav = () => {
           ),
         }}
       /> */}
-    </Tab.Navigator>
+        </Tab.Navigator>}
+    </>
   );
 };
 
@@ -121,9 +172,9 @@ const styles = StyleSheet.create({
     borderTopColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.red,
-    borderTopRightRadius:normalize(20),
-    borderTopLeftRadius:normalize(20),
+    backgroundColor: Colors.skyblue,
+    borderTopRightRadius: normalize(20),
+    borderTopLeftRadius: normalize(20),
     height: normalize(85),
     position: 'absolute',
     left: 0,
@@ -153,7 +204,7 @@ const styles = StyleSheet.create({
   tabIcon: {
     height: normalize(20),
     width: normalize(20),
-    tintColor:Colors.white
+    tintColor: Colors.white
   },
   focusedIcon: {
     tintColor: Colors.red,
