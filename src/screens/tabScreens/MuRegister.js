@@ -44,6 +44,9 @@ const ActiveTask = props => {
   const isFocused = useIsFocused();
   const [isClocked, setIsClocked] = useState(false);
   const [addTaskModal, setAddTaskModal] = useState(false);
+
+  console.log('isFocused>>>>>>>>>>>>>>', isFocused);
+
   const [officeList, setOfficeList] = useState([]);
   const [complitedTaskData, setComplitedTaskData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -71,19 +74,17 @@ const ActiveTask = props => {
       console.warn(err);
     }
   };
-    const getOneTimeLocation = () => {
+  const getOneTimeLocation = () => {
     Geolocation.getCurrentPosition(
       //Will give you the current location
 
       position => {
-        const {latitude, longitude} = position.coords;
+        const { latitude, longitude } = position.coords;
         console.log('lat long----', latitude, longitude);
         setLocation({ latitude, longitude });
-
       },
       error => {
-      console.log(error);
-      
+        console.log(error);
       },
       {
         enableHighAccuracy: false,
@@ -98,16 +99,20 @@ const ActiveTask = props => {
     setIsFocusTask(false);
   };
   useEffect(() => {
-    requestLocationPermission();
-    connectionrequest()
-      .then(() => {
-        dispatch(userDetailsRequest());
-        dispatch(municipalityRegisterListRequest());
-      })
-      .catch(err => {
-        console.log(err);
-        showErrorAlert('Please connect to internet');
-      });
+    if (isFocused) {
+      requestLocationPermission();
+      connectionrequest()
+        .then(() => {
+          dispatch(userDetailsRequest());
+          dispatch(municipalityRegisterListRequest());
+        })
+        .catch(err => {
+          console.log(err);
+          showErrorAlert('Please connect to internet');
+        });
+    } else {
+      setAddTaskModal(false);
+    }
   }, [isFocused]);
 
   function getMuOfficeList() {
@@ -124,20 +129,25 @@ const ActiveTask = props => {
   }
 
   const getLocation = async () => {
-    setAddTaskModal(false);
-    setLoading(true);
-    Geolocation.getCurrentPosition(
-      position => {
-        const { latitude, longitude } = position.coords;
-        setLocation({ latitude, longitude });
-        handleClickPhoto(latitude, longitude);
-      },
-      error => {
-        setLoading(false);
-        console.log('Error getting location', error);
-      },
-      { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 },
-    );
+    if (selectedOffice == '') {
+      Alert.alert('Please select your office');
+    } else {
+      setAddTaskModal(false);
+
+      setLoading(true);
+      Geolocation.getCurrentPosition(
+        position => {
+          const { latitude, longitude } = position.coords;
+          setLocation({ latitude, longitude });
+          handleClickPhoto(latitude, longitude);
+        },
+        error => {
+          setLoading(false);
+          console.log('Error getting location', error);
+        },
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 },
+      );
+    }
   };
   const handleClickPhoto = async (lat, long) => {
     const result = await LocationGeocoder(lat, long);
@@ -236,6 +246,7 @@ const ActiveTask = props => {
       }}
       onPress={() => {
         getMuOfficeList();
+        setAddTaskModal(true);
       }}
     >
       <Image
@@ -289,7 +300,6 @@ const ActiveTask = props => {
       case 'Profile/municipalityRegisterSuccess':
         status = ProfileReducer.status;
         setSelectedOffice('');
-
         setLoading(false);
         break;
       case 'Profile/municipalityRegisterFailure':
@@ -305,7 +315,6 @@ const ActiveTask = props => {
         status = ProfileReducer.status;
         setOfficeList(ProfileReducer?.municipalityOfficeListResponse);
         setLoading(false);
-        setAddTaskModal(true);
         break;
       case 'Profile/municipalityOfficeListFailure':
         status = ProfileReducer.status;
@@ -350,11 +359,9 @@ const ActiveTask = props => {
         backdropOpacity={0.7}
         hideModalContentWhileAnimating={true}
         isVisible={addTaskModal}
-        // isVisible={false}
-        // style={{ width: '100%', alignSelf: 'center', }}
         animationInTiming={800}
         animationOutTiming={1000}
-        onBackdropPress={() => setAddTaskModal(!addTaskModal)}
+        onBackdropPress={() => setAddTaskModal(false)}
       >
         <ImageBackground
           resizeMode="stretch"
@@ -364,7 +371,7 @@ const ActiveTask = props => {
           <TouchableOpacity
             style={styles.close}
             onPress={() => {
-              setAddTaskModal(!addTaskModal);
+              setAddTaskModal(false);
             }}
           >
             <Image
@@ -564,7 +571,7 @@ const styles = StyleSheet.create({
   },
   userImagePlaceholder: {
     alignSelf: 'center',
-     height: normalize(150),
+    height: normalize(150),
     width: normalize(120),
   },
   mapSection: {
