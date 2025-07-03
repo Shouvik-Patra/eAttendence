@@ -22,7 +22,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { applyLeaveRequest } from '../../redux/reducer/ProfileReducer';
 import Loader from '../../utils/helpers/Loader';
 let status = '';
-const ApplyLeave = () => {
+const LeaveApply = () => {
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
@@ -225,41 +225,6 @@ const ApplyLeave = () => {
         }}
       />
       <Loader visible={loading} />
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          width: '100%',
-        }}
-      >
-        <TouchableOpacity
-          style={{
-            height: normalize(50),
-            backgroundColor: Colors.orange,
-            width: '50%',
-            justifyContent: 'center',
-            alignItems: 'center',
-            borderBottomColor:Colors.white,
-            borderBottomWidth:2
-          }}
-        >
-          <Text>Leave Apply</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={{
-            height: normalize(50),
-            backgroundColor: Colors.orange,
-            width: '50%',
-            justifyContent: 'center',
-            alignItems: 'center',
-            borderBottomColor:Colors.white,
-            borderBottomWidth:2
-          }}
-        >
-          <Text style={{fontFamily:Fonts.MulishBold,color:Colors.white,fontSize:16}}>Leave Apply</Text>
-        </TouchableOpacity>
-      </View>
       <ScrollView
         style={styles.container}
         showsVerticalScrollIndicator={false}
@@ -268,12 +233,189 @@ const ApplyLeave = () => {
           paddingHorizontal: normalize(20),
           paddingTop: normalize(20),
         }}
-      ></ScrollView>
+      >
+        <TouchableOpacity
+          onPress={() => {
+            setIsHolidayVisible(!isHolidayVisible);
+          }}
+          style={{
+            backgroundColor: Colors.white,
+            padding: 5,
+            justifyContent: 'center',
+            alignItems: 'center',
+            alignSelf: 'flex-end',
+            borderRadius: 8,
+          }}
+        >
+          <Image
+            style={{ tintColor: Colors.skyblue, height: 30, width: 30 }}
+            source={Images.tab2}
+          />
+        </TouchableOpacity>
+
+        {/* Start Date Section */}
+        <View style={styles.section}>
+          <Text style={styles.label}>Start Date *</Text>
+          <TouchableOpacity
+            style={styles.dateButton}
+            onPress={() => setShowStartDatePicker(true)}
+          >
+            <Text style={styles.dateText}>
+              {formatDateForDisplay(startDate)}
+            </Text>
+            <Text style={styles.dateIcon}>📅</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* End Date Section */}
+        <View style={styles.section}>
+          <Text style={styles.label}>End Date *</Text>
+          <TouchableOpacity
+            style={styles.dateButton}
+            onPress={() => setShowEndDatePicker(true)}
+          >
+            <Text style={styles.dateText}>{formatDateForDisplay(endDate)}</Text>
+            <Text style={styles.dateIcon}>📅</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Total Days Display */}
+        <View style={styles.section}>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryLabel}>Total Leave Days</Text>
+            <Text style={styles.summaryValue}>
+              {calculateLeaveDays()}{' '}
+              {calculateLeaveDays() === 1 ? 'day' : 'days'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Reason Section */}
+        <View style={styles.section}>
+          <Text style={styles.label}>Reason for Leave </Text>
+
+          <TextInputWithButton
+            show={true}
+            icon={true}
+            height={normalize(45)}
+            inputWidth={'100%'}
+            textColor={Colors.white}
+            placeholder={'Reason'}
+            placeholderTextColor={Colors.black}
+            paddingLeft={normalize(25)}
+            borderColor={Colors.inputGreyBorder}
+            borderRadius={normalize(5)}
+            editable={true}
+            fontFamily={Fonts.MulishRegular}
+            isheadertext={true}
+            value={reason}
+            fontSize={normalize(14)}
+            headertxtsize={normalize(13)}
+            onChangeText={setReason}
+            tintColor={Colors.tintGrey}
+            multiline={true}
+            maxLength={500}
+          />
+          <Text style={styles.characterCount}>{reason.length}/500</Text>
+        </View>
+
+        {/* Submit Button */}
+        <TouchableOpacity
+          style={[
+            styles.submitButton,
+            isSubmitting && styles.submitButtonDisabled,
+          ]}
+          onPress={() => {
+            handleSubmit();
+          }}
+          disabled={isSubmitting}
+        >
+          <Text style={styles.submitButtonText}>
+            {isSubmitting ? 'Submitting...' : 'Submit Application'}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.bottomSpace} />
+      </ScrollView>
+
+      {/* Date Pickers */}
+      <DatePicker
+        modal
+        open={showStartDatePicker}
+        date={startDate}
+        mode="date"
+        onConfirm={handleStartDateConfirm}
+        onCancel={handleStartDateCancel}
+        minimumDate={new Date()}
+        title="Select Start Date"
+        confirmText="Confirm"
+        cancelText="Cancel"
+      />
+
+      <DatePicker
+        modal
+        open={showEndDatePicker}
+        date={endDate}
+        mode="date"
+        onConfirm={handleEndDateConfirm}
+        onCancel={handleEndDateCancel}
+        minimumDate={startDate}
+        title="Select End Date"
+        confirmText="Confirm"
+        cancelText="Cancel"
+      />
+
+      <Modal
+        animationIn={'slideInUp'}
+        animationOut={'slideOutDown'}
+        backdropTransitionOutTiming={0}
+        backdropOpacity={0.1}
+        hideModalContentWhileAnimating={true}
+        isVisible={isHolidayVisible}
+        style={{ width: '100%', alignSelf: 'center', margin: 0 }}
+        animationInTiming={800}
+        animationOutTiming={1000}
+        onBackdropPress={() => setIsHolidayVisible(!isHolidayVisible)}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableOpacity
+            style={{
+              position: 'absolute',
+              top: -25,
+              right: normalize(0),
+              zIndex: 99,
+            }}
+            onPress={() => {
+              setIsHolidayVisible(!isHolidayVisible);
+            }}
+          >
+            <Image
+              source={Images.cross}
+              style={{
+                height: normalize(60),
+                width: normalize(60),
+                zIndex: 99,
+              }}
+            />
+          </TouchableOpacity>
+          <Text style={styles.title}>2025 Holiday Calendar</Text>
+
+          <FlatList
+            data={holidays}
+            keyExtractor={item => item.id}
+            renderItem={renderHolidayItem}
+            ListHeaderComponent={renderHeader}
+            ListFooterComponent={renderFooter}
+            style={styles.flatList}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
+      </Modal>
     </View>
   );
 };
 
-export default ApplyLeave;
+export default LeaveApply;
 
 const styles = StyleSheet.create({
   container: {

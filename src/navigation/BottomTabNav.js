@@ -61,75 +61,7 @@ const BottomTabNav = () => {
     </Tab.Navigator>
 
 
-  //  <Tab.Navigator
-  //         initialRouteName="Home"
-  //         screenOptions={{
-  //           unmountOnBlur: true,
-  //           tabBarHideOnKeyboard: true,
-  //           tabBarShowLabel: false,
-  //           headerShown: false,
-  //           tabBarStyle: styles.tabBarStyle,
-  //         }}>
-
-  //         <Tab.Screen
-  //           name="Home"
-  //           component={Home}
-  //           options={{
-  //             unmountOnBlur: true,
-  //             tabBarIcon: ({ focused }) => (
-  //               <TabIcon focused={focused} source={Images.tab1} />
-  //             ),
-  //           }}
-  //         />
-  //         <Tab.Screen
-  //           name="MuRegister"
-  //           component={MuRegister}
-  //           options={{
-  //             unmountOnBlur: true,
-  //             tabBarIcon: ({ focused }) => (
-  //               <TabIcon focused={focused} source={Images.tab5} />
-  //             ),
-  //           }}
-  //         />
-  //         <Tab.Screen
-  //           name="Leave"
-  //           component={ApplyLeave}
-  //           options={{
-  //             unmountOnBlur: true,
-  //             tabBarIcon: ({ focused }) => (
-  //               <TabIcon focused={focused} source={Images.tab2} />
-  //             ),
-  //           }}
-  //         />
-
-
-  //         <Tab.Screen
-  //           name="ActiveTask"
-  //           component={ActiveTask}
-  //           options={{
-  //             unmountOnBlur: true,
-  //             tabBarIcon: ({ focused }) => (
-  //               <TabIcon focused={focused} source={Images.tab3} />
-  //             ),
-  //           }}
-  //         />
-         
-
-  //         <Tab.Screen
-  //           name="MyProfile"
-  //           component={MyProfile}
-  //           listeners={({ navigation }) => ({
-  //             blur: () => navigation.setParams({ screen: undefined }),
-  //           })}
-  //           options={{
-  //             unmountOnBlur: true,
-  //             tabBarIcon: ({ focused }) => (
-  //               <TabIcon focused={focused} source={Images.tab4} />
-  //             ),
-  //           }}
-  //         />
-
-  //       </Tab.Navigator>
+  
   );
 };
 
