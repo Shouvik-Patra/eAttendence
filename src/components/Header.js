@@ -10,6 +10,7 @@ import {
 import normalize from '../utils/helpers/normalize';
 import {useIsFocused, useNavigation} from '@react-navigation/native';
 import {Colors, Fonts, Images} from '../themes/ThemePath';
+import constants from '../utils/helpers/constants';
 function Header(props) {
   const isFocused = useIsFocused();
   const [language, setLanguage] = useState('en');
@@ -126,21 +127,9 @@ function Header(props) {
                 shadowRadius: 10,
                 elevation: 16,
               }}>
-              <Text
-                style={[
-                  styles.fontDropdown,
-                  {
-                    // paddingBottom: normalize(-8),
-                    fontFamily: Fonts.MulishBold,
-                    fontWeight: 'bold',
-                    fontSize: normalize(12),
-                    textTransform: 'capitalize',
-                  },
-                ]}>
-                {language}
-              </Text>
+             
             </TouchableOpacity> */}
-
+{/* 
             <TouchableOpacity
               // style={{width: normalize(40)}}
               onPress={() =>
@@ -157,7 +146,21 @@ function Header(props) {
                   alignSelf: 'flex-end',
                 }}
               />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
+             <Text
+                style={[
+                  styles.fontDropdown,
+                  {
+                    color:Colors.white,
+                    fontFamily: Fonts.MulishBold,
+                    fontWeight: 'bold',
+                    fontSize: normalize(12),
+                    textTransform: 'capitalize',
+                    // marginRight:normalize(10)
+                  },
+                ]}>
+                v{constants?.APP_VERSION}
+              </Text>
           </View>
         </View>
       ) : null}

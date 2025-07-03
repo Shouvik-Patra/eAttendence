@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  Text,
-  Image,
-  View,
-  StyleSheet,
-  Platform,
-} from 'react-native';
+import { Text, Image, View, StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Home from '../screens/tabScreens/Home';
 import MyProfile from '../screens/tabScreens/MyProfile';
@@ -15,6 +9,7 @@ import ApplyLeave from '../screens/tabScreens/ApplyLeave';
 import HolidayList from '../screens/tabScreens/HolidayList';
 import ActiveTask from '../screens/tabScreens/ActiveTask';
 import MuRegister from '../screens/tabScreens/MuRegister';
+import ProfileMuRegister from '../screens/tabScreens/ProfileMuRegister';
 
 const Tab = createBottomTabNavigator();
 
@@ -30,137 +25,111 @@ const TabIcon = ({ focused, source }) => (
 
 const BottomTabNav = () => {
   return (
-    <>
-      {global.user_type = 'admin' ?
-
-
-        <Tab.Navigator
-          initialRouteName="MuRegister"
-          screenOptions={{
-            unmountOnBlur: true,
-            tabBarHideOnKeyboard: true,
-            tabBarShowLabel: false,
-            headerShown: false,
-            tabBarStyle: styles.tabBarStyle,
-          }}>
-          <Tab.Screen
-            name="MuRegister"
-            component={MuRegister}
-            options={{
-              unmountOnBlur: true,
-              tabBarIcon: ({ focused }) => (
-                <TabIcon focused={focused} source={Images.tab5} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="MyProfile"
-            component={MyProfile}
-            listeners={({ navigation }) => ({
-              blur: () => navigation.setParams({ screen: undefined }),
-            })}
-            options={{
-              unmountOnBlur: true,
-              tabBarIcon: ({ focused }) => (
-                <TabIcon focused={focused} source={Images.tab4} />
-              ),
-            }}
-          />
-        </Tab.Navigator>
-        :
-
-        <Tab.Navigator
-          initialRouteName="Home"
-          screenOptions={{
-            unmountOnBlur: true,
-            tabBarHideOnKeyboard: true,
-            tabBarShowLabel: false,
-            headerShown: false,
-            tabBarStyle: styles.tabBarStyle,
-          }}>
-
-          <Tab.Screen
-            name="Home"
-            component={Home}
-            options={{
-              unmountOnBlur: true,
-              tabBarIcon: ({ focused }) => (
-                <TabIcon focused={focused} source={Images.tab1} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="MuRegister"
-            component={MuRegister}
-            options={{
-              unmountOnBlur: true,
-              tabBarIcon: ({ focused }) => (
-                <TabIcon focused={focused} source={Images.tab5} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="Leave"
-            component={ApplyLeave}
-            options={{
-              unmountOnBlur: true,
-              tabBarIcon: ({ focused }) => (
-                <TabIcon focused={focused} source={Images.tab2} />
-              ),
-            }}
-          />
-
-
-          <Tab.Screen
-            name="ActiveTask"
-            component={ActiveTask}
-            options={{
-              unmountOnBlur: true,
-              tabBarIcon: ({ focused }) => (
-                <TabIcon focused={focused} source={Images.tab3} />
-              ),
-            }}
-          />
-          {/* <Tab.Screen
-        name="HolidayList"
-        component={HolidayList}
+    <Tab.Navigator
+      initialRouteName="MuRegister"
+      screenOptions={{
+        unmountOnBlur: true,
+        tabBarHideOnKeyboard: true,
+        tabBarShowLabel: false,
+        headerShown: false,
+        tabBarStyle: styles.tabBarStyle,
+      }}
+    >
+      <Tab.Screen
+        name="MuRegister"
+        component={MuRegister}
         options={{
           unmountOnBlur: true,
-          tabBarIcon: ({focused}) => (
-            <TabIcon focused={focused} source={Images.tab2} />
-          ),
-        }}
-      /> */}
-
-          <Tab.Screen
-            name="MyProfile"
-            component={MyProfile}
-            listeners={({ navigation }) => ({
-              blur: () => navigation.setParams({ screen: undefined }),
-            })}
-            options={{
-              unmountOnBlur: true,
-              tabBarIcon: ({ focused }) => (
-                <TabIcon focused={focused} source={Images.tab4} />
-              ),
-            }}
-          />
-
-          {/* <Tab.Screen
-        name="Earning"
-        component={Earning}
-        listeners={({navigation}) => ({
-          blur: () => navigation.setParams({screen: undefined}),
-        })}
-        options={{
-          unmountOnBlur: true,
-          tabBarIcon: ({focused}) => (
+          tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused} source={Images.tab5} />
           ),
         }}
-      /> */}
-        </Tab.Navigator>}
-    </>
+      />
+      <Tab.Screen
+        name="ProfileMuRegister"
+        component={ProfileMuRegister}
+        listeners={({ navigation }) => ({
+          blur: () => navigation.setParams({ screen: undefined }),
+        })}
+        options={{
+          unmountOnBlur: true,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon focused={focused} source={Images.tab4} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
+
+
+  //  <Tab.Navigator
+  //         initialRouteName="Home"
+  //         screenOptions={{
+  //           unmountOnBlur: true,
+  //           tabBarHideOnKeyboard: true,
+  //           tabBarShowLabel: false,
+  //           headerShown: false,
+  //           tabBarStyle: styles.tabBarStyle,
+  //         }}>
+
+  //         <Tab.Screen
+  //           name="Home"
+  //           component={Home}
+  //           options={{
+  //             unmountOnBlur: true,
+  //             tabBarIcon: ({ focused }) => (
+  //               <TabIcon focused={focused} source={Images.tab1} />
+  //             ),
+  //           }}
+  //         />
+  //         <Tab.Screen
+  //           name="MuRegister"
+  //           component={MuRegister}
+  //           options={{
+  //             unmountOnBlur: true,
+  //             tabBarIcon: ({ focused }) => (
+  //               <TabIcon focused={focused} source={Images.tab5} />
+  //             ),
+  //           }}
+  //         />
+  //         <Tab.Screen
+  //           name="Leave"
+  //           component={ApplyLeave}
+  //           options={{
+  //             unmountOnBlur: true,
+  //             tabBarIcon: ({ focused }) => (
+  //               <TabIcon focused={focused} source={Images.tab2} />
+  //             ),
+  //           }}
+  //         />
+
+
+  //         <Tab.Screen
+  //           name="ActiveTask"
+  //           component={ActiveTask}
+  //           options={{
+  //             unmountOnBlur: true,
+  //             tabBarIcon: ({ focused }) => (
+  //               <TabIcon focused={focused} source={Images.tab3} />
+  //             ),
+  //           }}
+  //         />
+         
+
+  //         <Tab.Screen
+  //           name="MyProfile"
+  //           component={MyProfile}
+  //           listeners={({ navigation }) => ({
+  //             blur: () => navigation.setParams({ screen: undefined }),
+  //           })}
+  //           options={{
+  //             unmountOnBlur: true,
+  //             tabBarIcon: ({ focused }) => (
+  //               <TabIcon focused={focused} source={Images.tab4} />
+  //             ),
+  //           }}
+  //         />
+
+  //       </Tab.Navigator>
   );
 };
 
@@ -204,7 +173,7 @@ const styles = StyleSheet.create({
   tabIcon: {
     height: normalize(20),
     width: normalize(20),
-    tintColor: Colors.white
+    tintColor: Colors.white,
   },
   focusedIcon: {
     tintColor: Colors.red,

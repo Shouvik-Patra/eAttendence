@@ -6,50 +6,83 @@ import {
   Text,
   Animated,
   Easing,
-  ActivityIndicator,
+  Image,
 } from 'react-native';
 import PropTypes from 'prop-types';
-import { Colors } from '../../themes/ThemePath';
+import { Colors, Images } from '../../themes/ThemePath';
 
-export default function Loader({ visible }) {
-  const rotateAnimation = useRef(new Animated.Value(0)).current;
+export default function Loader({ visible, text }) {
+  const rippleAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    let animation;
+    let rippleAnimation;
+    let rotationLoop;
 
     if (visible) {
-      const startRotation = () => {
-        rotateAnimation.setValue(0);
-        animation = Animated.loop(
-          Animated.timing(rotateAnimation, {
-            toValue: 1,
-            duration: 1000,
-            easing: Easing.linear,
-            useNativeDriver: true,
-          })
-        );
-        animation.start();
-      };
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
 
-      startRotation();
+      rippleAnim.setValue(0);
+      rippleAnimation = Animated.loop(
+        Animated.timing(rippleAnim, {
+          toValue: 1,
+          duration: 1500,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+      );
+      rippleAnimation.start();
+
+      rotateAnim.setValue(0);
+      rotationLoop = Animated.loop(
+        Animated.timing(rotateAnim, {
+          toValue: 1,
+          duration: 4000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      );
+      rotationLoop.start();
     } else {
-      rotateAnimation.setValue(0);
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+      rippleAnim.stopAnimation();
+      rotateAnim.stopAnimation();
     }
 
     return () => {
-      if (animation) animation.stop();
+      if (rippleAnimation) rippleAnimation.stop();
+      if (rotationLoop) rotationLoop.stop();
     };
   }, [visible]);
 
   const screenHeight = Dimensions.get('window').height;
 
-  const spin = rotateAnimation.interpolate({
+  const rippleScale = rippleAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.9, 2.5],
+  });
+
+  const rippleOpacity = rippleAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.6, 0],
+  });
+
+  const spin = rotateAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
   });
 
   return visible ? (
-    <SafeAreaView
+    <Animated.View
       style={{
         flex: 1,
         position: 'absolute',
@@ -63,36 +96,55 @@ export default function Loader({ visible }) {
         width: '100%',
         alignItems: 'center',
         justifyContent: 'center',
-      }}>
-      <Animated.View
-        style={{
-          width: 60,
-          height: 60,
-          borderRadius: 30,
-          borderWidth: 6,
-          borderColor: Colors.button || '#fff',
-          borderTopColor: 'transparent',
-          transform: [{ rotate: spin }],
-        }}
-      />
+        opacity: fadeAnim,
+      }}
+    >
+      <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+        <Animated.View
+          style={{
+            position: 'absolute',
+            width: 120,
+            height: 120,
+            borderRadius: 60,
+            backgroundColor: Colors.button || '#ffffff',
+            opacity: rippleOpacity,
+            transform: [{ scale: rippleScale }],
+          }}
+        />
+        <Animated.Image
+          source={Images.earth}
+          style={{
+            width: 200,
+            height: 200,
+            resizeMode: 'contain',
+            transform: [{ rotate: spin }],
+          }}
+        />
+      </View>
+
       <Text
         style={{
+          alignSelf: 'center',
           marginTop: 24,
-          fontSize: 16,
+          fontSize: 18,
           color: '#ffffff',
-          fontWeight: '500',
+          fontWeight: '600',
           textAlign: 'center',
-        }}>
-        Loading...
+          letterSpacing: 0.5,
+        }}
+      >
+        {text}
       </Text>
-    </SafeAreaView>
+    </Animated.View>
   ) : null;
 }
 
 Loader.propTypes = {
   visible: PropTypes.bool,
+  text: PropTypes.string,
 };
 
 Loader.defaultProps = {
   visible: false,
+  text: 'Finding your location...',
 };

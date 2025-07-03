@@ -24,6 +24,7 @@ import {
   clockoutRequest,
   municipalityRegisterRequest,
 } from '../../redux/reducer/ProfileReducer';
+import Loader from '../../utils/helpers/Loader';
 let status = '';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -47,9 +48,10 @@ const Attendence = props => {
   const latitude = props?.route.params?.latitude;
   const longitude = props?.route.params?.longitude;
   const task_id = props?.route.params?.task_id;
-  const office_no = props?.route.params?.task_id;
+  const office_id = props?.route.params?.office_id;
 
   // UI state
+  const [loading, setLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState('');
   const [finalImage, setFinalImage] = useState('');
   const [showFullScreenPreview, setShowFullScreenPreview] = useState(false);
@@ -180,7 +182,6 @@ const Attendence = props => {
       });
   }
 
-
   function onAddNewTask(capturedimage) {
     const imageName = capturedimage.split('/').pop();
     const imageType = 'image/jpeg';
@@ -219,21 +220,15 @@ const Attendence = props => {
       });
   }
   function onMuRegister(capturedimage) {
-    console.log("Hi sir>>>>");
-    
-    // props?.navigation.navigate('BottomTabNav', {
-    //         screen: 'MuRegister',
-    //         params: {
-    //           finalImageUri: capturedimage,
-    //           isEditing: true,
-    //         },
-    //       });
     const imageName = capturedimage.split('/').pop();
     const imageType = 'image/jpeg';
     const formData = new FormData();
     formData.append('user_id', ProfileReducer?.userDetailsResponse?.id);
-    formData.append('municipality', ProfileReducer?.userDetailsResponse?.municipality);
-    formData.append('office_no', office_no);
+    formData.append(
+      'municipality',
+      ProfileReducer?.userDetailsResponse?.municipality,
+    );
+    formData.append('office_id', office_id);
     formData.append('latitude', latitude);
     formData.append('longitude', longitude);
     formData.append('address', locationData?.address);
@@ -258,6 +253,7 @@ const Attendence = props => {
   }
 
   const handleSubmit = async () => {
+    setLoading(true);
     if (viewShotRef.current && !isSubmitting) {
       setIsSubmitting(true);
 
@@ -273,7 +269,7 @@ const Attendence = props => {
           input: 'uri',
           output: 'jpg',
         });
-        setFinalImage(finalImagePath)
+        setFinalImage(finalImagePath);
         if (props?.route?.params?.pagename == 'MyProfile') {
           props?.navigation.navigate('BottomTabNav', {
             screen: 'MyProfile',
@@ -282,7 +278,7 @@ const Attendence = props => {
               isEditing: true,
             },
           });
-          return
+          return;
         }
         // Handle clock in/out for attendance
         if (props?.route?.params?.status == 'clockin') {
@@ -291,15 +287,13 @@ const Attendence = props => {
           onClockOut(finalImagePath);
         } else if (props?.route?.params?.status == 'MuRegister') {
           onMuRegister(finalImagePath);
-        }else {
+        } else {
           onAddNewTask(finalImagePath);
         }
         console.log(
           'Final compressed square image with geotag:',
           finalImagePath,
         );
-
-
       } catch (error) {
         console.error('Error processing final image:', error);
         setIsSubmitting(false);
@@ -323,7 +317,7 @@ const Attendence = props => {
         break;
       case 'Profile/clockinFailure':
         status = ProfileReducer.status;
-        showErrorAlert('Clock In fail due to Network issue, Try again!')
+        showErrorAlert('Clock In fail due to Network issue, Try again!');
 
         props?.navigation.navigate('BottomTabNav', {
           screen: 'Home',
@@ -347,7 +341,7 @@ const Attendence = props => {
         break;
       case 'Profile/clockoutFailure':
         status = ProfileReducer.status;
-        showErrorAlert('Clock Out fail due to Network issue, Try again!')
+        showErrorAlert('Clock Out fail due to Network issue, Try again!');
 
         props?.navigation.navigate('BottomTabNav', {
           screen: 'Home',
@@ -371,7 +365,7 @@ const Attendence = props => {
         break;
       case 'Profile/addTaskFailure':
         status = ProfileReducer.status;
-        showErrorAlert('Task add fail due to Network issue, Try again!')
+        showErrorAlert('Task add fail due to Network issue, Try again!');
 
         props?.navigation.navigate('BottomTabNav', {
           screen: 'ActiveTask',
@@ -386,6 +380,8 @@ const Attendence = props => {
         break;
       case 'Profile/municipalityRegisterSuccess':
         status = ProfileReducer.status;
+        setLoading(false);
+
         props?.navigation.navigate('BottomTabNav', {
           screen: 'MuRegister',
           params: {
@@ -395,7 +391,9 @@ const Attendence = props => {
         break;
       case 'Profile/municipalityRegisterFailure':
         status = ProfileReducer.status;
-        showErrorAlert('Task add fail due to Network issue, Try again!')
+        setLoading(false);
+
+        showErrorAlert('Task add fail due to Network issue, Try again!');
 
         props?.navigation.navigate('BottomTabNav', {
           screen: 'MuRegister',
@@ -426,6 +424,7 @@ const Attendence = props => {
 
   return (
     <View style={styles.fullScreenContainer}>
+      <Loader visible={loading} />
       {/* Camera View with Square Frame */}
       {!showFullScreenPreview && (
         <>
@@ -458,7 +457,9 @@ const Attendence = props => {
                 {/* Instruction text */}
                 <View style={styles.instructionContainer}>
                   <Text style={styles.instructionText}>
-                   {props?.route?.params?.status == 'MuRegister' ? "Capture image with municipality board": "Position your face in the frame"}
+                    {props?.route?.params?.status == 'MuRegister'
+                      ? 'Position your face in the frame'
+                      : 'Position your face in the frame'}
                   </Text>
                 </View>
               </View>
@@ -538,7 +539,7 @@ const Attendence = props => {
             onPress={toggleCameraPosition}
           >
             <View style={styles.iconButton}>
-              <Image style={styles.iconImage} source={Images.camera} />
+              <Image style={styles.iconImage} source={Images.refreshicon} />
             </View>
           </TouchableOpacity>
         )}
@@ -803,8 +804,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconImage: {
-    width: 24,
-    height: 24,
+    width: 26,
+    height: 26,
     tintColor: 'white',
   },
   iconImage1: {

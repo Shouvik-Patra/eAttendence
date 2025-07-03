@@ -28,9 +28,9 @@ const Signin = props => {
   const AuthReducer = useSelector(state => state.AuthReducer);
   console.log('login>>', AuthReducer);
 
-  const [phone, setPhone] = useState('kolkata');//9641132495//basirhat@aswass.in
+  const [phone, setPhone] = useState('');//9641132495//basirhat@aswass.in
   const [secure1, setSecure1] = useState(false);
-  const [password, setPassword] = useState('123456');//12345
+  const [password, setPassword] = useState('');//12345
   const [keyboardShown, setKeyboardShown] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -165,9 +165,8 @@ const Signin = props => {
                 inputWidth={'100%'}
                 marginTop={normalize(25)}
                 textColor={Colors.textInputColor}
-                InputHeaderText={'Phone number'}
-                placeholder={'Enter phone'}
-                keyboardType={'phone-pad'}
+                InputHeaderText={'User Name'}
+                placeholder={'Enter username'}
                 placeholderTextColor={Colors.black}
                 paddingLeft={normalize(25)}
                 borderColor={Colors.inputGreyBorder}

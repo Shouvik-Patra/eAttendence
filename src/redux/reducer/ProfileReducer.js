@@ -14,6 +14,7 @@ const initialState = {
   applyLeaveResponse: {},
   municipalityRegisterResponse: {},
   municipalityRegisterListResponse: {},
+  municipalityOfficeListResponse: {},
 };
 
 const ProfileSlice = createSlice({
@@ -137,6 +138,18 @@ const ProfileSlice = createSlice({
       state.error = action.error;
       state.status = action.type;
     },
+
+    municipalityOfficeListRequest(state, action) {
+      state.status = action.type;
+    },
+    municipalityOfficeListSuccess(state, action) {
+      state.municipalityOfficeListResponse = action.payload;
+      state.status = action.type;
+    },
+    municipalityOfficeListFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
   },
 });
 
@@ -180,7 +193,10 @@ export const {
   municipalityRegisterListRequest,
   municipalityRegisterListSuccess,
   municipalityRegisterListFailure,
-  
+
+  municipalityOfficeListRequest,
+  municipalityOfficeListSuccess,
+  municipalityOfficeListFailure,
 } = ProfileSlice.actions;
 
 export default ProfileSlice.reducer;

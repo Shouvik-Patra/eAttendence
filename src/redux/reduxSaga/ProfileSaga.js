@@ -19,10 +19,12 @@ import {
   addTaskFailure,
   applyLeaveSuccess,
   applyLeaveFailure,
-    municipalityRegisterSuccess,
+  municipalityRegisterSuccess,
   municipalityRegisterFailure,
   municipalityRegisterListFailure,
   municipalityRegisterListSuccess,
+  municipalityOfficeListSuccess,
+  municipalityOfficeListFailure,
 } from '../reducer/ProfileReducer';
 import showErrorAlert from '../../utils/helpers/Toast';
 let getItem = state => state.AuthReducer;
@@ -294,6 +296,29 @@ export function* municipalityRegisterListSaga(action) {
     yield put(municipalityRegisterListFailure(error));
   }
 }
+
+export function* municipalityOfficeListSaga(action) {
+  let items = yield select(getItem);
+
+  let header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: items?.getTokenResponse,
+  };
+  try {
+    let response = yield call(getApi, `getOfficeByMunicipalityName/${action.payload}`, header);
+
+    if (response?.data?.meta?.code == 200) {
+      yield put(municipalityOfficeListSuccess(response?.data?.data));
+    } else {
+      yield put(municipalityOfficeListFailure(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    }
+  } catch (error) {
+    console.log('add address error:', error);
+    yield put(municipalityOfficeListFailure(error));
+  }
+}
 const watchFunction = [
   (function* () {
     yield takeLatest('Profile/userDetailsRequest', userDetailsSaga);
@@ -317,13 +342,25 @@ const watchFunction = [
     yield takeLatest('Profile/addTaskRequest', addTaskSaga);
   })(),
   (function* () {
-    yield takeLatest('Profile/municipalityRegisterRequest', municipalityRegisterSaga);
+    yield takeLatest(
+      'Profile/municipalityRegisterRequest',
+      municipalityRegisterSaga,
+    );
   })(),
   (function* () {
     yield takeLatest('Profile/applyLeaveRequest', applyleaveSaga);
   })(),
   (function* () {
-    yield takeLatest('Profile/municipalityRegisterListRequest', municipalityRegisterListSaga);
+    yield takeLatest(
+      'Profile/municipalityRegisterListRequest',
+      municipalityRegisterListSaga,
+    );
+  })(),
+  (function* () {
+    yield takeLatest(
+      'Profile/municipalityOfficeListRequest',
+      municipalityOfficeListSaga,
+    );
   })(),
 ];
 
