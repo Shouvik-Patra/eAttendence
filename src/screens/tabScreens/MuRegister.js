@@ -323,7 +323,6 @@ const ActiveTask = props => {
         break;
     }
   }
-console.log("office>>>>>>>>>>>>>>>>>>",ProfileReducer?.municipalityOfficeListResponse);
 
   return (
     <View style={styles.mainContainer}>
@@ -440,7 +439,7 @@ console.log("office>>>>>>>>>>>>>>>>>>",ProfileReducer?.municipalityOfficeListRes
                 iconStyle={styles.iconStyle}
                 containerStyle={styles.dropdownListContainer}
                 itemTextStyle={styles.dropdownItemText}
-                data={ProfileReducer?.municipalityOfficeListResponse}
+                data={ProfileReducer?.municipalityOfficeListResponse || ''}
                 maxHeight={300}
                 labelField="name" // Display the title
                 valueField="id" // Use the ID as value
