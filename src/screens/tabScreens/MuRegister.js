@@ -166,7 +166,6 @@ const ActiveTask = props => {
 
   const renderTaskList = ({ item, index }) => (
     <View style={styles.userInfoContainer}>
-      
       <View style={styles.userTextContainer}>
         <Text style={styles.blackText}>
           Office :{' '}
@@ -255,7 +254,7 @@ const ActiveTask = props => {
         style={{ height: 50, width: 50 }}
         source={
           ProfileReducer?.userDetailsResponse?.attendance_status_text ==
-            'Clocked In'
+          'Clocked In'
             ? Images.addTask
             : Images.lock
         }
@@ -286,7 +285,11 @@ const ActiveTask = props => {
       case 'Profile/municipalityRegisterListSuccess':
         status = ProfileReducer.status;
         setLoading(false);
-        setComplitedTaskData(ProfileReducer?.municipalityRegisterListResponse);
+         setComplitedTaskData(
+          Array.isArray(ProfileReducer?.municipalityRegisterListResponse)
+            ? ProfileReducer?.municipalityRegisterListResponse
+            : [],
+        );
         break;
       case 'Profile/municipalityRegisterListFailure':
         status = ProfileReducer.status;
@@ -314,7 +317,11 @@ const ActiveTask = props => {
         break;
       case 'Profile/municipalityOfficeListSuccess':
         status = ProfileReducer.status;
-        setOfficeList(ProfileReducer?.municipalityOfficeListResponse);
+        setOfficeList(
+          Array.isArray(ProfileReducer?.municipalityOfficeListResponse)
+            ? ProfileReducer.municipalityOfficeListResponse
+            : [],
+        );
         setLoading(false);
         break;
       case 'Profile/municipalityOfficeListFailure':
@@ -330,7 +337,7 @@ const ActiveTask = props => {
         HeaderLogo
         Title
         placeText={'Register Your Office'}
-        onPress_back_button={() => { }}
+        onPress_back_button={() => {}}
         onPress_right_button={() => {
           props.navigation.navigate('Notification');
         }}
@@ -342,11 +349,7 @@ const ActiveTask = props => {
         showsVerticalScrollIndicator={false}
       >
         <FlatList
-          data={
-            ProfileReducer?.municipalityRegisterListResponse
-              ? ProfileReducer?.municipalityRegisterListResponse
-              : []
-          }
+          data={complitedTaskData}
           keyExtractor={item => item.id}
           renderItem={renderTaskList}
           ListFooterComponent={renderFooter}
@@ -439,13 +442,13 @@ const ActiveTask = props => {
                 iconStyle={styles.iconStyle}
                 containerStyle={styles.dropdownListContainer}
                 itemTextStyle={styles.dropdownItemText}
-                data={ProfileReducer?.municipalityOfficeListResponse || ''}
+                data={officeList}
                 maxHeight={300}
-                labelField="name" // Display the title
-                valueField="id" // Use the ID as value
+                labelField="name"
+                valueField="id"
                 placeholder={!isFocusTask ? 'Select office' : '...'}
                 searchPlaceholder="Search..."
-                value={selectedOffice} // This will be the ID
+                value={selectedOffice}
                 onFocus={() => setIsFocusTask(true)}
                 onBlur={() => setIsFocusTask(false)}
                 onChange={handleTaskSelect}
