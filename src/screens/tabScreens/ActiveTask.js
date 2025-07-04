@@ -183,7 +183,15 @@ const ActiveTask = props => {
             'You are not allowed to add task',
             'Please Clock In first',
           );
-        } else {
+        } else if (
+          ProfileReducer?.userDetailsResponse?.attendance_status_text ==
+          "Attendance Not Applicable"
+        ) {
+          Alert.alert(
+            'You are not allowed to add task',
+            'Please Clock In first',
+          );
+        }else {
           setAddTaskModal(!addTaskModal);
         }
       }}

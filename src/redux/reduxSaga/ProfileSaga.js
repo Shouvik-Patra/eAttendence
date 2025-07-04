@@ -27,6 +27,8 @@ import {
   municipalityOfficeListFailure,
 } from '../reducer/ProfileReducer';
 import showErrorAlert from '../../utils/helpers/Toast';
+import { getTokenSuccess, logoutRequest, logoutSuccess } from '../reducer/AuthReducer';
+import constants from '../../utils/helpers/constants';
 let getItem = state => state.AuthReducer;
 
 //User Profile Details
@@ -40,17 +42,26 @@ export function* userDetailsSaga(action) {
     accesstoken: items?.getTokenResponse,
   };
   try {
+    console.log("User Details::header>>", header);
+
     let response = yield call(getApi, 'user_profile_info', header);
+    console.log("User Details::response>>", response);
 
     if (response?.data?.meta?.code == 200) {
       yield put(userDetailsSuccess(response?.data?.data));
     } else {
-      yield put(userDetailsFailure(response?.data?.data));
+      yield put(userDetailsFailure(response?.data));
       showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
-    console.log('add address error:', error);
-    yield put(userDetailsFailure(error));
+    console.log("error>>>>>>>>>>",error);
+    
+    yield put(userDetailsFailure(error?.response?.data));
+    if (error?.response?.data?.meta?.message == "Token is invalid or expired") {
+     yield call(AsyncStorage.removeItem, constants.TOKEN);
+      yield put(getTokenSuccess(null));
+      yield put(logoutSuccess());
+    }
   }
 }
 
@@ -158,7 +169,6 @@ export function* taskListSaga(action) {
       showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
-    console.log('add address error:', error);
     yield put(taskListFailure(error));
   }
 }
@@ -180,7 +190,6 @@ export function* complitedTaskListSaga(action) {
       showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
-    console.log('add address error:', error);
     yield put(complitedTaskListFailure(error));
   }
 }
@@ -292,7 +301,6 @@ export function* municipalityRegisterListSaga(action) {
       showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
-    console.log('add address error:', error);
     yield put(municipalityRegisterListFailure(error));
   }
 }
@@ -315,7 +323,6 @@ export function* municipalityOfficeListSaga(action) {
       showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
-    console.log('add address error:', error);
     yield put(municipalityOfficeListFailure(error));
   }
 }

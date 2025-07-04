@@ -29,7 +29,7 @@ const Signin = props => {
   console.log('login>>', AuthReducer);
 
   const [phone, setPhone] = useState('');//9641132495//basirhat@aswass.in
-  const [secure1, setSecure1] = useState(false);
+  const [secure1, setSecure1] = useState(true);
   const [password, setPassword] = useState('');//12345
   const [keyboardShown, setKeyboardShown] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
