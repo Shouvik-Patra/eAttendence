@@ -166,16 +166,17 @@ const ActiveTask = props => {
 
   const renderTaskList = ({ item, index }) => (
     <View style={styles.userInfoContainer}>
+      
       <View style={styles.userTextContainer}>
         <Text style={styles.blackText}>
-          Office id :{' '}
+          Office :{' '}
           <Text
             style={[
               styles.redText,
               { color: isClocked ? Colors.green : Colors.red },
             ]}
           >
-            {item?.office_id}
+            {item?.office_name}
           </Text>
         </Text>
         <Text style={styles.userAddress}>{item?.address}</Text>
@@ -254,12 +255,12 @@ const ActiveTask = props => {
         style={{ height: 50, width: 50 }}
         source={
           ProfileReducer?.userDetailsResponse?.attendance_status_text ==
-          'Clocked In'
+            'Clocked In'
             ? Images.addTask
             : Images.lock
         }
       />
-      <Text style={styles.newTask}>Add New field</Text>
+      <Text style={styles.newTask}>Add New Office</Text>
     </TouchableOpacity>
   );
 
@@ -322,14 +323,15 @@ const ActiveTask = props => {
         break;
     }
   }
+console.log("office>>>>>>>>>>>>>>>>>>",ProfileReducer?.municipalityOfficeListResponse);
 
   return (
     <View style={styles.mainContainer}>
       <Header
         HeaderLogo
         Title
-        placeText={'Field Visit'}
-        onPress_back_button={() => {}}
+        placeText={'Register Your Office'}
+        onPress_back_button={() => { }}
         onPress_right_button={() => {
           props.navigation.navigate('Notification');
         }}
@@ -413,7 +415,7 @@ const ActiveTask = props => {
                 marginTop: normalize(20),
               }}
             >
-              Verify Your Visit
+              Register Your Office
             </Text>
             <Text
               style={{
@@ -438,7 +440,7 @@ const ActiveTask = props => {
                 iconStyle={styles.iconStyle}
                 containerStyle={styles.dropdownListContainer}
                 itemTextStyle={styles.dropdownItemText}
-                data={officeList}
+                data={ProfileReducer?.municipalityOfficeListResponse}
                 maxHeight={300}
                 labelField="name" // Display the title
                 valueField="id" // Use the ID as value
@@ -463,7 +465,7 @@ const ActiveTask = props => {
                 getLocation();
               }}
             >
-              <Text style={styles.clockButtonText}>Verify My Visit</Text>
+              <Text style={styles.clockButtonText}>Register Office</Text>
             </TouchableOpacity>
           </ScrollView>
         </ImageBackground>

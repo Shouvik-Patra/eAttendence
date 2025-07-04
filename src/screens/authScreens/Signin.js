@@ -64,7 +64,7 @@ const Signin = props => {
       showErrorAlert('Please Enter Password');
     } else {
       let obj = {
-        username: phone,
+        username: phone.trim(),
         password: password,
       };
       console.log('objobjobjobjobj', obj);
