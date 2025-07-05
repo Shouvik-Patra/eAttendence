@@ -26,10 +26,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useIsFocused } from '@react-navigation/native';
 import Geolocation from '@react-native-community/geolocation';
 import {
-  complitedTaskListRequest,
   municipalityOfficeListRequest,
   municipalityRegisterListRequest,
-  taskListRequest,
   userDetailsRequest,
 } from '../../redux/reducer/ProfileReducer';
 import connectionrequest from '../../utils/helpers/NetInfo';
@@ -45,14 +43,13 @@ const ActiveTask = props => {
   const [isClocked, setIsClocked] = useState(false);
   const [addTaskModal, setAddTaskModal] = useState(false);
 
-  console.log('isFocused>>>>>>>>>>>>>>', isFocused);
-
   const [officeList, setOfficeList] = useState([]);
   const [complitedTaskData, setComplitedTaskData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isFocusTask, setIsFocusTask] = useState(false);
   const [selectedOffice, setSelectedOffice] = useState('');
-  console.log('selectedOffice>>>>>', selectedOffice);
+  console.log('complitedTaskData>>>>>', complitedTaskData);
+  console.log('officeList>>>>>', officeList);
 
   const [location, setLocation] = useState({ latitude: null, longitude: null });
   const requestLocationPermission = async () => {
@@ -80,7 +77,6 @@ const ActiveTask = props => {
 
       position => {
         const { latitude, longitude } = position.coords;
-        console.log('lat long----', latitude, longitude);
         setLocation({ latitude, longitude });
       },
       error => {
@@ -98,13 +94,23 @@ const ActiveTask = props => {
     setSelectedOffice(item.id);
     setIsFocusTask(false);
   };
+  function getMunicipalityRegisterList() {
+    connectionrequest()
+      .then(() => {
+        dispatch(municipalityRegisterListRequest());
+      })
+      .catch(err => {
+        console.log(err);
+        showErrorAlert('Please connect to internet');
+      });
+  }
   useEffect(() => {
     if (isFocused) {
       requestLocationPermission();
+      getMunicipalityRegisterList();
       connectionrequest()
         .then(() => {
           dispatch(userDetailsRequest());
-          dispatch(municipalityRegisterListRequest());
         })
         .catch(err => {
           console.log(err);
@@ -262,6 +268,17 @@ const ActiveTask = props => {
       <Text style={styles.newTask}>Add New Office</Text>
     </TouchableOpacity>
   );
+  useEffect(() => {
+    if (ProfileReducer?.municipalityRegisterListResponse?.length > 0) {
+      setComplitedTaskData(ProfileReducer.municipalityRegisterListResponse);
+    }
+  }, [ProfileReducer.municipalityRegisterListResponse]);
+
+  useEffect(() => {
+    if (ProfileReducer?.municipalityOfficeListResponse?.length > 0) {
+      setOfficeList(ProfileReducer?.municipalityOfficeListResponse);
+    }
+  }, [ProfileReducer?.municipalityOfficeListResponse]);
 
   if (status == '' || ProfileReducer.status != status) {
     switch (ProfileReducer.status) {
@@ -285,11 +302,7 @@ const ActiveTask = props => {
       case 'Profile/municipalityRegisterListSuccess':
         status = ProfileReducer.status;
         setLoading(false);
-         setComplitedTaskData(
-          Array.isArray(ProfileReducer?.municipalityRegisterListResponse)
-            ? ProfileReducer?.municipalityRegisterListResponse
-            : [],
-        );
+        setComplitedTaskData(ProfileReducer?.municipalityRegisterListResponse);
         break;
       case 'Profile/municipalityRegisterListFailure':
         status = ProfileReducer.status;
@@ -304,6 +317,8 @@ const ActiveTask = props => {
       case 'Profile/municipalityRegisterSuccess':
         status = ProfileReducer.status;
         setSelectedOffice('');
+        getMunicipalityRegisterList();
+
         setLoading(false);
         break;
       case 'Profile/municipalityRegisterFailure':
@@ -317,11 +332,7 @@ const ActiveTask = props => {
         break;
       case 'Profile/municipalityOfficeListSuccess':
         status = ProfileReducer.status;
-        setOfficeList(
-          Array.isArray(ProfileReducer?.municipalityOfficeListResponse)
-            ? ProfileReducer.municipalityOfficeListResponse
-            : [],
-        );
+        setOfficeList(ProfileReducer?.municipalityOfficeListResponse);
         setLoading(false);
         break;
       case 'Profile/municipalityOfficeListFailure':
@@ -343,19 +354,15 @@ const ActiveTask = props => {
         }}
       />
       <Loader visible={loading} />
-      <ScrollView
+
+      <FlatList
+        data={complitedTaskData}
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollViewContent}
+        keyExtractor={(item, index) => item?.id?.toString() || index.toString()}
+        renderItem={renderTaskList}
+        ListFooterComponent={renderFooter}
         showsVerticalScrollIndicator={false}
-      >
-        <FlatList
-          data={complitedTaskData}
-          keyExtractor={item => item.id}
-          renderItem={renderTaskList}
-          ListFooterComponent={renderFooter}
-          showsVerticalScrollIndicator={false}
-        />
-      </ScrollView>
+      />
       <Modal
         animationIn={'slideInUp'}
         animationOut={'slideOutDown'}
@@ -481,7 +488,7 @@ export default ActiveTask;
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: '#34495e',
   },
   close: {
     position: 'absolute',
@@ -505,7 +512,9 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: '#34495e',
+    marginTop: normalize(10),
+    width: '95%',
+    alignSelf: 'center',
   },
   scrollViewContent: {
     paddingHorizontal: normalize(10),
