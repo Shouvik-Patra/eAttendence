@@ -26,10 +26,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useIsFocused } from '@react-navigation/native';
 import Geolocation from '@react-native-community/geolocation';
 import {
-  complitedTaskListRequest,
   municipalityOfficeListRequest,
   municipalityRegisterListRequest,
-  taskListRequest,
   userDetailsRequest,
 } from '../../redux/reducer/ProfileReducer';
 import connectionrequest from '../../utils/helpers/NetInfo';
@@ -45,14 +43,13 @@ const ActiveTask = props => {
   const [isClocked, setIsClocked] = useState(false);
   const [addTaskModal, setAddTaskModal] = useState(false);
 
-  console.log('isFocused>>>>>>>>>>>>>>', isFocused);
-
   const [officeList, setOfficeList] = useState([]);
   const [complitedTaskData, setComplitedTaskData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isFocusTask, setIsFocusTask] = useState(false);
   const [selectedOffice, setSelectedOffice] = useState('');
-  console.log('selectedOffice>>>>>', selectedOffice);
+  console.log('complitedTaskData>>>>>', complitedTaskData);
+  console.log('officeList>>>>>', officeList);
 
   const [location, setLocation] = useState({ latitude: null, longitude: null });
   const requestLocationPermission = async () => {
@@ -80,7 +77,6 @@ const ActiveTask = props => {
 
       position => {
         const { latitude, longitude } = position.coords;
-        console.log('lat long----', latitude, longitude);
         setLocation({ latitude, longitude });
       },
       error => {
@@ -98,13 +94,23 @@ const ActiveTask = props => {
     setSelectedOffice(item.id);
     setIsFocusTask(false);
   };
+  function getMunicipalityRegisterList() {
+    connectionrequest()
+      .then(() => {
+        dispatch(municipalityRegisterListRequest());
+      })
+      .catch(err => {
+        console.log(err);
+        showErrorAlert('Please connect to internet');
+      });
+  }
   useEffect(() => {
     if (isFocused) {
       requestLocationPermission();
+      getMunicipalityRegisterList();
       connectionrequest()
         .then(() => {
           dispatch(userDetailsRequest());
-          dispatch(municipalityRegisterListRequest());
         })
         .catch(err => {
           console.log(err);
@@ -166,7 +172,6 @@ const ActiveTask = props => {
 
   const renderTaskList = ({ item, index }) => (
     <View style={styles.userInfoContainer}>
-      
       <View style={styles.userTextContainer}>
         <Text style={styles.blackText}>
           Office :{' '}
@@ -255,7 +260,7 @@ const ActiveTask = props => {
         style={{ height: 50, width: 50 }}
         source={
           ProfileReducer?.userDetailsResponse?.attendance_status_text ==
-            'Clocked In'
+          'Clocked In'
             ? Images.addTask
             : Images.lock
         }
@@ -263,6 +268,17 @@ const ActiveTask = props => {
       <Text style={styles.newTask}>Add New Office</Text>
     </TouchableOpacity>
   );
+  useEffect(() => {
+    if (ProfileReducer?.municipalityRegisterListResponse?.length > 0) {
+      setComplitedTaskData(ProfileReducer.municipalityRegisterListResponse);
+    }
+  }, [ProfileReducer.municipalityRegisterListResponse]);
+
+  useEffect(() => {
+    if (ProfileReducer?.municipalityOfficeListResponse?.length > 0) {
+      setOfficeList(ProfileReducer?.municipalityOfficeListResponse);
+    }
+  }, [ProfileReducer?.municipalityOfficeListResponse]);
 
   if (status == '' || ProfileReducer.status != status) {
     switch (ProfileReducer.status) {
@@ -301,6 +317,8 @@ const ActiveTask = props => {
       case 'Profile/municipalityRegisterSuccess':
         status = ProfileReducer.status;
         setSelectedOffice('');
+        getMunicipalityRegisterList();
+
         setLoading(false);
         break;
       case 'Profile/municipalityRegisterFailure':
@@ -330,29 +348,21 @@ const ActiveTask = props => {
         HeaderLogo
         Title
         placeText={'Register Your Office'}
-        onPress_back_button={() => { }}
+        onPress_back_button={() => {}}
         onPress_right_button={() => {
           props.navigation.navigate('Notification');
         }}
       />
       <Loader visible={loading} />
-      <ScrollView
+
+      <FlatList
+        data={complitedTaskData}
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollViewContent}
+        keyExtractor={(item, index) => item?.id?.toString() || index.toString()}
+        renderItem={renderTaskList}
+        ListFooterComponent={renderFooter}
         showsVerticalScrollIndicator={false}
-      >
-        <FlatList
-          data={
-            ProfileReducer?.municipalityRegisterListResponse
-              ? ProfileReducer?.municipalityRegisterListResponse
-              : []
-          }
-          keyExtractor={item => item.id}
-          renderItem={renderTaskList}
-          ListFooterComponent={renderFooter}
-          showsVerticalScrollIndicator={false}
-        />
-      </ScrollView>
+      />
       <Modal
         animationIn={'slideInUp'}
         animationOut={'slideOutDown'}
@@ -439,13 +449,13 @@ const ActiveTask = props => {
                 iconStyle={styles.iconStyle}
                 containerStyle={styles.dropdownListContainer}
                 itemTextStyle={styles.dropdownItemText}
-                data={ProfileReducer?.municipalityOfficeListResponse || ''}
+                data={officeList}
                 maxHeight={300}
-                labelField="name" // Display the title
-                valueField="id" // Use the ID as value
+                labelField="name"
+                valueField="id"
                 placeholder={!isFocusTask ? 'Select office' : '...'}
                 searchPlaceholder="Search..."
-                value={selectedOffice} // This will be the ID
+                value={selectedOffice}
                 onFocus={() => setIsFocusTask(true)}
                 onBlur={() => setIsFocusTask(false)}
                 onChange={handleTaskSelect}
@@ -478,7 +488,7 @@ export default ActiveTask;
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: '#34495e',
   },
   close: {
     position: 'absolute',
@@ -502,7 +512,9 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: '#34495e',
+    marginTop: normalize(10),
+    width: '95%',
+    alignSelf: 'center',
   },
   scrollViewContent: {
     paddingHorizontal: normalize(10),
