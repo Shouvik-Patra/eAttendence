@@ -1,6 +1,6 @@
 import { call, put, select, takeLatest } from 'redux-saga/effects';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getApi, postApi } from '../../utils/helpers/ApiRequest';
+import { getApi, postApi, postApiWithParam, putApi } from '../../utils/helpers/ApiRequest';
 
 import {
   userDetailsSuccess,
@@ -25,6 +25,12 @@ import {
   municipalityRegisterListSuccess,
   municipalityOfficeListSuccess,
   municipalityOfficeListFailure,
+  leaveLogSuccess,
+  leaveLogFailure,
+  leaveCancelSuccess,
+  leaveCancelFailure,
+  leaveTypeSuccess,
+  leaveTypeFailure,
 } from '../reducer/ProfileReducer';
 import showErrorAlert from '../../utils/helpers/Toast';
 import { getTokenSuccess, logoutRequest, logoutSuccess } from '../reducer/AuthReducer';
@@ -54,11 +60,11 @@ export function* userDetailsSaga(action) {
       showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
-    console.log("error>>>>>>>>>>",error);
-    
+    console.log("error>>>>>>>>>>", error);
+
     yield put(userDetailsFailure(error?.response?.data));
     if (error?.response?.data?.meta?.message == "Token is invalid or expired") {
-     yield call(AsyncStorage.removeItem, constants.TOKEN);
+      yield call(AsyncStorage.removeItem, constants.TOKEN);
       yield put(getTokenSuccess(null));
       yield put(logoutSuccess());
     }
@@ -326,6 +332,83 @@ export function* municipalityOfficeListSaga(action) {
     yield put(municipalityOfficeListFailure(error));
   }
 }
+export function* leaveTypeListSaga(action) {
+  let items = yield select(getItem);
+
+  let header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: items?.getTokenResponse,
+  };
+  try {
+    let response = yield call(getApi, 'get_leave_types', header);
+
+    if (response?.data?.meta?.code == 200) {
+      yield put(leaveTypeSuccess(response?.data?.data));
+    } else {
+      yield put(leaveTypeFailure(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    }
+  } catch (error) {
+    yield put(leaveTypeFailure(error));
+  }
+}
+
+export function* leaveLogSaga(action) {
+  let items = yield select(getItem);
+
+  let header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: items?.getTokenResponse,
+  };
+  try {
+
+    let response = yield call(getApi, 'leave_status', header);
+
+    if (response?.data?.meta?.code == 200) {
+      yield put(leaveLogSuccess(response?.data?.data));
+    } else {
+      yield put(leaveLogFailure(response?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    }
+  } catch (error) {
+    console.log("error>>>>>>>>>>", error);
+
+    yield put(leaveLogFailure(error?.response?.data));
+    if (error?.response?.data?.meta?.message == "Token is invalid or expired") {
+      yield call(AsyncStorage.removeItem, constants.TOKEN);
+      yield put(getTokenSuccess(null));
+      yield put(logoutSuccess());
+    }
+  }
+}
+export function* cancelLeaveSaga(action) {
+  let items = yield select(getItem);
+
+  try {
+    let Header = {
+      Accept: 'application/json',
+      contenttype: 'application/json',
+      accesstoken: items?.getTokenResponse,
+    };
+
+    const response = yield call(postApiWithParam, `leave_cancel_emp`,action.payload, Header);
+    console.log('response>>>>>>>>>>>', response);
+
+    if (response?.data?.meta?.code == 200) {
+      yield put(leaveCancelSuccess(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    } else {
+      yield put(leaveCancelFailure(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    }
+  } catch (error) {
+    yield put(leaveCancelFailure(error));
+    // showErrorAlert(error?.response?.data?.meta?.message);
+  }
+}
+
 const watchFunction = [
   (function* () {
     yield takeLatest('Profile/userDetailsRequest', userDetailsSaga);
@@ -367,6 +450,24 @@ const watchFunction = [
     yield takeLatest(
       'Profile/municipalityOfficeListRequest',
       municipalityOfficeListSaga,
+    );
+  })(),
+  (function* () {
+    yield takeLatest(
+      'Profile/leaveLogRequest',
+      leaveLogSaga,
+    );
+  })(),
+  (function* () {
+    yield takeLatest(
+      'Profile/leaveCancelRequest',
+      cancelLeaveSaga,
+    );
+  })(),
+  (function* () {
+    yield takeLatest(
+      'Profile/leaveTypeRequest',
+      leaveTypeListSaga,
     );
   })(),
 ];

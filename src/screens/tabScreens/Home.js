@@ -230,7 +230,7 @@ const Home = props => {
         </View>
 
         {/* Map Section */}
-        <View style={styles.mapSection}>
+        {/* <View style={styles.mapSection}>
           <View style={styles.mapContainer}>
             {location?.latitude && location?.longitude ? (
               <MapView
@@ -260,7 +260,7 @@ const Home = props => {
               </Text>
             )}
           </View>
-        </View>
+        </View> */}
 
         {/* Clock In/Out Button */}
         {ProfileReducer?.userDetailsResponse?.attendance_status_text !=

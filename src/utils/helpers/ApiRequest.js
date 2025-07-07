@@ -41,3 +41,24 @@ export async function postApi(url, payload, header) {
     },
   });
 }
+
+
+export async function postApiWithParam(url, payload, header) {
+  // If payload is a number or string (like an ID), append it to the URL
+  let apiUrl = `${constants.BASE_URL}/${url}`;
+  let requestPayload = payload;
+  
+  // Check if payload is a primitive value (number/string) that should be part of URL
+  if (typeof payload === 'number' || typeof payload === 'string') {
+    apiUrl = `${constants.BASE_URL}/${url}/${payload}`;
+    requestPayload = {}; // Empty payload for URL-based requests
+  }
+  console.log('postApiWithParam: ', apiUrl, requestPayload);
+  return await axios.post(apiUrl, requestPayload, {
+    headers: {
+      Accept: header.Accept,
+      'Content-Type': header.contenttype,
+      'Authorization': header.accesstoken,
+    },
+  });
+}

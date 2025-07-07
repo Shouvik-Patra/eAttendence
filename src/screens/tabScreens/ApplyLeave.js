@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import moment from 'moment';
 import Header from '../../components/Header';
 import { Colors, Fonts, Images } from '../../themes/ThemePath';
@@ -19,25 +19,29 @@ import normalize from '../../utils/helpers/normalize';
 import Modal from 'react-native-modal';
 import connectionrequest from '../../utils/helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
-import { applyLeaveRequest } from '../../redux/reducer/ProfileReducer';
+import { applyLeaveRequest, leaveTypeRequest } from '../../redux/reducer/ProfileReducer';
 import Loader from '../../utils/helpers/Loader';
 import { Dropdown } from 'react-native-element-dropdown';
+import { useIsFocused } from '@react-navigation/native';
 let status = '';
 const ApplyLeave = () => {
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
+  const isFocused = useIsFocused();
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [leaveType, setLeaveType] = useState([]);
   const [selectedLeaveType, setSelectedLeaveType] = useState(null);
   const [isFocusTask, setIsFocusTask] = useState(false);
 
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isHolidayVisible, setIsHolidayVisible] = useState(false);
-  const [loading, setLoading] = useState(false);
+  console.log("Reason>>>>>>>>>>>>>>", typeof (reason));
+
 
   const holidays = [
     {
@@ -88,7 +92,18 @@ const ApplyLeave = () => {
       type: 'Religious',
     },
   ];
-
+  useEffect(() => {
+    if (isFocused) {
+      connectionrequest()
+        .then(() => {
+          dispatch(leaveTypeRequest());
+        })
+        .catch(err => {
+          console.log(err);
+          showErrorAlert('Please connect to internet');
+        });
+    }
+  }, [isFocused]);
   const renderHeader = () => (
     <View style={styles.headerContainer}>
       <View style={styles.headerRow}>
@@ -164,59 +179,84 @@ const ApplyLeave = () => {
   const handleEndDateCancel = () => {
     setShowEndDatePicker(false);
   };
+
   function handleSubmit() {
-    if (selectedLeaveType ==null) {
-        showErrorAlert('Please Select leave Type.')
-    }else if(setReason == ''){
-        showErrorAlert('Please describe leave reason.')
+    // Check if start date is today
+    const today = new Date();
+    const isStartDateToday = startDate.toDateString() === today.toDateString();
 
+    // Validation checks
+    if (isStartDateToday && ProfileReducer?.userDetailsResponse?.is_attendance_given == 1) {
+      showErrorAlert('You are not allowed to apply for leave as you already clock in today')
     }
-    const obj = {
-      start_date: formatDate(startDate),
-      end_date: formatDate(endDate),
-      reason: reason,
-    };
-    // const formData = new FormData();
-
-    // formData.append('start_date', formatDate(startDate));
-
-    // formData.append('end_date', formatDate(endDate));
-
-    // formData.append('reason', reason);
-
-    connectionrequest()
-      .then(() => {
-        console.log('applyLeaveRequest:obj>>>>>>>', obj);
-
-        dispatch(applyLeaveRequest(obj));
-      })
-      .catch(err => {
-        console.log(err);
-        showErrorAlert('Please connect to internet');
-      });
+    else if (selectedLeaveType == null) {
+      showErrorAlert('Please Select leave Type.')
+    } else if (reason == '') {
+      showErrorAlert('Please describe reason for leave.')
+    } else {
+      const obj = {
+        start_date: formatDate(startDate),
+        end_date: formatDate(endDate),
+        leave_gov_type: selectedLeaveType,
+        reason: reason,
+      };
+      connectionrequest()
+        .then(() => {
+          console.log('applyLeaveRequest:obj>>>>>>>', obj);
+          dispatch(applyLeaveRequest(obj));
+        })
+        .catch(err => {
+          console.log(err);
+          showErrorAlert('Please connect to internet');
+        });
+    }
   }
+
+
+  useEffect(() => {
+    if (ProfileReducer?.leaveTypeResponse?.length > 0) {
+      setLeaveType(ProfileReducer?.leaveTypeResponse);
+    }
+  }, [ProfileReducer?.leaveTypeResponse]);
 
   if (status == '' || ProfileReducer.status != status) {
     switch (ProfileReducer.status) {
       case 'Profile/applyLeaveRequest':
         status = ProfileReducer.status;
-        setLoading(true);
         break;
       case 'Profile/applyLeaveSuccess':
         status = ProfileReducer.status;
-        setLoading(false);
+        setStartDate(new Date());
+        setEndDate(new Date());
+        setSelectedLeaveType(null);
+        setReason('');
 
         break;
       case 'Profile/applyLeaveFailure':
         status = ProfileReducer.status;
-        setLoading(false);
-
+        break;
+      case 'Profile/leaveTypeRequest':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/leaveTypeSuccess':
+        status = ProfileReducer.status;
+        setLeaveType(ProfileReducer?.leaveTypeResponse);
+        break;
+      case 'Profile/leaveTypeFailure':
+        status = ProfileReducer.status;
         break;
     }
   }
   return (
     <>
-      <Loader visible={loading} />
+      <Loader
+        visible={
+          ProfileReducer?.status ==
+          'Profile/leaveTypeRequest' ||
+          ProfileReducer?.status ==
+          'Profile/applyLeaveRequest'
+        }
+      />
       <ScrollView
         style={styles.container}
         showsVerticalScrollIndicator={false}
@@ -282,12 +322,7 @@ const ApplyLeave = () => {
             iconStyle={styles.iconStyle}
             containerStyle={styles.dropdownListContainer}
             itemTextStyle={styles.dropdownItemText}
-            data={[
-              { id: 'CL', name: 'CL' },
-              { id: 'EL', name: 'EL' },
-              { id: 'RH', name: 'RH' },
-              { id: 'ML', name: 'ML' },
-            ]}
+            data={leaveType}
             maxHeight={300}
             labelField="name"
             valueField="id"
@@ -297,7 +332,7 @@ const ApplyLeave = () => {
             onFocus={() => setIsFocusTask(true)}
             onBlur={() => setIsFocusTask(false)}
             onChange={item => {
-              setSelectedLeaveType(item.id); // or item.name, depending on use
+              setSelectedLeaveType(item.name); // or item.name, depending on use
               setIsFocusTask(false);
             }}
             renderLeftIcon={() => <Text style={styles.icon}>🗓️</Text>}
@@ -445,8 +480,8 @@ export default ApplyLeave;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-
     width: '100%',
+    backgroundColor: Colors.bgColor
   },
   modalContainer: {
     height: normalize(550),

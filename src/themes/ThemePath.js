@@ -70,6 +70,7 @@ export const Colors = {
   backgroundWhite: 'rgb(244,244,244)',
   lightBlue: 'rgb(232,247,253)',
   grey: '#7D7C8A',
+  bgColor: '#34495e',
 };
 
 export const Fonts = {

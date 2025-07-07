@@ -8,7 +8,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import moment from 'moment';
 import Header from '../../components/Header';
 import { Colors, Fonts, Images } from '../../themes/ThemePath';
@@ -19,56 +19,31 @@ import normalize from '../../utils/helpers/normalize';
 import Modal from 'react-native-modal';
 import connectionrequest from '../../utils/helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
-import { applyLeaveRequest } from '../../redux/reducer/ProfileReducer';
+import { applyLeaveRequest, leaveCancelRequest, leaveLogRequest } from '../../redux/reducer/ProfileReducer';
 import Loader from '../../utils/helpers/Loader';
+import { useIsFocused } from '@react-navigation/native';
 let status = '';
 const Leavelog = () => {
-    const [startDate, setStartDate] = useState(new Date());
-    const [endDate, setEndDate] = useState(new Date());
-    const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-    const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-    const [leaveType, setLeaveType] = useState('full'); // 'full' or 'half'
-    const [reason, setReason] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isHolidayVisible, setIsHolidayVisible] = useState(false);
-    const [loading, setLoading] = useState(false);
     const dispatch = useDispatch();
-    const AuthReducer = useSelector(state => state.AuthReducer);
     const ProfileReducer = useSelector(state => state.ProfileReducer);
-    const LeavelogList = [
-        {
-            id: '1',
-            name: 'Republic Day',
-            from_date: '04-07-2025',
-            to_date: '06-07-2025',
-            leave_status: 'Approved',
-            applied_on: '02-07-2025',
-        },
-        {
-            id: '1',
-            name: 'Republic Day',
-            from_date: '06-07-2025',
-            to_date: '07-07-2025',
-            leave_status: 'Cancel',
-            applied_on: '02-07-2025',
-        },
-        {
-            id: '1',
-            name: 'Republic Day',
-            from_date: '06-07-2025',
-            to_date: '07-07-2025',
-            leave_status: 'Pending',
-            applied_on: '02-07-2025',
-        },
+    const isFocused = useIsFocused();
+    const [loading, setLoading] = useState(false);
+    const [LeavelogList, setLeavelogList] = useState([]);
+    const formatDate = date => {
+        return moment(date).format('YYYY-MM-DD');
+    };
 
-    ];
+    function handleCancel(id) {
 
-    const renderHeader = () => (
-        <View style={{ width: '100%' }}>
-
-        </View>
-    );
-
+        connectionrequest()
+            .then(() => {
+                dispatch(leaveCancelRequest(id));
+            })
+            .catch(err => {
+                console.log(err);
+                showErrorAlert('Please connect to internet');
+            });
+    }
     const renderLeavelog = ({ item, index }) => (
         <View style={styles.itemContainer}>
             <View style={styles.row1}>
@@ -78,106 +53,141 @@ const Leavelog = () => {
                         styles.lebelValue,
                         {
                             color:
-                                item?.leave_status === 'Pending'
+                                item?.status === 'pending'
                                     ? Colors.orange
-                                    : item?.leave_status === 'Cancel'
+                                    : item?.status === 'cancel'
                                         ? Colors.red
                                         : Colors.green,
                             fontFamily: Fonts.MulishBold,
+                            textTransform: 'capitalize'
                         },
                     ]}>
-                    {item?.leave_status}
+                    {item?.status}
                 </Text>
             </View>
             <View style={styles.row1}>
+                <Text style={styles.lebel}>Leave Type : </Text>
+                <Text style={styles.lebelValue}>{item?.leave_gov_type}</Text>
+            </View>
+            <View style={styles.row1}>
                 <Text style={styles.lebel}>From : </Text>
-                <Text style={styles.lebelValue}>{item?.from_date}</Text>
+                <Text style={styles.lebelValue}>{formatDate(item?.start_date)}</Text>
             </View>
             <View style={styles.row1}>
                 <Text style={styles.lebel}>To : </Text>
-                <Text style={styles.lebelValue}>{item?.to_date}</Text>
+                <Text style={styles.lebelValue}>{formatDate(item?.end_date)}</Text>
             </View>
             <View style={styles.row1}>
                 <Text style={styles.lebel}>Applyed on : </Text>
-                <Text style={styles.lebelValue}>{item?.applied_on}</Text>
+                <Text style={styles.lebelValue}>{formatDate(item?.applied_at)}</Text>
             </View>
-            { item?.leave_status === 'Pending' &&<TouchableOpacity style={{ backgroundColor: Colors.red, position: 'absolute', right: 20, bottom: 20, borderRadius: normalize(8) }}>
+            <View style={[styles.row1, { width: '75%', alignItems: 'baseline' }]}>
+                <Text style={styles.lebel}>Reason : </Text>
+                <Text style={styles.lebelValue}>{item?.reason}</Text>
+            </View>
+            {item?.status === 'pending' && <TouchableOpacity
+                onPress={() => {
+                    Alert.alert('Are you sure', 'You want to cancel ?', [
+                        {
+                            text: 'Cancel',
+                            onPress: () => console.log('Cancel Pressed'),
+                            style: 'cancel',
+                        },
+                        {
+                            text: 'OK', onPress: () => {
+                                handleCancel(item?.id)
+                            }
+                        },
+                    ]);
+
+                }}
+                style={{ backgroundColor: Colors.red, position: 'absolute', right: 20, top: 15, borderRadius: normalize(8) }}>
                 <Text style={[styles.lebelValue, { color: Colors.white, paddingHorizontal: 30, paddingVertical: 10 }]}>Cancel</Text>
             </TouchableOpacity>}
         </View>
     );
 
+    useEffect(() => {
+        if (isFocused) {
+            connectionrequest()
+                .then(() => {
+                    dispatch(leaveLogRequest());
+                })
+                .catch(err => {
+                    console.log(err);
+                    showErrorAlert('Please connect to internet');
+                });
+        }
+    }, [isFocused]);
 
 
-    const formatDate = date => {
-        return moment(date).format('YYYY-MM-DD');
-    };
-
-
-    function handleSubmit() {
-        const obj = {
-            start_date: formatDate(startDate),
-            end_date: formatDate(endDate),
-            reason: reason,
-        };
-        // const formData = new FormData();
-
-        // formData.append('start_date', formatDate(startDate));
-
-        // formData.append('end_date', formatDate(endDate));
-
-        // formData.append('reason', reason);
-
-        connectionrequest()
-            .then(() => {
-                console.log('applyLeaveRequest:obj>>>>>>>', obj);
-
-                dispatch(applyLeaveRequest(obj));
-            })
-            .catch(err => {
-                console.log(err);
-                showErrorAlert('Please connect to internet');
-            });
-    }
+    useEffect(() => {
+        if (ProfileReducer?.leaveLogResponse?.length > 0) {
+            setLeavelogList(ProfileReducer?.leaveLogResponse);
+        }
+    }, [ProfileReducer?.leaveLogResponse]);
 
     if (status == '' || ProfileReducer.status != status) {
         switch (ProfileReducer.status) {
-            case 'Profile/applyLeaveRequest':
+            case 'Profile/leaveLogRequest':
                 status = ProfileReducer.status;
-                setLoading(true);
                 break;
-            case 'Profile/applyLeaveSuccess':
+            case 'Profile/leaveLogSuccess':
                 status = ProfileReducer.status;
-                setLoading(false);
-
                 break;
-            case 'Profile/applyLeaveFailure':
+            case 'Profile/leaveLogFailure':
                 status = ProfileReducer.status;
-                setLoading(false);
-
+                break;
+            case 'Profile/leaveCancelRequest':
+                status = ProfileReducer.status;
+                break;
+            case 'Profile/leaveCancelSuccess':
+                status = ProfileReducer.status;
+                connectionrequest()
+                    .then(() => {
+                        dispatch(leaveLogRequest());
+                    })
+                    .catch(err => {
+                        console.log(err);
+                        showErrorAlert('Please connect to internet');
+                    });
+                break;
+            case 'Profile/leaveCancelFailure':
+                status = ProfileReducer.status;
                 break;
         }
     }
     return (
-        <>
-            <Loader visible={loading} />
+        <View style={styles.container}>
+            <Loader
+                visible={
+                    ProfileReducer?.status ==
+                    'Profile/leaveCancelRequest' ||
+                    ProfileReducer?.status ==
+                    'Profile/leaveLogRequest'
+                }
+            />
             <FlatList
                 data={LeavelogList}
                 keyExtractor={item => item.id}
                 renderItem={renderLeavelog}
-                ListHeaderComponent={renderHeader}
                 style={styles.flatList}
                 showsVerticalScrollIndicator={false}
             />
 
 
-        </>
+        </View>
     );
 };
 
 export default Leavelog;
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        width: '100%',
+        backgroundColor: Colors.bgColor
+    },
     flatList: {
         flex: 1,
         width: '100%',

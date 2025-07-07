@@ -28,12 +28,13 @@ const Signin = props => {
   const AuthReducer = useSelector(state => state.AuthReducer);
   console.log('login>>', AuthReducer);
 
-  const [phone, setPhone] = useState('');//9641132495//basirhat@aswass.in
+  const [phone, setPhone] = useState('9609947429');//9641132495//basirhat@aswass.in
   const [secure1, setSecure1] = useState(true);
-  const [password, setPassword] = useState('');//12345
+  const [password, setPassword] = useState('12345');//12345
   const [keyboardShown, setKeyboardShown] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+console.log("loading>>>>>>",loading);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -74,6 +75,7 @@ const Signin = props => {
         })
         .catch(err => {
           showErrorAlert('Please connect to internet');
+          set
         });
     }
   };
@@ -99,7 +101,13 @@ const Signin = props => {
       resizeMode="cover"
       style={styles.onbordingStyle}
     >
-      <Loader visible={loading} />
+
+       <Loader
+            visible={
+              AuthReducer?.status ==
+              'Auth/signInRequest' 
+            }
+          />
       <SafeAreaView style={{ flex: 1, width: '100%' }}>
         <View style={{ width: '100%', paddingHorizontal: normalize(10) }}>
           <View style={styles.headerContain}>

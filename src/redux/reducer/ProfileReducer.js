@@ -15,6 +15,9 @@ const initialState = {
   municipalityRegisterResponse: {},
   municipalityRegisterListResponse: {},
   municipalityOfficeListResponse: {},
+  leaveLogResponse: {},
+  leaveCancelResponse: {},
+  leaveTypeResponse: {},
 };
 
 const ProfileSlice = createSlice({
@@ -150,6 +153,41 @@ const ProfileSlice = createSlice({
       state.error = action.error;
       state.status = action.type;
     },
+
+    leaveLogRequest(state, action) {
+      state.status = action.type;
+    },
+    leaveLogSuccess(state, action) {
+      state.leaveLogResponse = action.payload;
+      state.status = action.type;
+    },
+    leaveLogFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
+
+    leaveCancelRequest(state, action) {
+      state.status = action.type;
+    },
+    leaveCancelSuccess(state, action) {
+      state.leaveCancelResponse = action.payload;
+      state.status = action.type;
+    },
+    leaveCancelFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
+    leaveTypeRequest(state, action) {
+      state.status = action.type;
+    },
+    leaveTypeSuccess(state, action) {
+      state.leaveTypeResponse = action.payload;
+      state.status = action.type;
+    },
+    leaveTypeFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
   },
 });
 
@@ -197,6 +235,19 @@ export const {
   municipalityOfficeListRequest,
   municipalityOfficeListSuccess,
   municipalityOfficeListFailure,
+
+  leaveLogRequest,
+  leaveLogSuccess,
+  leaveLogFailure,
+
+  leaveCancelRequest,
+  leaveCancelSuccess,
+  leaveCancelFailure,
+
+  leaveTypeRequest,
+  leaveTypeSuccess,
+  leaveTypeFailure,
+
 } = ProfileSlice.actions;
 
 export default ProfileSlice.reducer;
