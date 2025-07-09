@@ -5,6 +5,7 @@ const initialState = {
   isLoading: true,
   error: {},
   userDetailsResponse: {},
+  attendenceStatusResponse: {},
   clockinResponse: {},
   clockoutResponse: {},
   profileUpdateResponse: {},
@@ -18,6 +19,9 @@ const initialState = {
   leaveLogResponse: {},
   leaveCancelResponse: {},
   leaveTypeResponse: {},
+  taskLocationResponse: {},
+  startTaskResponse: {},
+  endTaskResponse: {},
 };
 
 const ProfileSlice = createSlice({
@@ -32,6 +36,17 @@ const ProfileSlice = createSlice({
       state.status = action.type;
     },
     userDetailsFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
+    attendenceStatusRequest(state, action) {
+      state.status = action.type;
+    },
+    attendenceStatusSuccess(state, action) {
+      state.attendenceStatusResponse = action.payload;
+      state.status = action.type;
+    },
+    attendenceStatusFailure(state, action) {
       state.error = action.error;
       state.status = action.type;
     },
@@ -188,6 +203,43 @@ const ProfileSlice = createSlice({
       state.error = action.error;
       state.status = action.type;
     },
+
+    taskLocationRequest(state, action) {
+      state.status = action.type;
+    },
+    taskLocationSuccess(state, action) {
+      state.taskLocationResponse = action.payload;
+      state.status = action.type;
+    },
+    taskLocationFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
+
+    startTaskRequest(state, action) {
+      state.status = action.type;
+    },
+    startTaskSuccess(state, action) {
+      state.startTaskResponse = action.payload;
+      state.status = action.type;
+    },
+    startTaskFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
+
+
+    endTaskRequest(state, action) {
+      state.status = action.type;
+    },
+    endTaskSuccess(state, action) {
+      state.endTaskResponse = action.payload;
+      state.status = action.type;
+    },
+    endTaskFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
   },
 });
 
@@ -195,6 +247,10 @@ export const {
   userDetailsRequest,
   userDetailsSuccess,
   userDetailsFailure,
+
+  attendenceStatusRequest,
+  attendenceStatusSuccess,
+  attendenceStatusFailure,
 
   clockinRequest,
   clockinSuccess,
@@ -248,6 +304,17 @@ export const {
   leaveTypeSuccess,
   leaveTypeFailure,
 
+  taskLocationRequest,
+  taskLocationSuccess,
+  taskLocationFailure,
+
+  startTaskRequest,
+  startTaskSuccess,
+  startTaskFailure,
+
+  endTaskRequest,
+  endTaskSuccess,
+  endTaskFailure,
 } = ProfileSlice.actions;
 
 export default ProfileSlice.reducer;

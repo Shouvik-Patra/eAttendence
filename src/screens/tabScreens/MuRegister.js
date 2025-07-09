@@ -259,7 +259,7 @@ const ActiveTask = props => {
         resizeMode="contain"
         style={{ height: 50, width: 50 }}
         source={
-          ProfileReducer?.userDetailsResponse?.attendance_status_text ==
+          ProfileReducer?.attendenceStatusResponse?.attendance_status_text ==
           'Clocked In'
             ? Images.addTask
             : Images.lock

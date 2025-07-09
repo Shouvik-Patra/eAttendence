@@ -48,7 +48,9 @@ const Attendence = props => {
   const latitude = props?.route.params?.latitude;
   const longitude = props?.route.params?.longitude;
   const task_id = props?.route.params?.task_id;
+  const location_id = props?.route.params?.location_id;
   const office_id = props?.route.params?.office_id;
+  const isInsideOffice = props?.route?.params?.isInsideOffice;
 
   // UI state
   const [loading, setLoading] = useState(false);
@@ -136,7 +138,7 @@ const Attendence = props => {
     formData.append('check_in_latitude', latitude);
     formData.append('check_in_longitude', longitude);
     formData.append('check_in_address', locationData?.address);
-    formData.append('remarks', 'Checked in successfully');
+    formData.append('remarks', isInsideOffice);
     formData.append('check_in_photo', {
       uri:
         Platform.OS === 'android'
@@ -182,43 +184,39 @@ const Attendence = props => {
       });
   }
 
-  function onAddNewTask(capturedimage) {
-    const imageName = capturedimage.split('/').pop();
-    const imageType = 'image/jpeg';
-    const formData = new FormData();
+  // function onAddNewTask(capturedimage) {
+  //   const imageName = capturedimage.split('/').pop();
+  //   const imageType = 'image/jpeg';
+  //   const formData = new FormData();
 
-    formData.append('task_id', task_id);
+  //   formData.append('task_id', task_id);
+  //   formData.append('location_id', location_id);
+  //   formData.append('date', moment(new Date()).format('YYYY-MM-DD'));
+  //   formData.append('time', moment().format('HH:mm:ss'));
+  //   formData.append('latitude', latitude);
+  //   formData.append('longitude', longitude);
+  //   formData.append('address', locationData?.address);
+  //   formData.append('photo', {
+  //     uri:
+  //       Platform.OS === 'android'
+  //         ? capturedimage
+  //         : capturedimage.replace('file://', ''),
+  //     name: imageName,
+  //     type: imageType,
+  //   });
+  //   console.log('7777');
 
-    formData.append('date', moment(new Date()).format('YYYY-MM-DD'));
+  //   connectionrequest()
+  //     .then(() => {
+  //       console.log('formdata>>>>>>>', formData);
 
-    formData.append('time', moment().format('HH:mm:ss'));
-
-    formData.append('latitude', latitude);
-
-    formData.append('longitude', longitude);
-
-    formData.append('address', locationData?.address);
-    formData.append('photo', {
-      uri:
-        Platform.OS === 'android'
-          ? capturedimage
-          : capturedimage.replace('file://', ''),
-      name: imageName,
-      type: imageType,
-    });
-    console.log('7777');
-
-    connectionrequest()
-      .then(() => {
-        console.log('formdata>>>>>>>', formData);
-
-        dispatch(addTaskRequest(formData));
-      })
-      .catch(err => {
-        console.log(err);
-        showErrorAlert('Please connect to internet');
-      });
-  }
+  //       dispatch(addTaskRequest(formData));
+  //     })
+  //     .catch(err => {
+  //       console.log(err);
+  //       showErrorAlert('Please connect to internet');
+  //     });
+  // }
   function onMuRegister(capturedimage) {
     const imageName = capturedimage.split('/').pop();
     const imageType = 'image/jpeg';

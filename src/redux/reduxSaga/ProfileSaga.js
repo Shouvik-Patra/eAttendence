@@ -31,6 +31,14 @@ import {
   leaveCancelFailure,
   leaveTypeSuccess,
   leaveTypeFailure,
+  taskLocationSuccess,
+  taskLocationFailure,
+  attendenceStatusFailure,
+  attendenceStatusSuccess,
+  startTaskSuccess,
+  startTaskFailure,
+  endTaskSuccess,
+  endTaskFailure,
 } from '../reducer/ProfileReducer';
 import showErrorAlert from '../../utils/helpers/Toast';
 import { getTokenSuccess, logoutRequest, logoutSuccess } from '../reducer/AuthReducer';
@@ -50,7 +58,7 @@ export function* userDetailsSaga(action) {
   try {
     console.log("User Details::header>>", header);
 
-    let response = yield call(getApi, 'user_profile_info', header);
+    let response = yield call(getApi, 'user_profile_info_emp', header);
     console.log("User Details::response>>", response);
 
     if (response?.data?.meta?.code == 200) {
@@ -63,6 +71,31 @@ export function* userDetailsSaga(action) {
     console.log("error>>>>>>>>>>", error);
 
     yield put(userDetailsFailure(error?.response?.data));
+    if (error?.response?.data?.meta?.message == "Token is invalid or expired") {
+      yield call(AsyncStorage.removeItem, constants.TOKEN);
+      yield put(getTokenSuccess(null));
+      yield put(logoutSuccess());
+    }
+  }
+}
+export function* attendenceStatusSaga(action) {
+  let items = yield select(getItem);
+
+  let header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: items?.getTokenResponse,
+  };
+  try {
+    let response = yield call(getApi, 'user_attendance_status', header);
+    if (response?.data?.meta?.code == 200) {
+      yield put(attendenceStatusSuccess(response?.data?.data));
+    } else {
+      yield put(attendenceStatusFailure(response?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    }
+  } catch (error) {
+    yield put(attendenceStatusFailure(error?.response?.data));
     if (error?.response?.data?.meta?.message == "Token is invalid or expired") {
       yield call(AsyncStorage.removeItem, constants.TOKEN);
       yield put(getTokenSuccess(null));
@@ -90,7 +123,7 @@ export function* clockinSaga(action) {
       showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
-    yield put(clockinFailure(error));
+    yield put(clockinFailure(error?.response?.data));
     // showErrorAlert(error?.response?.data?.meta?.message);
   }
 }
@@ -120,7 +153,7 @@ export function* clockoutSaga(action) {
   } catch (error) {
     console.log('helooo>>>', error);
 
-    yield put(clockoutFailure(error));
+    yield put(clockoutFailure(error?.response?.data));
     // showErrorAlert(error?.response?.data?.meta?.message);
   }
 }
@@ -153,7 +186,7 @@ export function* profileupdateSaga(action) {
   } catch (error) {
     console.log('helooo>>>', error);
 
-    yield put(profileUpdateFailure(error));
+    yield put(profileUpdateFailure(error?.response?.data));
     // showErrorAlert(error?.response?.data?.meta?.message);
   }
 }
@@ -175,7 +208,7 @@ export function* taskListSaga(action) {
       showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
-    yield put(taskListFailure(error));
+    yield put(taskListFailure(error?.response?.data));
   }
 }
 export function* complitedTaskListSaga(action) {
@@ -196,7 +229,7 @@ export function* complitedTaskListSaga(action) {
       showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
-    yield put(complitedTaskListFailure(error));
+    yield put(complitedTaskListFailure(error?.response?.data));
   }
 }
 export function* addTaskSaga(action) {
@@ -227,7 +260,7 @@ export function* addTaskSaga(action) {
   } catch (error) {
     console.log('helooo>>>', error);
 
-    yield put(addTaskFailure(error));
+    yield put(addTaskFailure(error?.response?.data));
     // showErrorAlert(error?.response?.data?.meta?.message);
   }
 }
@@ -252,7 +285,7 @@ export function* applyleaveSaga(action) {
       showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
-    yield put(applyLeaveFailure(error));
+    yield put(applyLeaveFailure(error?.response?.data));
     // showErrorAlert(error?.response?.data?.meta?.message);
   }
 }
@@ -284,7 +317,7 @@ export function* municipalityRegisterSaga(action) {
   } catch (error) {
     console.log('helooo>>>', error);
 
-    yield put(municipalityRegisterFailure(error));
+    yield put(municipalityRegisterFailure(error?.response?.data));
     // showErrorAlert(error?.response?.data?.meta?.message);
   }
 }
@@ -307,7 +340,7 @@ export function* municipalityRegisterListSaga(action) {
       showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
-    yield put(municipalityRegisterListFailure(error));
+    yield put(municipalityRegisterListFailure(error?.response?.data));
   }
 }
 
@@ -329,7 +362,7 @@ export function* municipalityOfficeListSaga(action) {
       showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
-    yield put(municipalityOfficeListFailure(error));
+    yield put(municipalityOfficeListFailure(error?.response?.data));
   }
 }
 export function* leaveTypeListSaga(action) {
@@ -350,7 +383,7 @@ export function* leaveTypeListSaga(action) {
       showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
-    yield put(leaveTypeFailure(error));
+    yield put(leaveTypeFailure(error?.response?.data));
   }
 }
 
@@ -404,14 +437,111 @@ export function* cancelLeaveSaga(action) {
       showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
-    yield put(leaveCancelFailure(error));
+    yield put(leaveCancelFailure(error?.response?.data));
+    // showErrorAlert(error?.response?.data?.meta?.message);
+  }
+}
+export function* taskLocationSaga(action) {
+  let items = yield select(getItem);
+
+  let header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: items?.getTokenResponse,
+  };
+  try {
+
+    let response = yield call(getApi, 'get-all-locations', header);
+
+    if (response?.data?.meta?.code == 200) {
+      yield put(taskLocationSuccess(response?.data?.data));
+    } else {
+      yield put(taskLocationFailure(response?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    }
+  } catch (error) {
+    console.log("error>>>>>>>>>>", error);
+
+    yield put(taskLocationFailure(error?.response?.data));
+    if (error?.response?.data?.meta?.message == "Token is invalid or expired") {
+      yield call(AsyncStorage.removeItem, constants.TOKEN);
+      yield put(getTokenSuccess(null));
+      yield put(logoutSuccess());
+    }
+  }
+}
+
+export function* startTaskSaga(action) {
+  let items = yield select(getItem);
+
+  try {
+    let Header = {
+      Accept: 'application/json',
+      contenttype: 'application/json',
+      accesstoken: items?.getTokenResponse,
+    };
+
+    const response = yield call(
+      postApi,
+      'start-task',
+      action.payload,
+      Header,
+    );
+    console.log('response>>>>>>>>>>>', response);
+
+    if (response?.data?.meta?.code == 200) {
+      yield put(startTaskSuccess(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    } else {
+      yield put(startTaskFailure(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    }
+  } catch (error) {
+    console.log('helooo>>>', error);
+
+    yield put(startTaskFailure(error?.response?.data));
     // showErrorAlert(error?.response?.data?.meta?.message);
   }
 }
 
+export function* endTaskSaga(action) {
+  let items = yield select(getItem);
+
+  try {
+    let Header = {
+      Accept: 'application/json',
+      contenttype: 'application/json',
+      accesstoken: items?.getTokenResponse,
+    };
+
+    const response = yield call(
+      postApi,
+      'end-task',
+      action.payload,
+      Header,
+    );
+    console.log('response>>>>>>>>>>>', response);
+
+    if (response?.data?.meta?.code == 200) {
+      yield put(endTaskSuccess(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    } else {
+      yield put(endTaskFailure(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    }
+  } catch (error) {
+    console.log('helooo>>>', error);
+
+    yield put(endTaskFailure(error?.response?.data));
+    // showErrorAlert(error?.response?.data?.meta?.message);
+  }
+}
 const watchFunction = [
   (function* () {
     yield takeLatest('Profile/userDetailsRequest', userDetailsSaga);
+  })(),
+  (function* () {
+    yield takeLatest('Profile/attendenceStatusRequest',attendenceStatusSaga);
   })(),
   (function* () {
     yield takeLatest('Profile/clockinRequest', clockinSaga);
@@ -468,6 +598,24 @@ const watchFunction = [
     yield takeLatest(
       'Profile/leaveTypeRequest',
       leaveTypeListSaga,
+    );
+  })(),
+  (function* () {
+    yield takeLatest(
+      'Profile/taskLocationRequest',
+      taskLocationSaga,
+    );
+  })(),
+  (function* () {
+    yield takeLatest(
+      'Profile/startTaskRequest',
+      startTaskSaga,
+    );
+  })(),
+  (function* () {
+    yield takeLatest(
+      'Profile/endTaskRequest',
+      endTaskSaga,
     );
   })(),
 ];

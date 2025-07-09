@@ -1,6 +1,7 @@
 import {
   Alert,
   Image,
+  ImageBackground,
   PermissionsAndroid,
   Platform,
   ScrollView,
@@ -9,19 +10,22 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Header from '../../components/Header';
 import { Colors, Fonts, Images } from '../../themes/ThemePath';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import showErrorAlert from '../../utils/helpers/Toast';
 import { Camera } from 'react-native-vision-camera';
 import normalize from '../../utils/helpers/normalize';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import moment from 'moment';
+import Modal from 'react-native-modal';
 import Geolocation from '@react-native-community/geolocation';
 import Loader from '../../utils/helpers/Loader';
 import connectionrequest from '../../utils/helpers/NetInfo';
-import { userDetailsRequest } from '../../redux/reducer/ProfileReducer';
+import {
+  attendenceStatusRequest,
+  userDetailsRequest,
+} from '../../redux/reducer/ProfileReducer';
 import { useDispatch, useSelector } from 'react-redux';
 import { useIsFocused } from '@react-navigation/native';
 import { LocationGeocoder } from '../../components/LocationGeocoder';
@@ -30,15 +34,17 @@ const Home = props => {
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
+
   const isFocused = useIsFocused();
+  const [addTaskModal, setAddTaskModal] = useState(false);
   const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isInsideOffice, setIsInsideOffice] = useState('');
 
   const [location, setLocation] = useState({
     latitude: 22.5726,
     longitude: 88.3639,
   });
-  console.log('my location', location);
 
   const requestLocationPermission = async () => {
     if (Platform.OS === 'android') {
@@ -50,13 +56,13 @@ const Home = props => {
     return true;
   };
 
-  const getLocation = async () => {
+  const getLocation = async isInside => {
     setLoading(true);
     Geolocation.getCurrentPosition(
       position => {
         const { latitude, longitude } = position.coords;
         setLocation({ latitude, longitude });
-        handleClickPhoto(latitude, longitude);
+        handleClickPhoto(latitude, longitude, isInside);
       },
       error => {
         setLoading(false);
@@ -81,7 +87,6 @@ const Home = props => {
     );
   };
 
-
   // Listen for the returned image from Attendance page
   useEffect(() => {
     if (props?.route?.params?.finalImageUri) {
@@ -94,17 +99,22 @@ const Home = props => {
     }
   }, [props?.route?.params?.finalImageUri]);
   useEffect(() => {
-    getCurrentLocation();
-    connectionrequest()
-      .then(() => {
-        dispatch(userDetailsRequest());
-      })
-      .catch(err => {
-        console.log(err);
-        showErrorAlert('Please connect to internet');
-      });
-  }, []);
-  const handleClickPhoto = async (lat, long) => {
+    if (isFocused) {
+      getCurrentLocation();
+      connectionrequest()
+        .then(() => {
+          dispatch(attendenceStatusRequest());
+          dispatch(userDetailsRequest());
+        })
+        .catch(err => {
+          console.log(err);
+          showErrorAlert('Please connect to internet');
+        });
+    } else {
+      setAddTaskModal(false);
+    }
+  }, [isFocused]);
+  const handleClickPhoto = async (lat, long, isInside) => {
     console.log('>>>', lat, long);
     const result = await LocationGeocoder(lat, long);
     const actualAddress = result?.address || 'Unknown Address';
@@ -114,8 +124,9 @@ const Home = props => {
       latitude: lat,
       longitude: long,
       pagename: 'Home',
+      isInsideOffice: isInside,
       status:
-        ProfileReducer?.userDetailsResponse?.is_attendance_given == 1
+        ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 1
           ? 'clockout'
           : 'clockin',
     });
@@ -137,9 +148,27 @@ const Home = props => {
         break;
       case 'Profile/clockinSuccess':
         status = ProfileReducer.status;
-        // setFormTypeData(ProfileReducer?.formListResponse?.data);
         break;
       case 'Profile/clockinSuccessFailure':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/userDetailsRequest':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/userDetailsSuccess':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/userDetailsFailure':
+        status = ProfileReducer.status;
+        break;
+
+      case 'Profile/attendenceStatusRequest':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/attendenceStatusSuccess':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/attendenceStatusFailure':
         status = ProfileReducer.status;
         break;
     }
@@ -157,7 +186,12 @@ const Home = props => {
           props.navigation.navigate('Notification');
         }}
       />
-      <Loader visible={loading} />
+      <Loader
+        visible={
+          ProfileReducer?.status == 'Profile/clockinRequest' ||
+          ProfileReducer?.status == 'Profile/userDetailsRequest'
+        }
+      />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
@@ -179,14 +213,15 @@ const Home = props => {
                   styles.redText,
                   {
                     color:
-                      ProfileReducer?.userDetailsResponse
+                      ProfileReducer?.attendenceStatusResponse
                         ?.is_attendance_given == 1
                         ? Colors.green
                         : Colors.red,
                   },
                 ]}
               >
-                {ProfileReducer?.userDetailsResponse?.is_attendance_given == 1
+                {ProfileReducer?.attendenceStatusResponse
+                  ?.is_attendance_given == 1
                   ? 'Clocked In'
                   : 'Pending...'}
               </Text>
@@ -263,30 +298,117 @@ const Home = props => {
         </View> */}
 
         {/* Clock In/Out Button */}
-        {ProfileReducer?.userDetailsResponse?.attendance_status_text !=
+        {ProfileReducer?.attendenceStatusResponse?.attendance_status_text !=
           'Clocked Out' && (
+          <TouchableOpacity
+            style={[
+              styles.clockButton,
+              {
+                backgroundColor:
+                  ProfileReducer?.attendenceStatusResponse
+                    ?.is_attendance_given == 1
+                    ? '#FFA500'
+                    : Colors.green,
+              },
+            ]}
+            onPress={() => {
+              setAddTaskModal(true);
+            }}
+          >
+            <Text style={styles.clockButtonText}>
+              {ProfileReducer?.attendenceStatusResponse?.is_attendance_given ==
+              1
+                ? 'Clock Out'
+                : 'Clock In'}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </ScrollView>
+      <Modal
+        animationIn={'slideInUp'}
+        animationOut={'slideOutDown'}
+        backdropTransitionOutTiming={0}
+        backdropOpacity={0.7}
+        hideModalContentWhileAnimating={true}
+        isVisible={addTaskModal}
+        animationInTiming={800}
+        animationOutTiming={1000}
+        onBackdropPress={() => setAddTaskModal(false)}
+      >
+        <ImageBackground
+          resizeMode="stretch"
+          source={Images.pageBackground}
+          style={styles.modalContainer}
+        >
+          <TouchableOpacity
+            style={styles.close}
+            onPress={() => {
+              setAddTaskModal(false);
+            }}
+          >
+            <Image
+              resizeMode="contain"
+              source={Images.close}
+              style={{ height: normalize(10), width: normalize(10) }}
+            />
+          </TouchableOpacity>
+          <ScrollView contentContainerStyle={{ paddingTop: 50 }}>
+            <Image
+              resizeMode="contain"
+              style={{
+                alignSelf: 'center',
+                height: normalize(100),
+                width: normalize(100),
+                marginTop: -50,
+              }}
+              source={Images.wb_logo}
+            />
+
+            <Text
+              style={{
+                textAlign: 'center',
+                fontFamily: Fonts.MulishExtraBold,
+                fontSize: 22,
+                color: Colors.white,
+                marginBottom: normalize(15),
+                marginTop: normalize(20),
+              }}
+            >
+              Select from where are you CLOCK IN
+            </Text>
+
             <TouchableOpacity
               style={[
                 styles.clockButton,
                 {
-                  backgroundColor:
-                    ProfileReducer?.userDetailsResponse?.is_attendance_given == 1
-                      ? '#FFA500'
-                      : Colors.green,
+                  backgroundColor: Colors.green,
                 },
               ]}
               onPress={() => {
-                getLocation();
+                getLocation('inside');
               }}
             >
-              <Text style={styles.clockButtonText}>
-                {ProfileReducer?.userDetailsResponse?.is_attendance_given == 1
-                  ? 'Clock Out'
-                  : 'Clock In'}
-              </Text>
+              <Text style={styles.clockButtonText}>Inside Office</Text>
             </TouchableOpacity>
-          )}
-      </ScrollView>
+            <TouchableOpacity
+              style={[
+                styles.clockButton,
+                {
+                  backgroundColor: Colors.orange,
+                },
+              ]}
+              onPress={() => {
+                props?.navigation?.navigate('ActiveTask', {
+                  currenLocation: 'outsideoffice',
+                });
+                // getLocation('outside');
+              }}
+            >
+              <Text style={styles.clockButtonText}>Outside Office</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </ImageBackground>
+      </Modal>
     </View>
   );
 };
@@ -401,5 +523,26 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '900',
     color: Colors.white,
+  },
+
+  close: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: Colors.white,
+    borderRadius: 50,
+    padding: 5,
+    height: normalize(20),
+    width: normalize(20),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    height: normalize(400),
+    justifyContent: 'center',
+    padding: normalize(20),
+    borderRadius: normalize(8),
+    overflow: 'hidden',
+    zIndex: 98,
   },
 });

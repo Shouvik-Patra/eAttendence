@@ -19,7 +19,10 @@ import normalize from '../../utils/helpers/normalize';
 import Modal from 'react-native-modal';
 import connectionrequest from '../../utils/helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
-import { applyLeaveRequest, leaveTypeRequest } from '../../redux/reducer/ProfileReducer';
+import {
+  applyLeaveRequest,
+  leaveTypeRequest,
+} from '../../redux/reducer/ProfileReducer';
 import Loader from '../../utils/helpers/Loader';
 import { Dropdown } from 'react-native-element-dropdown';
 import { useIsFocused } from '@react-navigation/native';
@@ -40,8 +43,7 @@ const ApplyLeave = () => {
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isHolidayVisible, setIsHolidayVisible] = useState(false);
-  console.log("Reason>>>>>>>>>>>>>>", typeof (reason));
-
+  console.log('Reason>>>>>>>>>>>>>>', typeof reason);
 
   const holidays = [
     {
@@ -186,13 +188,17 @@ const ApplyLeave = () => {
     const isStartDateToday = startDate.toDateString() === today.toDateString();
 
     // Validation checks
-    if (isStartDateToday && ProfileReducer?.userDetailsResponse?.is_attendance_given == 1) {
-      showErrorAlert('You are not allowed to apply for leave as you already clock in today')
-    }
-    else if (selectedLeaveType == null) {
-      showErrorAlert('Please Select leave Type.')
+    if (
+      isStartDateToday &&
+      ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 1
+    ) {
+      showErrorAlert(
+        'You are not allowed to apply for leave as you already clock in today',
+      );
+    } else if (selectedLeaveType == null) {
+      showErrorAlert('Please Select leave Type.');
     } else if (reason == '') {
-      showErrorAlert('Please describe reason for leave.')
+      showErrorAlert('Please describe reason for leave.');
     } else {
       const obj = {
         start_date: formatDate(startDate),
@@ -211,7 +217,6 @@ const ApplyLeave = () => {
         });
     }
   }
-
 
   useEffect(() => {
     if (ProfileReducer?.leaveTypeResponse?.length > 0) {
@@ -251,10 +256,8 @@ const ApplyLeave = () => {
     <>
       <Loader
         visible={
-          ProfileReducer?.status ==
-          'Profile/leaveTypeRequest' ||
-          ProfileReducer?.status ==
-          'Profile/applyLeaveRequest'
+          ProfileReducer?.status == 'Profile/leaveTypeRequest' ||
+          ProfileReducer?.status == 'Profile/applyLeaveRequest'
         }
       />
       <ScrollView
@@ -481,7 +484,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: '100%',
-    backgroundColor: Colors.bgColor
+    backgroundColor: Colors.bgColor,
   },
   modalContainer: {
     height: normalize(550),

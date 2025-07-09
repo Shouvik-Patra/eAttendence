@@ -28,9 +28,9 @@ const Signin = props => {
   const AuthReducer = useSelector(state => state.AuthReducer);
   console.log('login>>', AuthReducer);
 
-  const [phone, setPhone] = useState('9609947429');//9641132495//basirhat@aswass.in
+  const [phone, setPhone] = useState('8961700942');//9641132495//basirhat@aswass.in
   const [secure1, setSecure1] = useState(true);
-  const [password, setPassword] = useState('12345');//12345
+  const [password, setPassword] = useState('123456');//12345
   const [keyboardShown, setKeyboardShown] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -87,7 +87,7 @@ console.log("loading>>>>>>",loading);
       case 'Auth/signInSuccess':
         status = AuthReducer.status;
         setLoading(false);
-        props.navigation.navigate('BottomTabNav');
+        // props.navigation.navigate('BottomTabNav');
         break;
       case 'Auth/signInFailure':
         status = AuthReducer.status;
@@ -223,8 +223,8 @@ console.log("loading>>>>>>",loading);
               <Button
                 height={normalize(45)}
                 marginTop={normalize(25)}
-                borderRadius={normalize(10)}
-                backgroundColor={Colors.button}
+                width={'100%'}
+                backgroundColor={Colors.skyblue}
                 title={'Signin'}
                 fontSize={normalize(15)}
                 fontFamily={Fonts.MulishSemiBold}
