@@ -45,7 +45,9 @@ const ActiveTask = props => {
 
   const isFocused = useIsFocused();
   const [isClocked, setIsClocked] = useState(false);
-  const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(null);
+  const [taskId, setTaskId] = useState(null);
+  const [taskAction, setTaskAction] = useState(null);
+  const [endTaskModal, setEndTaskModal] = useState(false);
   const [addTaskModal, setAddTaskModal] = useState(false);
   const [TaskLocationList, setTaskLocation] = useState([]);
   const [TaskPurposeList, setTaskPurposeList] = useState([]);
@@ -60,17 +62,7 @@ const ActiveTask = props => {
   console.log('>>>>>', selectedTaskLocation, selectedTaskPurpose);
 
   const [location, setLocation] = useState({ latitude: null, longitude: null });
-
   currentLocation = props?.route?.params?.currenLocation;
-  // Listen for the returned image from Attendance page
-  useEffect(() => {
-    if (props?.route?.params?.finalImageUri) {
-      setCapturedImageWithGeotag(props.route.params.finalImageUri);
-      // Clear the parameter to avoid re-triggering
-      props?.navigation.setParams({ finalImageUri: undefined });
-    }
-  }, [props?.route?.params?.finalImageUri]);
-
   const handleTasklocationSelect = async item => {
     setSelectedTasklocatio(item);
     setIsFocusTask1(false);
@@ -79,6 +71,7 @@ const ActiveTask = props => {
     setSelectedTaskPurpose(item);
     setIsFocusTask2(false);
   };
+
   useEffect(() => {
     if (isFocused) {
       connectionrequest()
@@ -96,10 +89,12 @@ const ActiveTask = props => {
     }
   }, [isFocused]);
   const getLocation = async (taskid, buttonRes) => {
+    setEndTaskModal(false);
+    setAddTaskModal(false);
     Geolocation.getCurrentPosition(
       position => {
         const { latitude, longitude } = position.coords;
-        setLocation({ latitude, longitude });
+        // setLocation({ latitude, longitude });
         if (buttonRes == 'start') {
           onStartTask(latitude, longitude, taskid);
         } else if (buttonRes == 'end') {
@@ -310,7 +305,9 @@ const ActiveTask = props => {
               opacity={item?.status === 'approved' ? 0.5 : 1}
               disabled={item?.status === 'approved'}
               onPress={() => {
-                getLocation(item?.id, 'end');
+                setTaskId(item?.id);
+                setTaskAction('end');
+                setEndTaskModal(true);
               }}
             />
           </View>
@@ -683,6 +680,123 @@ const ActiveTask = props => {
           >
             <Text style={styles.clockButtonText}>Verify My Visit</Text>
           </TouchableOpacity>
+        </ImageBackground>
+      </Modal>
+
+      <Modal
+        animationIn={'slideInUp'}
+        animationOut={'slideOutDown'}
+        backdropTransitionOutTiming={0}
+        backdropOpacity={0.7}
+        hideModalContentWhileAnimating={true}
+        isVisible={endTaskModal}
+        animationInTiming={800}
+        animationOutTiming={1000}
+        onBackdropPress={() => setEndTaskModal(false)}
+      >
+        <ImageBackground
+          resizeMode="stretch"
+          source={Images.pageBackground}
+          style={styles.modalContainer}
+        >
+          <TouchableOpacity
+            style={styles.close}
+            onPress={() => {
+              setEndTaskModal(false);
+            }}
+          >
+            <Image
+              resizeMode="contain"
+              source={Images.close}
+              style={{ height: normalize(10), width: normalize(10) }}
+            />
+          </TouchableOpacity>
+          <ScrollView contentContainerStyle={{ paddingTop: 50 }}>
+            <Image
+              resizeMode="contain"
+              style={{
+                alignSelf: 'center',
+                height: normalize(100),
+                width: normalize(100),
+                marginTop: -50,
+              }}
+              source={Images.wb_logo}
+            />
+
+            <Text
+              style={{
+                textAlign: 'center',
+                fontFamily: Fonts.MulishExtraBold,
+                fontSize: 22,
+                color: Colors.white,
+                marginBottom: normalize(15),
+                marginTop: normalize(20),
+              }}
+            >
+              You are about to end thsi task. Now what...?
+            </Text>
+
+            <TouchableOpacity
+              style={[
+                styles.clockButton,
+                {
+                  backgroundColor: Colors.green,
+                },
+              ]}
+              onPress={() => {
+                setEndTaskModal(false);
+                getLocation(taskId, taskAction);
+
+                setTimeout(() => {
+                  setAddTaskModal(true);
+                }, 3000); // Adjust this delay if needed
+              }}
+            >
+              <Text style={styles.clockButtonText}>Proceed To Next</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.clockButton,
+                {
+                  backgroundColor: Colors.orange,
+                },
+              ]}
+              onPress={() => {
+            
+                getLocation(taskId, taskAction);
+              }}
+            >
+              <Text style={styles.clockButtonText}>End This Task</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.clockButton,
+                {
+                  backgroundColor: Colors.red,
+                },
+              ]}
+              // onPress={() => {
+              //   props?.navigation?.navigate('Home', {
+              //     currenLocation: 'ActiveTask',
+              //   });
+              //   setAddTaskModal(false);
+              // }}
+
+              onPress={() => {
+                setEndTaskModal(false);
+                setAddTaskModal(false);
+                getLocation(taskId, taskAction);
+
+                setTimeout(() => {
+                  props?.navigation?.navigate('Home', {
+                  currenLocation: 'ActiveTask',
+                });
+                }, 3000); // Adjust this delay if needed
+              }}
+            >
+              <Text style={styles.clockButtonText}>End Day</Text>
+            </TouchableOpacity>
+          </ScrollView>
         </ImageBackground>
       </Modal>
     </View>
