@@ -55,22 +55,6 @@ const Home = props => {
     }
     return true;
   };
-
-  const getLocation = async isInside => {
-    setLoading(true);
-    Geolocation.getCurrentPosition(
-      position => {
-        const { latitude, longitude } = position.coords;
-        setLocation({ latitude, longitude });
-        handleClickPhoto(latitude, longitude, isInside);
-      },
-      error => {
-        setLoading(false);
-        console.log('Error getting location', error);
-      },
-      { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 },
-    );
-  };
   const getCurrentLocation = async () => {
     // setLoading(true);
     Geolocation.getCurrentPosition(
@@ -86,6 +70,22 @@ const Home = props => {
       { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 },
     );
   };
+  const getLocation = async (isInside, attendenceStatus) => {
+    setLoading(true);
+    Geolocation.getCurrentPosition(
+      position => {
+        const { latitude, longitude } = position.coords;
+        setLocation({ latitude, longitude });
+        handleClickPhoto(latitude, longitude, isInside, attendenceStatus);
+      },
+      error => {
+        setLoading(false);
+        console.log('Error getting location', error);
+      },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 },
+    );
+  };
+
 
   // Listen for the returned image from Attendance page
   useEffect(() => {
@@ -114,7 +114,7 @@ const Home = props => {
       setAddTaskModal(false);
     }
   }, [isFocused]);
-  const handleClickPhoto = async (lat, long, isInside) => {
+  const handleClickPhoto = async (lat, long, isInside, attendenceStatus) => {
     console.log('>>>', lat, long);
     const result = await LocationGeocoder(lat, long);
     const actualAddress = result?.address || 'Unknown Address';
@@ -125,6 +125,7 @@ const Home = props => {
       longitude: long,
       pagename: 'Home',
       isInsideOffice: isInside,
+      attendenceStatus: attendenceStatus,
       status:
         ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 1
           ? 'clockout'
@@ -213,17 +214,15 @@ const Home = props => {
                   styles.redText,
                   {
                     color:
-                      ProfileReducer?.attendenceStatusResponse
-                        ?.is_attendance_given == 1
-                        ? Colors.green
-                        : Colors.red,
+                      ProfileReducer?.attendenceStatusResponse?.status == "pending"
+
+                        ? Colors.red : Colors.green,
                   },
                 ]}
               >
-                {ProfileReducer?.attendenceStatusResponse
-                  ?.is_attendance_given == 1
-                  ? 'Clocked In'
-                  : 'Pending...'}
+                {ProfileReducer?.attendenceStatusResponse?.status == "pending"
+
+                  ? 'Pending...' : 'Clocked In'}
               </Text>
             </Text>
             <Text style={styles.blackText}>
@@ -300,29 +299,50 @@ const Home = props => {
         {/* Clock In/Out Button */}
         {ProfileReducer?.attendenceStatusResponse?.attendance_status_text !=
           'Clocked Out' && (
-          <TouchableOpacity
-            style={[
-              styles.clockButton,
-              {
-                backgroundColor:
-                  ProfileReducer?.attendenceStatusResponse
-                    ?.is_attendance_given == 1
-                    ? '#FFA500'
-                    : Colors.green,
-              },
-            ]}
-            onPress={() => {
-              setAddTaskModal(true);
-            }}
-          >
-            <Text style={styles.clockButtonText}>
-              {ProfileReducer?.attendenceStatusResponse?.is_attendance_given ==
-              1
-                ? 'Clock Out'
-                : 'Clock In'}
-            </Text>
-          </TouchableOpacity>
-        )}
+            <TouchableOpacity
+              disabled={
+                ProfileReducer?.attendenceStatusResponse?.status === "pending"
+                  ? ProfileReducer?.attendenceStatusResponse?.is_attendance_given === 1
+                    ? true
+                    : false
+                  : false
+              }
+              style={[
+                styles.clockButton,
+                {
+                  backgroundColor:
+                    ProfileReducer?.attendenceStatusResponse?.status == "pending"
+                      ? Colors.green
+                      : '#FFA500',
+
+                  opacity: ProfileReducer?.attendenceStatusResponse?.status === "pending"
+                    ? ProfileReducer?.attendenceStatusResponse?.is_attendance_given === 1
+                      ? 0.5
+                      : 1
+                    : 1
+                },
+              ]}
+              onPress={() => {
+
+                ProfileReducer?.attendenceStatusResponse?.status === "present"
+                  && ProfileReducer?.attendenceStatusResponse?.is_attendance_given === 1
+                  ? getLocation('inside', 'present')
+
+                  : setAddTaskModal(true);
+
+              }}
+            >
+              <Text style={styles.clockButtonText}>
+                {
+                  ProfileReducer?.attendenceStatusResponse?.status === "pending"
+                    ? ProfileReducer?.attendenceStatusResponse?.is_attendance_given === 1
+                      ? "Clock In Pending..."
+                      : "Clock Out"
+                    : "Clock In"
+                }
+              </Text>
+            </TouchableOpacity>
+          )}
       </ScrollView>
       <Modal
         animationIn={'slideInUp'}
@@ -385,7 +405,7 @@ const Home = props => {
                 },
               ]}
               onPress={() => {
-                getLocation('inside');
+                getLocation('inside', 'present');
               }}
             >
               <Text style={styles.clockButtonText}>Inside Office</Text>
@@ -398,10 +418,7 @@ const Home = props => {
                 },
               ]}
               onPress={() => {
-                props?.navigation?.navigate('ActiveTask', {
-                  currenLocation: 'outsideoffice',
-                });
-                // getLocation('outside');
+                getLocation('outside', 'pending');
               }}
             >
               <Text style={styles.clockButtonText}>Outside Office</Text>

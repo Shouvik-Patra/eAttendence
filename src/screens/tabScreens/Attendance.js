@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   View,
   Dimensions,
+  Platform,
 } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { Camera, useCameraDevice } from 'react-native-vision-camera';
@@ -51,6 +52,7 @@ const Attendence = props => {
   const location_id = props?.route.params?.location_id;
   const office_id = props?.route.params?.office_id;
   const isInsideOffice = props?.route?.params?.isInsideOffice;
+  const attendenceStatus = props?.route?.params?.attendenceStatus;
 
   // UI state
   const [loading, setLoading] = useState(false);
@@ -134,7 +136,7 @@ const Attendence = props => {
     const imageType = 'image/jpeg';
     const formData = new FormData();
     formData.append('check_in', moment().format('HH:mm:ss'));
-    formData.append('status', 'present');
+    formData.append('status', attendenceStatus);
     formData.append('check_in_latitude', latitude);
     formData.append('check_in_longitude', longitude);
     formData.append('check_in_address', locationData?.address);
@@ -149,7 +151,7 @@ const Attendence = props => {
     });
 
     connectionrequest()
-      .then(() => {
+      .then(() => { 
         dispatch(clockinRequest(formData));
       })
       .catch(err => {
