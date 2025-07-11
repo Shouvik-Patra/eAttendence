@@ -86,7 +86,6 @@ const Home = props => {
     );
   };
 
-
   // Listen for the returned image from Attendance page
   useEffect(() => {
     if (props?.route?.params?.finalImageUri) {
@@ -127,7 +126,8 @@ const Home = props => {
       isInsideOffice: isInside,
       attendenceStatus: attendenceStatus,
       status:
-        ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 1
+        ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 1 ||
+        ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 2
           ? 'clockout'
           : 'clockin',
     });
@@ -214,15 +214,16 @@ const Home = props => {
                   styles.redText,
                   {
                     color:
-                      ProfileReducer?.attendenceStatusResponse?.status == "pending"
-
-                        ? Colors.red : Colors.green,
+                      ProfileReducer?.attendenceStatusResponse?.status ==
+                      'pending'
+                        ? Colors.red
+                        : Colors.green,
                   },
                 ]}
               >
-                {ProfileReducer?.attendenceStatusResponse?.status == "pending"
-
-                  ? 'Pending...' : 'Clocked In'}
+                {ProfileReducer?.attendenceStatusResponse?.status == 'pending'
+                  ? 'Pending...'
+                  : 'Clocked In'}
               </Text>
             </Text>
             <Text style={styles.blackText}>
@@ -297,52 +298,85 @@ const Home = props => {
         </View> */}
 
         {/* Clock In/Out Button */}
-        {ProfileReducer?.attendenceStatusResponse?.attendance_status_text !=
-          'Clocked Out' && (
-            <TouchableOpacity
-              disabled={
-                ProfileReducer?.attendenceStatusResponse?.status === "pending"
-                  ? ProfileReducer?.attendenceStatusResponse?.is_attendance_given === 1
-                    ? true
-                    : false
-                  : false
-              }
-              style={[
-                styles.clockButton,
-                {
-                  backgroundColor:
-                    ProfileReducer?.attendenceStatusResponse?.status == "pending"
-                      ? Colors.green
-                      : '#FFA500',
-
-                  opacity: ProfileReducer?.attendenceStatusResponse?.status === "pending"
-                    ? ProfileReducer?.attendenceStatusResponse?.is_attendance_given === 1
-                      ? 0.5
-                      : 1
-                    : 1
-                },
-              ]}
-              onPress={() => {
-
-                ProfileReducer?.attendenceStatusResponse?.status === "present"
-                  && ProfileReducer?.attendenceStatusResponse?.is_attendance_given === 1
-                  ? getLocation('inside', 'present')
-
-                  : setAddTaskModal(true);
-
-              }}
-            >
-              <Text style={styles.clockButtonText}>
-                {
-                  ProfileReducer?.attendenceStatusResponse?.status === "pending"
-                    ? ProfileReducer?.attendenceStatusResponse?.is_attendance_given === 1
-                      ? "Clock In Pending..."
-                      : "Clock Out"
-                    : "Clock In"
+        {!(
+          ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
+            'Clocked Out Outside' ||
+          ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
+            'Clocked Out Inside'
+        ) && (
+          <TouchableOpacity
+            disabled={
+              ProfileReducer?.attendenceStatusResponse?.status === 'pending' &&
+              ProfileReducer?.attendenceStatusResponse?.is_attendance_given ===
+                2
+            }
+            style={[
+              styles.clockButton,
+              {
+                backgroundColor: (() => {
+                  const { status, is_attendance_given } =
+                    ProfileReducer?.attendenceStatusResponse || {};
+                  if (status === 'pending' && is_attendance_given === 0)
+                    return Colors.green;
+                  if (status === 'pending' && is_attendance_given === 2)
+                    return Colors.green;
+                  if (status === 'present') return '#FFA500'; // Orange
+                  return Colors.grey; // fallback
+                })(),
+                opacity:
+                  ProfileReducer?.attendenceStatusResponse?.status ===
+                    'pending' &&
+                  ProfileReducer?.attendenceStatusResponse
+                    ?.is_attendance_given === 2
+                    ? 0.5
+                    : 1,
+              },
+            ]}
+            onPress={() => {
+              const { status, is_attendance_given, is_task_running } =
+                ProfileReducer?.attendenceStatusResponse || {};
+              if (status === 'present') {
+                if (is_task_running) {
+                  Alert.alert('Warning!', 'Please End the running task', [
+                    {
+                      text: 'Cancel',
+                      onPress: () => console.log('Cancel Pressed'),
+                      style: 'cancel',
+                    },
+                    {
+                      text: 'OK',
+                      onPress: () => {
+                        props?.navigation?.navigate('ActiveTask', {
+                          currenLocation: 'Home',
+                        });
+                      },
+                    },
+                  ]);
+                } else {
+                  getLocation('inside', 'present');
                 }
-              </Text>
-            </TouchableOpacity>
-          )}
+              } else {
+                setAddTaskModal(true);
+              }
+            }}
+          >
+            <Text style={styles.clockButtonText}>
+              {(() => {
+                const { status, is_attendance_given } =
+                  ProfileReducer?.attendenceStatusResponse || {};
+                if (status === 'pending' && is_attendance_given === 0)
+                  return 'Clock In';
+                if (status === 'present' && is_attendance_given === 1)
+                  return 'Clock Out';
+                if (status === 'pending' && is_attendance_given === 2)
+                  return 'Clock in pending...';
+                if (status === 'present' && is_attendance_given === 2)
+                  return 'Clock Out';
+                return 'Loading...';
+              })()}
+            </Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
       <Modal
         animationIn={'slideInUp'}

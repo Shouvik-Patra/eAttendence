@@ -215,37 +215,22 @@ const ActiveTask = props => {
     (
       <View style={styles.userInfoContainer}>
         <View style={styles.userTextContainer}>
-          <Text style={styles.userAddress}>{item?.address}</Text>
+          {/* <Text style={styles.userAddress}>{item?.address}</Text> */}
           <Text style={styles.blackText}>
             Visit Location :{' '}
-            <Text
-              style={[
-                styles.redText,
-                { color: isClocked ? Colors.green : Colors.red },
-              ]}
-            >
+            <Text style={styles.redText}>
               {item?.location_name ? item?.location_name : ''}
             </Text>
           </Text>
           <Text style={styles.blackText}>
             Visit Purpose :{' '}
-            <Text
-              style={[
-                styles.redText,
-                { color: isClocked ? Colors.green : Colors.red },
-              ]}
-            >
+            <Text style={styles.redText}>
               {item?.task_name ? item?.task_name : ''}
             </Text>
           </Text>
           <Text style={styles.blackText}>
             Created at :{' '}
-            <Text
-              style={[
-                styles.redText,
-                { color: isClocked ? Colors.green : Colors.red },
-              ]}
-            >
+            <Text style={styles.redText}>
               {/* {moment. item?.created_at} */}
               {moment(item?.created_at)
                 .local()
@@ -266,6 +251,10 @@ const ActiveTask = props => {
             >
               {item?.status}
             </Text>
+          </Text>
+          <Text style={styles.blackText}>
+            Task Duration :{' '}
+            <Text style={styles.redText}>{item?.task_duration}</Text>
           </Text>
         </View>
 
@@ -327,10 +316,7 @@ const ActiveTask = props => {
         marginBottom: normalize(10),
       }}
       onPress={() => {
-        if (
-          ProfileReducer?.attendenceStatusResponse?.attendance_status_text ==
-          'Clocked Out'
-        ) {
+        if (ProfileReducer?.attendenceStatusResponse?.status === 'present') {
           Alert.alert('You are not allowed to add task', 'You Clocked Out');
         } else if (
           ProfileReducer?.attendenceStatusResponse?.attendance_status_text ==
@@ -762,7 +748,6 @@ const ActiveTask = props => {
                 },
               ]}
               onPress={() => {
-            
                 getLocation(taskId, taskAction);
               }}
             >
@@ -789,8 +774,8 @@ const ActiveTask = props => {
 
                 setTimeout(() => {
                   props?.navigation?.navigate('Home', {
-                  currenLocation: 'ActiveTask',
-                });
+                    currenLocation: 'ActiveTask',
+                  });
                 }, 3000); // Adjust this delay if needed
               }}
             >
@@ -873,11 +858,10 @@ const styles = StyleSheet.create({
     color: Colors.black,
   },
   redText: {
-    fontFamily: Fonts.MulishSemiBold,
+    fontFamily: Fonts.MulishRegular,
     fontSize: 16,
-    fontWeight: '700',
     marginTop: 5,
-    color: Colors.red,
+    color: Colors.black,
   },
   todayText: {
     fontFamily: Fonts.MulishSemiBold,
