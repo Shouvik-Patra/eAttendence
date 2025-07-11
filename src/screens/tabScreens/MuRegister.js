@@ -5,6 +5,7 @@ import {
   ImageBackground,
   Linking,
   PermissionsAndroid,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -71,6 +72,38 @@ const ActiveTask = props => {
       console.warn(err);
     }
   };
+const requestCameraPermission = async () => {
+  const cameraPermission = await Camera.requestCameraPermission();
+  const micPermission = await Camera.requestMicrophonePermission();
+
+  if (cameraPermission === 'authorized' && micPermission === 'authorized') {
+    console.log('Permissions granted!');
+    return true;
+  }
+
+  if (
+    cameraPermission === 'denied' ||
+    micPermission === 'denied' ||
+    cameraPermission === 'restricted'
+  ) {
+    Alert.alert(
+      'Permission Required',
+      'Camera and microphone access is required. Please enable them in settings.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Open Settings',
+          onPress: () => Linking.openSettings(),
+        },
+      ],
+    );
+  }
+
+  return false;
+};
+
+
+
   const getOneTimeLocation = () => {
     Geolocation.getCurrentPosition(
       //Will give you the current location
@@ -106,6 +139,7 @@ const ActiveTask = props => {
   }
   useEffect(() => {
     if (isFocused) {
+      requestCameraPermission();
       requestLocationPermission();
       getMunicipalityRegisterList();
       connectionrequest()

@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   View,
   Dimensions,
+  Platform,
 } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { Camera, useCameraDevice } from 'react-native-vision-camera';
