@@ -288,7 +288,8 @@ const Attendence = props => {
         } else if (props?.route?.params?.status == 'MuRegister') {
           onMuRegister(finalImagePath);
         } else {
-          onAddNewTask(finalImagePath);
+          console.log('hitting else');
+          
         }
         console.log(
           'Final compressed square image with geotag:',

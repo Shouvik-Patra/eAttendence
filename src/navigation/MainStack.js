@@ -13,7 +13,6 @@ import Attendence from '../screens/tabScreens/Attendance';
 const Stack = createStackNavigator();
 export default function StackNav() {
   const AuthReducer = useSelector(state => state.AuthReducer);
-  console.log('mainstack>>>>', AuthReducer.getTokenResponse);
 
   const dispatch = useDispatch();
 

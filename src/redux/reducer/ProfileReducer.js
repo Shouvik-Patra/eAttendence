@@ -22,6 +22,7 @@ const initialState = {
   taskLocationResponse: {},
   startTaskResponse: {},
   endTaskResponse: {},
+  attendenceReportResponse: {},
 };
 
 const ProfileSlice = createSlice({
@@ -228,7 +229,6 @@ const ProfileSlice = createSlice({
       state.status = action.type;
     },
 
-
     endTaskRequest(state, action) {
       state.status = action.type;
     },
@@ -237,6 +237,18 @@ const ProfileSlice = createSlice({
       state.status = action.type;
     },
     endTaskFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
+
+    attendenceReportRequest(state, action) {
+      state.status = action.type;
+    },
+    attendenceReportSuccess(state, action) {
+      state.attendenceReportResponse = action.payload;
+      state.status = action.type;
+    },
+    attendenceReportFailure(state, action) {
       state.error = action.error;
       state.status = action.type;
     },
@@ -315,6 +327,10 @@ export const {
   endTaskRequest,
   endTaskSuccess,
   endTaskFailure,
+
+  attendenceReportRequest,
+  attendenceReportSuccess,
+  attendenceReportFailure,
 } = ProfileSlice.actions;
 
 export default ProfileSlice.reducer;

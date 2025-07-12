@@ -14,7 +14,6 @@ import constants from '../../utils/helpers/constants';
 export function* getTokenSaga() {
   try {
     const response = yield call(AsyncStorage.getItem, constants.TOKEN);
-    console.log(response);
     if (response != null) {
       yield put(getTokenSuccess(response));
       console.log('TOKEN===--->', response);
@@ -38,10 +37,13 @@ export function* signinSaga(action) {
       action.payload,
       header,
     );
-    console.log('response', response);
     if (response?.data?.meta?.code == 200) {
       yield put(signInSuccess(response?.data?.data));
-      yield call(AsyncStorage.setItem, constants.TOKEN, response?.data?.data?.access_token);
+      yield call(
+        AsyncStorage.setItem,
+        constants.TOKEN,
+        response?.data?.data?.access_token,
+      );
       yield put(getTokenSuccess(response?.data?.data?.access_token));
     } else {
       yield put(signInFailure(response?.data?.data));

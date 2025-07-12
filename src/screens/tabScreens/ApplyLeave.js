@@ -43,7 +43,6 @@ const ApplyLeave = () => {
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isHolidayVisible, setIsHolidayVisible] = useState(false);
-  console.log('Reason>>>>>>>>>>>>>>', typeof reason);
 
   const holidays = [
     {

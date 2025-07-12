@@ -302,7 +302,8 @@ const Home = props => {
           ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
             'Clocked Out Outside' ||
           ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
-            'Clocked Out Inside'
+            'Clocked Out Inside' ||
+          ProfileReducer?.attendenceStatusResponse?.is_attendence_allowed ===false
         ) && (
           <TouchableOpacity
             disabled={
@@ -371,6 +372,8 @@ const Home = props => {
                 if (status === 'pending' && is_attendance_given === 2)
                   return 'Clock in pending...';
                 if (status === 'present' && is_attendance_given === 2)
+                  return 'Clock Out';
+                if (status === 'present' && is_attendance_given === 3)
                   return 'Clock Out';
                 return 'Loading...';
               })()}
@@ -456,6 +459,19 @@ const Home = props => {
               }}
             >
               <Text style={styles.clockButtonText}>Outside Office</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.clockButton,
+                {
+                  backgroundColor: Colors.orange,
+                },
+              ]}
+              onPress={() => {
+                getLocation('other', 'present');
+              }}
+            >
+              <Text style={styles.clockButtonText}>Other</Text>
             </TouchableOpacity>
           </ScrollView>
         </ImageBackground>

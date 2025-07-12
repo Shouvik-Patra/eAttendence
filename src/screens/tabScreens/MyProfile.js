@@ -10,6 +10,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { launchImageLibrary } from 'react-native-image-picker';
 import Header from '../../components/Header';
 import { Colors, Fonts, Images } from '../../themes/ThemePath';
@@ -26,99 +27,135 @@ import {
 import connectionrequest from '../../utils/helpers/NetInfo';
 import Loader from '../../utils/helpers/Loader';
 import TextInputWithButton from '../../components/TextInputWithBotton';
+
 let status = '';
+
 const MyProfile = props => {
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
-
   const isFocused = useIsFocused();
-  const [name, setName] = useState(ProfileReducer?.userDetailsResponse?.name ? ProfileReducer?.userDetailsResponse?.name : '');
-  const [email, setEmail] = useState(ProfileReducer?.userDetailsResponse?.email ? ProfileReducer?.userDetailsResponse?.email : '');
-  const [phone, setPhone] = useState(ProfileReducer?.userDetailsResponse?.phone ? ProfileReducer?.userDetailsResponse?.phone : '');
-  const [address, setAddress] = useState(ProfileReducer?.userDetailsResponse?.address ? ProfileReducer?.userDetailsResponse?.phone : '');
-  const [isEditing, setIsEditing] = useState(props?.route?.params?.isEditing || false);
+
+  // Initialize state with userDetailsResponse data
+  const userDetails = ProfileReducer?.userDetailsResponse || {};
+
+  const [name, setName] = useState(userDetails?.name || '');
+  const [email, setEmail] = useState(userDetails?.email || '');
+  const [phone, setPhone] = useState(userDetails?.phone || '');
+  const [dob, setDob] = useState(userDetails?.dob || '');
+  const [dobDate, setDobDate] = useState(
+    userDetails?.dob ? new Date(userDetails?.dob) : new Date(),
+  );
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [address, setAddress] = useState(userDetails?.address || '');
+  const [municipality, setMunicipality] = useState(
+    userDetails?.municipality || '',
+  );
+  const [ward, setWard] = useState(userDetails?.ward || '');
+  const [district, setDistrict] = useState(userDetails?.district || '');
+
+  const [isEditing, setIsEditing] = useState(
+    props?.route?.params?.isEditing || false,
+  );
   const [loading, setLoading] = useState(false);
+  const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(
+    userDetails?.photo || null,
+  );
+console.log("Profile>>>>>>>>",capturedImageWithGeotag);
 
-  const [profile, setProfile] = useState({
-    profilePicture: Images.profilepic,
-    name: ProfileReducer?.userDetailsResponse?.name ? ProfileReducer?.userDetailsResponse?.name :'',
-    dob: '1995-11-11',
-    doj: '2020-03-01',
-    address: 'Uttar Rajyadharpur, Hooghly',
-    phoneNumber: '8961700942',
-  });
-  const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(ProfileReducer?.userDetailsResponse?.photo ? ProfileReducer?.userDetailsResponse?.photo : null);
-  console.log('capturedImageWithGeotag>>', capturedImageWithGeotag);
+  useEffect(() => {
+    getuserDetails();
+  }, [isFocused]);
+  // Update state when userDetailsResponse changes
+  useEffect(() => {
+    if (ProfileReducer?.userDetailsResponse) {
+      const details = ProfileReducer.userDetailsResponse;
+      setName(details?.name || '');
+      setEmail(details?.email || '');
+      setPhone(details?.phone || '');
+      setDob(details?.dob || '');
+      setDobDate(details?.dob ? new Date(details?.dob) : new Date());
+      setAddress(details?.address || '');
+      setMunicipality(details?.municipality || '');
+      setWard(details?.ward || '');
+      setDistrict(details?.district || '');
+      // setCapturedImageWithGeotag(details?.photo || null);
+    }
+  }, [ProfileReducer?.userDetailsResponse]);
 
-  const [editedProfile, setEditedProfile] = useState({ ...profile });
   // Listen for the returned image from Attendance page
   useEffect(() => {
     if (props?.route?.params?.finalImageUri) {
       setCapturedImageWithGeotag(props.route.params.finalImageUri);
-      // Clear the parameter to avoid re-triggering
       props?.navigation.setParams({ finalImageUri: undefined });
-
-      // Show success message
-      showErrorAlert('Success', 'Photo captured with geotag successfully!');
     }
   }, [props?.route?.params?.finalImageUri]);
+
   const handleEdit = () => {
-    // setEditedProfile({ ...profile });
     setIsEditing(true);
   };
 
   const handleCancel = () => {
-    // setEditedProfile({ ...profile });
     setIsEditing(false);
+    // Reset to original values
+    const details = ProfileReducer?.userDetailsResponse || {};
+    setName(details?.name || '');
+    setEmail(details?.email || '');
+    setPhone(details?.phone || '');
+    setDob(details?.dob || '');
+    setDobDate(details?.dob ? new Date(details?.dob) : new Date());
+    setAddress(details?.address || '');
+    setMunicipality(details?.municipality || '');
+    setWard(details?.ward || '');
+    setDistrict(details?.district || '');
+    setCapturedImageWithGeotag(details?.photo || null);
+    setShowDatePicker(false);
   };
 
   const handleClickPhoto = () => {
-    console.log('heloo');
-
     props?.navigation.navigate('Attendence', {
       pagename: 'MyProfile',
     });
   };
 
+  const handleDateChange = (event, selectedDate) => {
+    const currentDate = selectedDate || dobDate;
+    setShowDatePicker(Platform.OS === 'ios');
+    setDobDate(currentDate);
+
+    // Format date to YYYY-MM-DD for API
+    const formattedDate = currentDate.toISOString().split('T')[0];
+    setDob(formattedDate);
+  };
+
+  const showDatepicker = () => {
+    setShowDatePicker(true);
+  };
+
   function onUpdateProfile() {
     const imageName = capturedImageWithGeotag?.split('/').pop(); // extract file name
-    const imageType = 'image/jpeg'; // or dynamically detect
-
-    // let obj = {
-    //   name: 'Shouvik Patra',
-    //   email: 'shouvik@yopmail.com',
-    //   photo: capturedImageWithGeotag ? capturedImageWithGeotag : null,
-    // };
+    const imageType = 'image/jpeg';
     const formData = new FormData();
     formData.append('name', name);
     formData.append('email', email);
-    formData.append('address', address);
-    formData.append('photo', {
-      uri:
-        Platform.OS === 'android'
-          ? capturedImageWithGeotag
-          : capturedImageWithGeotag?.replace('file://', ''),
-      name: imageName,
-      type: imageType,
-    });
+    formData.append('dob', dob);
+    formData.append('photo', capturedImageWithGeotag);
 
     connectionrequest()
       .then(() => {
         dispatch(profileUpdateRequest(formData));
       })
       .catch(err => {
-        console.log(err);
         showErrorAlert('Please connect to internet');
       });
   }
-  function userDetails() {
+
+  function getuserDetails() {
     connectionrequest()
       .then(() => {
         dispatch(userDetailsRequest());
       })
       .catch(err => {
-        console.log(err);
         showErrorAlert('Please connect to internet');
       });
   }
@@ -127,56 +164,32 @@ const MyProfile = props => {
     switch (ProfileReducer.status) {
       case 'Profile/userDetailsRequest':
         status = ProfileReducer.status;
-        setLoading(true)
+        setLoading(true);
         break;
       case 'Profile/userDetailsSuccess':
         status = ProfileReducer.status;
-        setLoading(false)
+        setLoading(false);
         break;
       case 'Profile/userDetailsFailure':
         status = ProfileReducer.status;
-        setLoading(false)
+        setLoading(false);
         break;
-
       case 'Profile/profileUpdateRequest':
         status = ProfileReducer.status;
-        setLoading(true)
+        setLoading(true);
         break;
       case 'Profile/profileUpdateSuccess':
         status = ProfileReducer.status;
-        setLoading(false)
-        userDetails();
+        setLoading(false);
+        setIsEditing(false);
+        getuserDetails();
         break;
       case 'Profile/profileUpdateFailure':
         status = ProfileReducer.status;
-        setLoading(false)
+        setLoading(false);
         break;
     }
   }
-  // const ProfileField = ({
-  //   label,
-  //   value,
-  //   editable = true,
-  //   multiline = false,
-  //   onChangeText,
-  // }) => (
-  //   <View style={styles.fieldContainer}>
-  //     <Text style={styles.fieldLabel}>{label}</Text>
-  //     {isEditing && editable ? (
-  //       <TextInput
-  //         style={[styles.input, multiline && styles.multilineInput]}
-  //         value={value}
-  //         onChangeText={onChangeText}
-  //         multiline={multiline}
-  //         numberOfLines={multiline ? 3 : 1}
-  //       />
-  //     ) : (
-  //       <Text style={[styles.fieldValue, !editable && styles.nonEditableField]}>
-  //         {label.includes('Date') ? formatDate(value) : value}
-  //       </Text>
-  //     )}
-  //   </View>
-  // );
 
   return (
     <View
@@ -192,7 +205,7 @@ const MyProfile = props => {
         Title
         placeText={'My Profile'}
         onPress_back_button={() => {
-          setModalVisible(true);
+          props.navigation.goBack();
         }}
         onPress_right_button={() => {
           props.navigation.navigate('Notification');
@@ -210,72 +223,26 @@ const MyProfile = props => {
             style={styles.profileImageContainer}
             disabled={!isEditing}
           >
-            {ProfileReducer?.userDetailsResponse?.photo ? (
+            {capturedImageWithGeotag ? (
               <Image
                 resizeMode="cover"
                 style={styles.profileImage}
-                source={{ uri: ProfileReducer?.userDetailsResponse?.photo }}
+                source={{ uri: capturedImageWithGeotag }}
               />
             ) : (
-              <Image
-                source={{uri:capturedImageWithGeotag}}
-                style={styles.profileImage}
-              />
+              <Image source={Images.profilepic} style={styles.profileImage} />
             )}
 
-            {isEditing  || props?.route?.params?.isEditing && (
+            {isEditing && (
               <View style={styles.editImageOverlay}>
                 <Text style={styles.editImageText}>Tap to change</Text>
               </View>
             )}
           </TouchableOpacity>
-          <Text style={styles.headerName}>
-            {ProfileReducer?.userDetailsResponse?.name ? ProfileReducer?.userDetailsResponse?.name :""}
-          </Text>
+          <Text style={styles.headerName}>{name || 'User Name'}</Text>
         </View>
 
-        {/* <View style={styles.content}>
-          <ProfileField
-            label="Full Name"
-            value={isEditing ? editedProfile.name : profile.name}
-            onChangeText={text =>
-              setEditedProfile({ ...editedProfile, name: text })
-            }
-          />
-
-          <ProfileField
-            label="Date of Birth"
-            value={isEditing ? editedProfile.dob : profile.dob}
-            onChangeText={text =>
-              setEditedProfile({ ...editedProfile, dob: text })
-            }
-          />
-
-          <ProfileField
-            label="Date of Joining"
-            value={isEditing ? editedProfile.doj : profile.doj}
-            onChangeText={text =>
-              setEditedProfile({ ...editedProfile, doj: text })
-            }
-          />
-
-          <ProfileField
-            label="Address"
-            value={isEditing ? editedProfile.address : profile.address}
-            multiline={true}
-            onChangeText={text =>
-              setEditedProfile({ ...editedProfile, address: text })
-            }
-          />
-
-          <ProfileField
-            label="Phone Number"
-            value={profile.phoneNumber}
-            editable={false}
-          />
-        </View> */}
-
-        {isEditing ?
+        {isEditing ? (
           <View style={styles.content}>
             <TextInputWithButton
               show={true}
@@ -321,15 +288,15 @@ const MyProfile = props => {
               onChangeText={e => setEmail(e)}
               tintColor={Colors.tintGrey}
             />
-            <TextInputWithButton
+            {/* <TextInputWithButton
               show={true}
               icon={true}
               height={normalize(45)}
               inputWidth={'100%'}
               marginTop={normalize(25)}
               textColor={Colors.textInputColor}
-              InputHeaderText={'Address'}
-              placeholder={'Enter Address'}
+              InputHeaderText={'Phone'}
+              placeholder={'Enter phone number'}
               placeholderTextColor={Colors.black}
               paddingLeft={normalize(25)}
               borderColor={Colors.inputGreyBorder}
@@ -337,29 +304,139 @@ const MyProfile = props => {
               editable={true}
               fontFamily={Fonts.MulishRegular}
               isheadertext={true}
-              value={address}
+              value={phone}
               fontSize={normalize(14)}
               headertxtsize={normalize(13)}
-              onChangeText={e => setAddress(e)}
+              onChangeText={e => setPhone(e)}
               tintColor={Colors.tintGrey}
-            />
-           
+            /> */}
+            <View style={styles.datePickerContainer}>
+              <Text style={styles.datePickerLabel}>Date of Birth</Text>
+              <TouchableOpacity
+                style={styles.datePickerButton}
+                onPress={showDatepicker}
+              >
+                <Text style={styles.datePickerText}>
+                  {dob ? dob : 'Select Date of Birth'}
+                </Text>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  testID="dateTimePicker"
+                  value={dobDate}
+                  mode="date"
+                  display="default"
+                  onChange={handleDateChange}
+                  maximumDate={new Date()}
+                />
+              )}
+            </View>
+            {/* <TextInputWithButton
+              show={true}
+              icon={true}
+              height={normalize(45)}
+              inputWidth={'100%'}
+              marginTop={normalize(25)}
+              textColor={Colors.textInputColor}
+              InputHeaderText={'Municipality'}
+              placeholder={'Enter municipality'}
+              placeholderTextColor={Colors.black}
+              paddingLeft={normalize(25)}
+              borderColor={Colors.inputGreyBorder}
+              borderRadius={normalize(5)}
+              editable={true}
+              fontFamily={Fonts.MulishRegular}
+              isheadertext={true}
+              value={municipality}
+              fontSize={normalize(14)}
+              headertxtsize={normalize(13)}
+              onChangeText={e => setMunicipality(e)}
+              tintColor={Colors.tintGrey}
+            /> */}
+            {/* <TextInputWithButton
+              show={true}
+              icon={true}
+              height={normalize(45)}
+              inputWidth={'100%'}
+              marginTop={normalize(25)}
+              textColor={Colors.textInputColor}
+              InputHeaderText={'Ward'}
+              placeholder={'Enter ward'}
+              placeholderTextColor={Colors.black}
+              paddingLeft={normalize(25)}
+              borderColor={Colors.inputGreyBorder}
+              borderRadius={normalize(5)}
+              editable={true}
+              fontFamily={Fonts.MulishRegular}
+              isheadertext={true}
+              value={ward}
+              fontSize={normalize(14)}
+              headertxtsize={normalize(13)}
+              onChangeText={e => setWard(e)}
+              tintColor={Colors.tintGrey}
+            /> */}
+            {/* <TextInputWithButton
+              show={true}
+              icon={true}
+              height={normalize(45)}
+              inputWidth={'100%'}
+              marginTop={normalize(25)}
+              textColor={Colors.textInputColor}
+              InputHeaderText={'District'}
+              placeholder={'Enter district'}
+              placeholderTextColor={Colors.black}
+              paddingLeft={normalize(25)}
+              borderColor={Colors.inputGreyBorder}
+              borderRadius={normalize(5)}
+              editable={true}
+              fontFamily={Fonts.MulishRegular}
+              isheadertext={true}
+              value={district}
+              fontSize={normalize(14)}
+              headertxtsize={normalize(13)}
+              onChangeText={e => setDistrict(e)}
+              tintColor={Colors.tintGrey}
+            /> */}
           </View>
-          :
+        ) : (
           <View style={styles.content}>
-            <Text style={styles.fieldValue}>
-              {name}
-            </Text>
-            <Text style={styles.fieldValue}>
-              {phone}
-            </Text>
-            <Text style={styles.fieldValue}>
-              {email}
-            </Text>
-          </View>}
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Name</Text>
+              <Text style={styles.fieldValue}>{name || 'Not provided'}</Text>
+            </View>
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Email</Text>
+              <Text style={styles.fieldValue}>{email || 'Not provided'}</Text>
+            </View>
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Phone</Text>
+              <Text style={styles.fieldValue}>{phone || 'Not provided'}</Text>
+            </View>
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Date of Birth</Text>
+              <Text style={styles.fieldValue}>{dob || 'Not provided'}</Text>
+            </View>
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Municipality</Text>
+              <Text style={styles.fieldValue}>
+                {municipality || 'Not provided'}
+              </Text>
+            </View>
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Ward</Text>
+              <Text style={styles.fieldValue}>{ward || 'Not provided'}</Text>
+            </View>
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>District</Text>
+              <Text style={styles.fieldValue}>
+                {district || 'Not provided'}
+              </Text>
+            </View>
+          </View>
+        )}
 
         <View style={styles.buttonContainer}>
-          {isEditing  ? (
+          {isEditing ? (
             <View style={styles.editButtonsContainer}>
               <TouchableOpacity
                 style={styles.cancelButton}
@@ -413,13 +490,10 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   scrollViewContent: {
-    // paddingHorizontal: normalize(10),
-    // paddingVertical: normalize(10),
-    paddingBottom: normalize(100), // Extra padding at bottom
+    paddingBottom: normalize(100),
   },
   header: {
     alignItems: 'center',
-    // backgroundColor: '#fff',
     paddingVertical: 30,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
@@ -469,13 +543,13 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   fieldContainer: {
-    marginBottom: 20,
+    marginBottom: 15,
   },
   fieldLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: '#666',
-    marginBottom: 8,
+    marginBottom: 5,
   },
   fieldValue: {
     fontSize: 16,
@@ -486,25 +560,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    marginTop: 15
-  },
-  nonEditableField: {
-    backgroundColor: '#f0f0f0',
-    color: '#888',
-  },
-  input: {
-    fontSize: 16,
-    color: '#333',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#4CAF50',
-  },
-  multilineInput: {
-    height: 80,
-    textAlignVertical: 'top',
   },
   buttonContainer: {
     padding: 20,
@@ -549,6 +604,29 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  datePickerContainer: {
+    marginTop: normalize(25),
+  },
+  datePickerLabel: {
+    fontSize: normalize(13),
+    color: Colors.textInputColor,
+    marginBottom: normalize(5),
+    fontFamily: Fonts.MulishRegular,
+  },
+  datePickerButton: {
+    height: normalize(45),
+    borderWidth: 1,
+    borderColor: Colors.skyblue,
+    borderRadius: normalize(5),
+    paddingLeft: normalize(10),
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+  },
+  datePickerText: {
+    fontSize: normalize(14),
+    color: Colors.textInputColor,
+    fontFamily: Fonts.MulishRegular,
   },
 });
 

@@ -10,6 +10,7 @@ import ActiveTask from '../screens/tabScreens/ActiveTask';
 import MuRegister from '../screens/tabScreens/MuRegister';
 import ProfileMuRegister from '../screens/tabScreens/ProfileMuRegister';
 import Leave from '../screens/tabScreens/Leave';
+import AttendenceReport from '../screens/tabScreens/AttendenceReport';
 
 const Tab = createBottomTabNavigator();
 
@@ -79,6 +80,19 @@ const BottomTabNav = () => {
           />
          
 
+          <Tab.Screen
+            name="AttendenceReport"
+            component={AttendenceReport}
+            listeners={({ navigation }) => ({
+              blur: () => navigation.setParams({ screen: undefined }),
+            })}
+            options={{
+              unmountOnBlur: true,
+              tabBarIcon: ({ focused }) => (
+                <TabIcon focused={focused} source={Images.tab6} />
+              ),
+            }}
+          />
           <Tab.Screen
             name="MyProfile"
             component={MyProfile}

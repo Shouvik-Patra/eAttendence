@@ -1,6 +1,11 @@
 import { call, put, select, takeLatest } from 'redux-saga/effects';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getApi, postApi, postApiWithParam, putApi } from '../../utils/helpers/ApiRequest';
+import {
+  getApi,
+  postApi,
+  postApiWithParam,
+  putApi,
+} from '../../utils/helpers/ApiRequest';
 
 import {
   userDetailsSuccess,
@@ -39,9 +44,15 @@ import {
   startTaskFailure,
   endTaskSuccess,
   endTaskFailure,
+  attendenceReportSuccess,
+  attendenceReportFailure,
 } from '../reducer/ProfileReducer';
 import showErrorAlert from '../../utils/helpers/Toast';
-import { getTokenSuccess, logoutRequest, logoutSuccess } from '../reducer/AuthReducer';
+import {
+  getTokenSuccess,
+  logoutRequest,
+  logoutSuccess,
+} from '../reducer/AuthReducer';
 import constants from '../../utils/helpers/constants';
 let getItem = state => state.AuthReducer;
 
@@ -56,10 +67,7 @@ export function* userDetailsSaga(action) {
     accesstoken: items?.getTokenResponse,
   };
   try {
-    console.log("User Details::header>>", header);
-
     let response = yield call(getApi, 'user_profile_info_emp', header);
-    console.log("User Details::response>>", response);
 
     if (response?.data?.meta?.code == 200) {
       yield put(userDetailsSuccess(response?.data?.data));
@@ -68,10 +76,10 @@ export function* userDetailsSaga(action) {
       showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
-    console.log("error>>>>>>>>>>", error);
+    console.log('error>>>>>>>>>>', error);
 
     yield put(userDetailsFailure(error?.response?.data));
-    if (error?.response?.data?.meta?.message == "Token is invalid or expired") {
+    if (error?.response?.data?.meta?.message == 'Token is invalid or expired') {
       yield call(AsyncStorage.removeItem, constants.TOKEN);
       yield put(getTokenSuccess(null));
       yield put(logoutSuccess());
@@ -96,7 +104,7 @@ export function* attendenceStatusSaga(action) {
     }
   } catch (error) {
     yield put(attendenceStatusFailure(error?.response?.data));
-    if (error?.response?.data?.meta?.message == "Token is invalid or expired") {
+    if (error?.response?.data?.meta?.message == 'Token is invalid or expired') {
       yield call(AsyncStorage.removeItem, constants.TOKEN);
       yield put(getTokenSuccess(null));
       yield put(logoutSuccess());
@@ -130,7 +138,6 @@ export function* clockinSaga(action) {
 
 export function* clockoutSaga(action) {
   let items = yield select(getItem);
-  console.log('45444----------------->>', items?.getTokenResponse);
 
   try {
     let Header = {
@@ -139,9 +146,7 @@ export function* clockoutSaga(action) {
       accesstoken: items?.getTokenResponse,
     };
 
-    console.log('Header>>>>>>>>>>>>>>>>', Header, action.payload);
     const response = yield call(postApi, 'check_out', action.payload, Header);
-    console.log('clockoutSaga ::response>>>>>>>>>>>', response);
 
     if (response?.data?.meta?.code == 200) {
       yield put(clockoutSuccess(response?.data?.data));
@@ -159,7 +164,6 @@ export function* clockoutSaga(action) {
 }
 export function* profileupdateSaga(action) {
   let items = yield select(getItem);
-  console.log('45444----------------->>', items?.getTokenResponse);
 
   try {
     let Header = {
@@ -174,7 +178,6 @@ export function* profileupdateSaga(action) {
       action.payload,
       Header,
     );
-    console.log('response>>>>>>>>>>>', response);
 
     if (response?.data?.meta?.code == 200) {
       yield put(profileUpdateSuccess(response?.data?.data));
@@ -184,8 +187,6 @@ export function* profileupdateSaga(action) {
       showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
-    console.log('helooo>>>', error);
-
     yield put(profileUpdateFailure(error?.response?.data));
     // showErrorAlert(error?.response?.data?.meta?.message);
   }
@@ -220,7 +221,11 @@ export function* complitedTaskListSaga(action) {
     accesstoken: items?.getTokenResponse,
   };
   try {
-    let response = yield call(getApi, 'get-task-submit', header);
+    let response = yield call(
+      getApi,
+      `get-task-submit?status=${action.payload}`,
+      header,
+    );
 
     if (response?.data?.meta?.code == 200) {
       yield put(complitedTaskListSuccess(response?.data?.data));
@@ -248,7 +253,6 @@ export function* addTaskSaga(action) {
       action.payload,
       Header,
     );
-    console.log('response>>>>>>>>>>>', response);
 
     if (response?.data?.meta?.code == 200) {
       yield put(addTaskSuccess(response?.data?.data));
@@ -275,7 +279,6 @@ export function* applyleaveSaga(action) {
     };
 
     const response = yield call(postApi, 'apply_leave', action.payload, Header);
-    console.log('response>>>>>>>>>>>', response);
 
     if (response?.data?.meta?.code == 200) {
       yield put(applyLeaveSuccess(response?.data?.data));
@@ -305,7 +308,6 @@ export function* municipalityRegisterSaga(action) {
       action.payload,
       Header,
     );
-    console.log('response>>>>>>>>>>>', response);
 
     if (response?.data?.meta?.code == 200) {
       yield put(municipalityRegisterSuccess(response?.data?.data));
@@ -353,7 +355,11 @@ export function* municipalityOfficeListSaga(action) {
     accesstoken: items?.getTokenResponse,
   };
   try {
-    let response = yield call(getApi, `getOfficeByMunicipalityName/${action.payload}`, header);
+    let response = yield call(
+      getApi,
+      `getOfficeByMunicipalityName/${action.payload}`,
+      header,
+    );
 
     if (response?.data?.meta?.code == 200) {
       yield put(municipalityOfficeListSuccess(response?.data?.data));
@@ -396,7 +402,6 @@ export function* leaveLogSaga(action) {
     accesstoken: items?.getTokenResponse,
   };
   try {
-
     let response = yield call(getApi, 'leave_status', header);
 
     if (response?.data?.meta?.code == 200) {
@@ -406,10 +411,10 @@ export function* leaveLogSaga(action) {
       showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
-    console.log("error>>>>>>>>>>", error);
+    console.log('error>>>>>>>>>>', error);
 
     yield put(leaveLogFailure(error?.response?.data));
-    if (error?.response?.data?.meta?.message == "Token is invalid or expired") {
+    if (error?.response?.data?.meta?.message == 'Token is invalid or expired') {
       yield call(AsyncStorage.removeItem, constants.TOKEN);
       yield put(getTokenSuccess(null));
       yield put(logoutSuccess());
@@ -426,8 +431,12 @@ export function* cancelLeaveSaga(action) {
       accesstoken: items?.getTokenResponse,
     };
 
-    const response = yield call(postApiWithParam, `leave_cancel_emp`,action.payload, Header);
-    console.log('response>>>>>>>>>>>', response);
+    const response = yield call(
+      postApiWithParam,
+      `leave_cancel_emp`,
+      action.payload,
+      Header,
+    );
 
     if (response?.data?.meta?.code == 200) {
       yield put(leaveCancelSuccess(response?.data?.data));
@@ -450,7 +459,6 @@ export function* taskLocationSaga(action) {
     accesstoken: items?.getTokenResponse,
   };
   try {
-
     let response = yield call(getApi, 'get-all-locations', header);
 
     if (response?.data?.meta?.code == 200) {
@@ -460,10 +468,10 @@ export function* taskLocationSaga(action) {
       showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
-    console.log("error>>>>>>>>>>", error);
+    console.log('error>>>>>>>>>>', error);
 
     yield put(taskLocationFailure(error?.response?.data));
-    if (error?.response?.data?.meta?.message == "Token is invalid or expired") {
+    if (error?.response?.data?.meta?.message == 'Token is invalid or expired') {
       yield call(AsyncStorage.removeItem, constants.TOKEN);
       yield put(getTokenSuccess(null));
       yield put(logoutSuccess());
@@ -481,13 +489,7 @@ export function* startTaskSaga(action) {
       accesstoken: items?.getTokenResponse,
     };
 
-    const response = yield call(
-      postApi,
-      'start-task',
-      action.payload,
-      Header,
-    );
-    console.log('response>>>>>>>>>>>', response);
+    const response = yield call(postApi, 'start-task', action.payload, Header);
 
     if (response?.data?.meta?.code == 200) {
       yield put(startTaskSuccess(response?.data?.data));
@@ -514,14 +516,7 @@ export function* endTaskSaga(action) {
       accesstoken: items?.getTokenResponse,
     };
 
-    const response = yield call(
-      postApi,
-      'end-task',
-      action.payload,
-      Header,
-    );
-    console.log('response>>>>>>>>>>>', response);
-
+    const response = yield call(postApi, 'end-task', action.payload, Header);
     if (response?.data?.meta?.code == 200) {
       yield put(endTaskSuccess(response?.data?.data));
       showErrorAlert(response?.data?.meta?.message);
@@ -536,12 +531,37 @@ export function* endTaskSaga(action) {
     // showErrorAlert(error?.response?.data?.meta?.message);
   }
 }
+export function* attendenceReportSaga(action) {
+  let items = yield select(getItem);
+
+  try {
+    let Header = {
+      Accept: 'application/json',
+      contenttype: 'application/json',
+      accesstoken: items?.getTokenResponse,
+    };
+
+    const response = yield call(postApi, 'getUserAttendance', action.payload, Header);
+    if (response?.data?.meta?.code == 200) {
+      yield put(attendenceReportSuccess(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    } else {
+      yield put(attendenceReportFailure(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    }
+  } catch (error) {
+    console.log('helooo>>>', error);
+
+    yield put(attendenceReportFailure(error?.response?.data));
+    // showErrorAlert(error?.response?.data?.meta?.message);
+  }
+}
 const watchFunction = [
   (function* () {
     yield takeLatest('Profile/userDetailsRequest', userDetailsSaga);
   })(),
   (function* () {
-    yield takeLatest('Profile/attendenceStatusRequest',attendenceStatusSaga);
+    yield takeLatest('Profile/attendenceStatusRequest', attendenceStatusSaga);
   })(),
   (function* () {
     yield takeLatest('Profile/clockinRequest', clockinSaga);
@@ -583,40 +603,25 @@ const watchFunction = [
     );
   })(),
   (function* () {
-    yield takeLatest(
-      'Profile/leaveLogRequest',
-      leaveLogSaga,
-    );
+    yield takeLatest('Profile/leaveLogRequest', leaveLogSaga);
   })(),
   (function* () {
-    yield takeLatest(
-      'Profile/leaveCancelRequest',
-      cancelLeaveSaga,
-    );
+    yield takeLatest('Profile/leaveCancelRequest', cancelLeaveSaga);
   })(),
   (function* () {
-    yield takeLatest(
-      'Profile/leaveTypeRequest',
-      leaveTypeListSaga,
-    );
+    yield takeLatest('Profile/leaveTypeRequest', leaveTypeListSaga);
   })(),
   (function* () {
-    yield takeLatest(
-      'Profile/taskLocationRequest',
-      taskLocationSaga,
-    );
+    yield takeLatest('Profile/taskLocationRequest', taskLocationSaga);
   })(),
   (function* () {
-    yield takeLatest(
-      'Profile/startTaskRequest',
-      startTaskSaga,
-    );
+    yield takeLatest('Profile/startTaskRequest', startTaskSaga);
   })(),
   (function* () {
-    yield takeLatest(
-      'Profile/endTaskRequest',
-      endTaskSaga,
-    );
+    yield takeLatest('Profile/endTaskRequest', endTaskSaga);
+  })(),
+  (function* () {
+    yield takeLatest('Profile/attendenceReportRequest', attendenceReportSaga);
   })(),
 ];
 
