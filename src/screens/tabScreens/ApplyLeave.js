@@ -39,6 +39,7 @@ const ApplyLeave = () => {
   const [leaveType, setLeaveType] = useState([]);
   const [selectedLeaveType, setSelectedLeaveType] = useState(null);
   const [isFocusTask, setIsFocusTask] = useState(false);
+console.log("selectedLeaveType>>>>>>>>>>>>>>>>>>>",selectedLeaveType);
 
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -187,14 +188,7 @@ const ApplyLeave = () => {
     const isStartDateToday = startDate.toDateString() === today.toDateString();
 
     // Validation checks
-    if (
-      isStartDateToday &&
-      ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 1
-    ) {
-      showErrorAlert(
-        'You are not allowed to apply for leave as you already clock in today',
-      );
-    } else if (selectedLeaveType == null) {
+     if (selectedLeaveType == null) {
       showErrorAlert('Please Select leave Type.');
     } else if (reason == '') {
       showErrorAlert('Please describe reason for leave.');
@@ -330,7 +324,7 @@ const ApplyLeave = () => {
             valueField="id"
             placeholder={!isFocusTask ? 'Select Leave Type' : '...'}
             searchPlaceholder="Search..."
-            value={selectedLeaveType}
+            value={'selectedLeaveType'}
             onFocus={() => setIsFocusTask(true)}
             onBlur={() => setIsFocusTask(false)}
             onChange={item => {

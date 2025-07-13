@@ -61,7 +61,7 @@ const MyProfile = props => {
   const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(
     userDetails?.photo || null,
   );
-console.log("Profile>>>>>>>>",capturedImageWithGeotag);
+console.log("Profile isEditing>>>>>>>>",isEditing);
 
   useEffect(() => {
     getuserDetails();
@@ -186,6 +186,7 @@ console.log("Profile>>>>>>>>",capturedImageWithGeotag);
         break;
       case 'Profile/profileUpdateFailure':
         status = ProfileReducer.status;
+        setIsEditing(false);
         setLoading(false);
         break;
     }

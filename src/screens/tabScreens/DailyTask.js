@@ -58,11 +58,23 @@ const DailyTask = props => {
   const [selectedTaskPurpose, setSelectedTaskPurpose] = useState('');
   const [other_location, setOther_location] = useState('');
   const [other_purpose, setOther_purpose] = useState('');
-  // const [buttonRes, setButtonRes] = useState('');
-  console.log('>>>>>', selectedTaskLocation, selectedTaskPurpose);
+
+  // Status filter states
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [isFocusStatus, setIsFocusStatus] = useState(false);
+
+  // Status options for dropdown
+  const statusOptions = [
+    { id: '', label: 'All Status' },
+    { id: 'pending', label: 'Pending' },
+    { id: 'approved', label: 'Approved' },
+    { id: 'rejected', label: 'Rejected' },
+    { id: 'ongoing', label: 'Ongoing' },
+  ];
 
   const [location, setLocation] = useState({ latitude: null, longitude: null });
   currentLocation = props?.route?.params?.currenLocation;
+
   // Fixed dropdown handlers and state management
   const handleTasklocationSelect = async item => {
     setSelectedTasklocatio(item); // This should store the entire object
@@ -74,13 +86,49 @@ const DailyTask = props => {
     setIsFocusTask2(false);
   };
 
+  // Status filter handler
+  // const handleStatusSelect = async item => {
+  //   setSelectedStatus(item);
+  //   setIsFocusStatus(false);
+
+  //   // Call API with selected status
+  //   connectionrequest()
+  //     .then(() => {
+  //       // dispatch(complitedTaskListRequest(item.id));
+  //         dispatch(complitedTaskListRequest(`pending,ongoing`));
+
+  //     })
+  //     .catch(err => {
+  //       console.log(err);
+  //       showErrorAlert('Please connect to internet');
+  //     });
+  // };
+
+  // Helper function to update filter programmatically
+  // const updateFilterStatus = statusId => {
+  //   const statusOption = statusOptions.find(option => option.id === statusId);
+  //   if (statusOption) {
+  //     setSelectedStatus(statusOption);
+  //     connectionrequest()
+  //       .then(() => {
+  //         // dispatch(complitedTaskListRequest(statusId));
+  //         dispatch(complitedTaskListRequest(`pending,ongoing`));
+
+  //       })
+  //       .catch(err => {
+  //         console.log(err);
+  //         showErrorAlert('Please connect to internet');
+  //       });
+  //   }
+  // };
+
   useEffect(() => {
     if (isFocused) {
       connectionrequest()
         .then(() => {
           dispatch(taskListRequest());
           dispatch(taskLocationRequest());
-          dispatch(complitedTaskListRequest('approved'));
+          dispatch(complitedTaskListRequest(''));
         })
         .catch(err => {
           console.log(err);
@@ -90,6 +138,7 @@ const DailyTask = props => {
       setAddTaskModal(false);
     }
   }, [isFocused]);
+
   const getLocation = async (taskid, buttonRes) => {
     setEndTaskModal(false);
     setAddTaskModal(false);
@@ -154,6 +203,7 @@ const DailyTask = props => {
         });
     }
   };
+
   const onStartTask = async (lat, long, taskid) => {
     const result = await LocationGeocoder(lat, long);
     const actualAddress = result?.address || 'Unknown Address';
@@ -177,6 +227,7 @@ const DailyTask = props => {
         showErrorAlert('Please connect to internet');
       });
   };
+
   const onEndTask = async (lat, long, taskid) => {
     const result = await LocationGeocoder(lat, long);
     const actualAddress = result?.address || 'Unknown Address';
@@ -208,7 +259,11 @@ const DailyTask = props => {
             item?.status == 'approved'
               ? Colors.lightgreen
               : item?.status == 'pending'
+              ? Colors.lightred
+              : item?.status == 'ongoing'
               ? Colors.lightYellow
+              : item?.status == 'complete'
+              ? Colors.lightgreen
               : Colors.lightred,
         },
       ]}
@@ -316,30 +371,30 @@ const DailyTask = props => {
       setTaskLocation(ProfileReducer.taskLocationResponse);
     }
   }, [ProfileReducer.taskLocationResponse]);
+
   useEffect(() => {
     if (ProfileReducer?.taskListResponse?.length > 0) {
       setTaskPurposeList(ProfileReducer.taskListResponse);
     }
   }, [ProfileReducer.taskListResponse]);
+
   useEffect(() => {
     if (ProfileReducer?.complitedTaskResponse?.length > 0) {
       setComplitedTaskData(ProfileReducer.complitedTaskResponse);
     }
   }, [ProfileReducer.complitedTaskResponse]);
+
   if (status == '' || ProfileReducer.status != status) {
     switch (ProfileReducer.status) {
       case 'Profile/complitedTaskListRequest':
         status = ProfileReducer.status;
-
         break;
       case 'Profile/complitedTaskListSuccess':
         status = ProfileReducer.status;
-
         break;
       case 'Profile/complitedTaskListFailure':
         status = ProfileReducer.status;
         showErrorAlert('Something went wrong! ');
-
         break;
 
       case 'Profile/startTaskRequest':
@@ -348,7 +403,8 @@ const DailyTask = props => {
       case 'Profile/startTaskSuccess':
         status = ProfileReducer.status;
         // setAddTaskModal(false);
-        dispatch(complitedTaskListRequest('approved'));
+        // Auto-change filter to "Ongoing" when task is started successfully
+        // updateFilterStatus('ongoing');
         break;
       case 'Profile/startTaskFailure':
         status = ProfileReducer.status;
@@ -360,9 +416,8 @@ const DailyTask = props => {
         break;
       case 'Profile/endTaskSuccess':
         status = ProfileReducer.status;
-        // setAddTaskModal(false);
-        dispatch(complitedTaskListRequest('approved'));
-
+        // Auto-change filter to "Approved" when task is ended successfully
+        // updateFilterStatus('approved');
         break;
       case 'Profile/endTaskFailure':
         status = ProfileReducer.status;
@@ -380,6 +435,37 @@ const DailyTask = props => {
           ProfileReducer?.status == 'Profile/complitedTaskListRequest'
         }
       />
+
+      {/* Status Filter Section */}
+      {/* <View style={styles.filterContainer}>
+        <Text style={styles.filterLabel}>Filter by Status:</Text>
+        <View style={styles.statusDropdownContainer}>
+          <Dropdown
+            style={[
+              styles.statusDropdown,
+              isFocusStatus && { borderColor: '#24bcf7' },
+            ]}
+            placeholderStyle={styles.placeholderStyle}
+            selectedTextStyle={styles.selectedTextStyle}
+            inputSearchStyle={styles.inputSearchStyle}
+            iconStyle={styles.iconStyle}
+            containerStyle={styles.dropdownListContainer}
+            itemTextStyle={styles.dropdownItemText}
+            data={statusOptions}
+            maxHeight={300}
+            labelField="label"
+            valueField="id"
+            placeholder={!isFocusStatus ? 'Select Status' : '...'}
+            searchPlaceholder="Search..."
+            value={selectedStatus?.id || ''}
+            onFocus={() => setIsFocusStatus(true)}
+            onBlur={() => setIsFocusStatus(false)}
+            onChange={handleStatusSelect}
+            renderLeftIcon={() => <Text style={styles.icon}>🔍</Text>}
+          />
+        </View>
+      </View> */}
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
@@ -392,6 +478,7 @@ const DailyTask = props => {
           showsVerticalScrollIndicator={false}
         />
       </ScrollView>
+
       <Modal
         animationIn={'slideInUp'}
         animationOut={'slideOutDown'}
@@ -620,7 +707,7 @@ const DailyTask = props => {
                 marginTop: normalize(20),
               }}
             >
-              You are about to end thsi task. Now what...?
+              You are about to end this task. Now what...?
             </Text>
 
             <TouchableOpacity
@@ -635,7 +722,10 @@ const DailyTask = props => {
                 getLocation(taskId, taskAction);
 
                 setTimeout(() => {
-                  setAddTaskModal(true);
+                  // props?.navigation?.navigate('TaskApproval', {
+                  //   currenLocation: 'DailyTask',
+                  // });
+                 props?.navigation.navigate('TaskApproval')
                 }, 3000); // Adjust this delay if needed
               }}
             >
@@ -695,6 +785,47 @@ const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
     backgroundColor: Colors.white,
+  },
+  filterContainer: {
+    backgroundColor: Colors.white,
+    paddingHorizontal: normalize(15),
+    paddingVertical: normalize(10),
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.lightGrey,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
+  },
+  filterLabel: {
+    fontFamily: Fonts.MulishBold,
+    fontSize: normalize(14),
+    color: Colors.black,
+    marginBottom: normalize(8),
+  },
+  statusDropdownContainer: {
+    width: '100%',
+  },
+  statusDropdown: {
+    height: normalize(40),
+    width: '100%',
+    borderColor: '#2494ea',
+    borderWidth: 1,
+    borderRadius: normalize(6),
+    paddingHorizontal: normalize(12),
+    backgroundColor: 'white',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.18,
+    shadowRadius: 1.0,
   },
   close: {
     position: 'absolute',

@@ -36,6 +36,29 @@ const AttendenceReport = () => {
   const isFocused = useIsFocused();
   const [loading, setLoading] = useState(false);
   const [attendenceList, setAttendenceList] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState(
+    moment().format('YYYY-MM'),
+  );
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+
+  // Generate months from January to current month
+  const generateMonthOptions = () => {
+    const currentYear = moment().year();
+    const currentMonth = moment().month(); // 0-11
+    const months = [];
+
+    for (let i = 0; i <= currentMonth; i++) {
+      const monthData = {
+        value: moment().year(currentYear).month(i).format('YYYY-MM'),
+        label: moment().year(currentYear).month(i).format('MMMM YYYY'),
+      };
+      months.push(monthData);
+    }
+
+    return months.reverse(); // Show latest month first
+  };
+
+  const monthOptions = generateMonthOptions();
 
   const formatDate = date => {
     return moment(date).format('YYYY-MM-DD');
@@ -55,14 +78,36 @@ const AttendenceReport = () => {
   const getStatusColor = status => {
     switch (status) {
       case 'present':
-        return Colors.lightgreen || '#90EE90'; // lightgreen
+        return Colors.lightgreen || '#E8F5E8';
       case 'leave':
-        return Colors.lightred || '#FFB6C1'; // lightred
+        return Colors.lightred || '#FFE8E8';
       case 'holiday':
-        return Colors.lightYellow || '#FFFFE0'; // lightyellow
+        return Colors.lightYellow || '#FFF8E1';
       default:
-        return Colors.white || '#F5F5F5'; // default color
+        return Colors.white || '#F5F5F5';
     }
+  };
+
+  const getStatusBadgeColor = status => {
+    switch (status) {
+      case 'present':
+        return '#4CAF50';
+      case 'leave':
+        return '#F44336';
+      case 'holiday':
+        return '#FF9800';
+      default:
+        return '#9E9E9E';
+    }
+  };
+
+  const prepareSummaryData = () => {
+    if (!attendenceList || Object.keys(attendenceList).length === 0) {
+      return null;
+    }
+
+    const monthKey = Object.keys(attendenceList)[0];
+    return attendenceList[monthKey]?.summary;
   };
 
   const prepareCalendarData = () => {
@@ -70,7 +115,7 @@ const AttendenceReport = () => {
       return [];
     }
 
-    const monthKey = Object.keys(attendenceList)[0]; // Get first month key
+    const monthKey = Object.keys(attendenceList)[0];
     const calendarData = attendenceList[monthKey]?.calendar;
 
     if (!calendarData) {
@@ -85,8 +130,121 @@ const AttendenceReport = () => {
       formattedDate: formatCalendarDate(date),
       status: calendarData[date],
       backgroundColor: getStatusColor(calendarData[date]),
+      badgeColor: getStatusBadgeColor(calendarData[date]),
     }));
   };
+
+  const renderSummaryCard = (title, value, icon, color) => (
+    <View style={[styles.summaryCard, { borderLeftColor: color }]}>
+      <View style={styles.summaryCardContent}>
+        <Text style={styles.summaryCardTitle}>{title}</Text>
+        <Text style={[styles.summaryCardValue, { color }]}>{value}</Text>
+      </View>
+      <View style={[styles.summaryIcon, { backgroundColor: color + '20' }]}>
+        <Text style={[styles.summaryIconText, { color }]}>{icon}</Text>
+      </View>
+    </View>
+  );
+
+  const renderSummarySection = () => {
+    const summary = prepareSummaryData();
+    if (!summary) return null;
+
+    return (
+      <View style={styles.summaryContainer}>
+        <Text style={styles.summaryTitle}>Monthly Summary</Text>
+        <View style={styles.summaryGrid}>
+          {renderSummaryCard(
+            'Present Days',
+            summary.total_present_days,
+            '✓',
+            '#4CAF50',
+          )}
+          {renderSummaryCard(
+            'Leave Days',
+            summary.total_leave_days,
+            '✗',
+            '#F44336',
+          )}
+          {renderSummaryCard(
+            'Absent Days',
+            summary.total_absent_days,
+            '○',
+            '#FF9800',
+          )}
+          {renderSummaryCard(
+            'Working Hours',
+            `${summary.total_working_hours}h`,
+            '⏱',
+            '#2196F3',
+          )}
+        </View>
+        {/* <View style={styles.workingHoursContainer}>
+          <Text style={styles.workingHoursText}>
+             Working Hours: {summary.expected_working_hours}h
+          </Text>
+        </View> */}
+      </View>
+    );
+  };
+
+  const renderMonthSelector = () => (
+    <View style={styles.monthSelectorContainer}>
+      <TouchableOpacity
+        style={styles.monthSelectorButton}
+        onPress={() => setShowMonthPicker(true)}
+      >
+        <Text style={styles.monthSelectorText}>
+          {moment(selectedMonth).format('MMMM YYYY')}
+        </Text>
+        <Text style={styles.monthSelectorArrow}>▼</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderMonthPicker = () => (
+    <Modal
+      isVisible={showMonthPicker}
+      onBackdropPress={() => setShowMonthPicker(false)}
+      style={styles.modalContainer}
+    >
+      <View style={styles.modalContent}>
+        <Text style={styles.modalTitle}>Select Month</Text>
+        <FlatList
+          data={monthOptions}
+          keyExtractor={item => item.value}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[
+                styles.monthOption,
+                selectedMonth === item.value && styles.selectedMonthOption,
+              ]}
+              onPress={() => {
+                setSelectedMonth(item.value);
+                setShowMonthPicker(false);
+              }}
+            >
+              <Text
+                style={[
+                  styles.monthOptionText,
+                  selectedMonth === item.value &&
+                    styles.selectedMonthOptionText,
+                ]}
+              >
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          )}
+        />
+        <TouchableOpacity
+          style={styles.modalCloseButton}
+          onPress={() => setShowMonthPicker(false)}
+        >
+          <Text style={styles.modalCloseButtonText}>Close</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
+  );
 
   const renderCalendarItem = ({ item }) => (
     <View style={[styles.tableRow, { backgroundColor: item.backgroundColor }]}>
@@ -95,10 +253,7 @@ const AttendenceReport = () => {
       </View>
       <View style={styles.statusColumn}>
         <View
-          style={[
-            styles.statusBadge,
-            { backgroundColor: item.backgroundColor },
-          ]}
+          style={[styles.statusBadge, { backgroundColor: item.badgeColor }]}
         >
           <Text style={styles.statusText}>
             {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
@@ -124,30 +279,15 @@ const AttendenceReport = () => {
       <Text style={styles.legendTitle}>Status Legend</Text>
       <View style={styles.legendRow}>
         <View style={styles.legendItem}>
-          <View
-            style={[
-              styles.legendColor,
-              { backgroundColor: Colors.lightgreen || '#90EE90' },
-            ]}
-          />
+          <View style={[styles.legendColor, { backgroundColor: '#4CAF50' }]} />
           <Text style={styles.legendText}>Present</Text>
         </View>
         <View style={styles.legendItem}>
-          <View
-            style={[
-              styles.legendColor,
-              { backgroundColor: Colors.lightred || '#FFB6C1' },
-            ]}
-          />
+          <View style={[styles.legendColor, { backgroundColor: '#F44336' }]} />
           <Text style={styles.legendText}>Leave</Text>
         </View>
         <View style={styles.legendItem}>
-          <View
-            style={[
-              styles.legendColor,
-              { backgroundColor: Colors.lightYellow || '#FFFFE0' },
-            ]}
-          />
+          <View style={[styles.legendColor, { backgroundColor: '#FF9800' }]} />
           <Text style={styles.legendText}>Holiday</Text>
         </View>
       </View>
@@ -207,14 +347,14 @@ const AttendenceReport = () => {
     if (isFocused) {
       connectionrequest()
         .then(() => {
-          dispatch(attendenceReportRequest());
+          dispatch(attendenceReportRequest({ month: selectedMonth }));
         })
         .catch(err => {
           console.log(err);
           showErrorAlert('Please connect to internet');
         });
     }
-  }, [isFocused]);
+  }, [isFocused, selectedMonth]);
 
   useEffect(() => {
     if (ProfileReducer?.attendenceReportResponse) {
@@ -238,14 +378,15 @@ const AttendenceReport = () => {
 
   const calendarData = prepareCalendarData();
 
+  const hasData = calendarData.length > 0 || prepareSummaryData() !== null;
+
   return (
     <View style={styles.container}>
       <Header
         HeaderLogo
         Title
-        placeText={'Attendence Report'}
+        placeText={'Attendance Report'}
         onPress_back_button={() => navigation.goBack()}
-        // onPress_right_button={() => navigation.navigate('Notification')}
       />
       <Loader
         visible={
@@ -254,35 +395,73 @@ const AttendenceReport = () => {
         }
       />
 
-      {/* Calendar Table */}
-      {calendarData.length > 0 && (
-        <View style={styles.tableContainer}>
-          <Text style={styles.tableTitle}>Monthly Attendance Calendar</Text>
-          {renderTableHeader()}
-          <FlatList
-            data={calendarData}
-            keyExtractor={item => item.id}
-            renderItem={renderCalendarItem}
-            style={styles.calendarFlatList}
-            showsVerticalScrollIndicator={false}
-          />
-          {renderLegend()}
-        </View>
-      )}
+      {/* Month Selector at top-right */}
+      <View style={styles.topRightContainer}>{renderMonthSelector()}</View>
 
-      {/* Original Leave Reports List */}
-      <FlatList
-        data={attendenceList}
-        keyExtractor={item => item.id}
-        renderItem={renderAttendenceReport}
-        ListEmptyComponent={() => (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No data available</Text>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
+        {hasData ? (
+          <>
+            {/* Summary Section */}
+            {renderSummarySection()}
+
+            {/* Calendar Section */}
+            <View style={styles.tableContainer}>
+              <View style={styles.tableTopSection}>
+                <Text style={styles.tableTitle}>
+                  Monthly Attendance
+                </Text>
+              </View>
+              {calendarData.length > 0 ? (
+                <>
+                  {renderTableHeader()}
+                  <FlatList
+                    data={calendarData}
+                    keyExtractor={item => item.id}
+                    renderItem={renderCalendarItem}
+                    style={styles.calendarFlatList}
+                    showsVerticalScrollIndicator={false}
+                  />
+                  {renderLegend()}
+                </>
+              ) : (
+                <View style={styles.noDataContainer}>
+                  <Text style={styles.noDataText}>
+                    No attendance data available for this month
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Original Leave Reports List */}
+            <FlatList
+              data={attendenceList}
+              keyExtractor={item => item.id}
+              renderItem={renderAttendenceReport}
+              ListEmptyComponent={() => (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No leave data available</Text>
+                </View>
+              )}
+              style={styles.flatList}
+              showsVerticalScrollIndicator={false}
+            />
+          </>
+        ) : (
+          <View style={styles.noDataMainContainer}>
+            <Text style={styles.noDataMainText}>
+              No data available for selected month
+            </Text>
+            <Text style={styles.noDataSubText}>
+              Please select a different month or check back later
+            </Text>
           </View>
         )}
-        style={styles.flatList}
-        showsVerticalScrollIndicator={false}
-      />
+      </ScrollView>
+
+      {renderMonthPicker()}
     </View>
   );
 };
@@ -295,6 +474,9 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: Colors.bgColor,
     paddingHorizontal: 10,
+  },
+  scrollView: {
+    flex: 1,
   },
   flatList: {
     flex: 1,
@@ -341,12 +523,14 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.MulishSemiBold,
     color: Colors.black,
   },
-  // New Calendar Table Styles
-  tableContainer: {
+
+  // Summary Section Styles
+  summaryContainer: {
     backgroundColor: Colors.white,
     marginVertical: normalize(10),
-    borderRadius: normalize(8),
-    elevation: 2,
+    borderRadius: normalize(12),
+    padding: normalize(16),
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -355,14 +539,188 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
   },
-  tableTitle: {
+  summaryTitle: {
+    fontSize: 20,
+    fontFamily: Fonts.MulishBold,
+    color: Colors.black,
+    textAlign: 'center',
+    marginBottom: normalize(16),
+  },
+  summaryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  summaryCard: {
+    width: '48%',
+    backgroundColor: Colors.white,
+    borderRadius: normalize(8),
+    padding: normalize(12),
+    marginBottom: normalize(12),
+    borderLeftWidth: 4,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  summaryCardContent: {
+    flex: 1,
+  },
+  summaryCardTitle: {
+    fontSize: 12,
+    fontFamily: Fonts.MulishRegular,
+    color: Colors.black,
+    marginBottom: normalize(4),
+  },
+  summaryCardValue: {
+    fontSize: 18,
+    fontFamily: Fonts.MulishBold,
+  },
+  summaryIcon: {
+    width: normalize(32),
+    height: normalize(32),
+    borderRadius: normalize(16),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  summaryIconText: {
+    fontSize: 16,
+    fontFamily: Fonts.MulishBold,
+  },
+  workingHoursContainer: {
+    backgroundColor: '#f8f9fa',
+    padding: normalize(12),
+    borderRadius: normalize(8),
+    marginTop: normalize(8),
+  },
+  workingHoursText: {
+    fontSize: 14,
+    fontFamily: Fonts.MulishSemiBold,
+    color: Colors.black,
+    textAlign: 'center',
+  },
+
+  // Top Right Container
+  topRightContainer: {
+    marginTop: normalize(10),
+  },
+
+  // Month Selector Styles
+  monthSelectorContainer: {
+    alignItems: 'flex-end',
+  },
+  monthSelectorTitle: {
+    fontSize: 12,
+    fontFamily: Fonts.MulishRegular,
+    color: Colors.black,
+    marginBottom: normalize(4),
+  },
+  monthSelectorButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    paddingHorizontal: normalize(12),
+    paddingVertical: normalize(8),
+    borderRadius: normalize(6),
+    borderWidth: 1,
+    borderColor: Colors.lightGray || '#e9ecef',
+    minWidth: normalize(120),
+  },
+  monthSelectorText: {
+    fontSize: 12,
+    fontFamily: Fonts.MulishSemiBold,
+    color: Colors.black,
+    flex: 1,
+  },
+  monthSelectorArrow: {
+    fontSize: 10,
+    color: Colors.black,
+    marginLeft: normalize(4),
+  },
+
+  // Modal Styles
+  modalContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: 0,
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: normalize(12),
+    padding: normalize(20),
+    width: '90%',
+    maxHeight: '70%',
+  },
+  modalTitle: {
     fontSize: 18,
     fontFamily: Fonts.MulishBold,
     color: Colors.black,
     textAlign: 'center',
-    paddingVertical: normalize(15),
+    marginBottom: normalize(16),
+  },
+  monthOption: {
+    paddingVertical: normalize(12),
+    paddingHorizontal: normalize(16),
+    borderRadius: normalize(8),
+    marginBottom: normalize(8),
+  },
+  selectedMonthOption: {
+    backgroundColor: Colors.lightBlue || '#e3f2fd',
+  },
+  monthOptionText: {
+    fontSize: 16,
+    fontFamily: Fonts.MulishSemiBold,
+    color: Colors.black,
+  },
+  selectedMonthOptionText: {
+    color: Colors.blue || '#2196F3',
+  },
+  modalCloseButton: {
+    backgroundColor: Colors.blue || '#2196F3',
+    paddingVertical: normalize(12),
+    borderRadius: normalize(8),
+    marginTop: normalize(16),
+  },
+  modalCloseButtonText: {
+    fontSize: 16,
+    fontFamily: Fonts.MulishBold,
+    color: Colors.white,
+    textAlign: 'center',
+  },
+
+  // Calendar Table Styles
+  tableContainer: {
+    backgroundColor: Colors.white,
+    marginVertical: normalize(10),
+    borderRadius: normalize(12),
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+  },
+  // Table Top Section (Updated)
+  tableTopSection: {
+    paddingHorizontal: normalize(16),
+    paddingVertical: normalize(16),
     borderBottomWidth: 1,
     borderBottomColor: Colors.lightGray || '#e9ecef',
+  },
+  tableTitle: {
+    fontSize: 18,
+    fontFamily: Fonts.MulishBold,
+    color: Colors.black,
+    flex: 1,
   },
   tableHeader: {
     flexDirection: 'row',
@@ -408,12 +766,12 @@ const styles = StyleSheet.create({
     paddingVertical: normalize(6),
     borderRadius: normalize(16),
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   statusText: {
     fontSize: 12,
-    fontFamily: Fonts.MulishSemiBold,
-    color: Colors.black,
+    fontFamily: Fonts.MulishBold,
+    color: Colors.white,
     textTransform: 'capitalize',
   },
   legendContainer: {
@@ -421,6 +779,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.lightGray || '#f8f9fa',
     borderTopWidth: 1,
     borderTopColor: Colors.lightGray || '#e9ecef',
+    borderBottomLeftRadius: normalize(12),
+    borderBottomRightRadius: normalize(12),
   },
   legendTitle: {
     fontSize: 14,
@@ -444,7 +804,7 @@ const styles = StyleSheet.create({
     borderRadius: normalize(8),
     marginRight: normalize(8),
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   legendText: {
     fontSize: 12,
@@ -453,12 +813,46 @@ const styles = StyleSheet.create({
   },
 
   emptyContainer: {
-    padding: 20,marginTop:normalize(80),
+    padding: 20,
+    marginTop: normalize(80),
     alignItems: 'center',
   },
   emptyText: {
     fontSize: 18,
-    fontFamily:Fonts.MulishBold,
+    fontFamily: Fonts.MulishBold,
     color: Colors.white,
+  },
+
+  noDataContainer: {
+    fontSize: 16,
+    fontFamily: Fonts.MulishSemiBold,
+    color: Colors.black,
+    textAlign:'center'
+  },
+  noDataText:{
+  textAlign:'center',
+    fontSize: 16,
+    fontFamily: Fonts.MulishRegular,
+    color: Colors.black,
+  },
+
+  noDataMainContainer:{
+   backgroundColor:Colors.white,
+   borderRadius:8,
+   marginTop:80,
+   padding:15,
+   alignItems:'center'
+  },
+noDataMainText:{
+    fontSize: 16,
+    fontFamily: Fonts.MulishSemiBold,
+    color: Colors.black,
+    textAlign:'center'
+  },
+noDataSubText:{
+  textAlign:'center',
+    fontSize: 16,
+    fontFamily: Fonts.MulishRegular,
+    color: Colors.black,
   },
 });

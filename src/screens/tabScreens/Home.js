@@ -445,7 +445,7 @@ const Home = props => {
                 getLocation('inside', 'present');
               }}
             >
-              <Text style={styles.clockButtonText}>Inside Office</Text>
+              <Text style={styles.clockButtonText}>Office Duty</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -458,7 +458,7 @@ const Home = props => {
                 getLocation('outside', 'pending');
               }}
             >
-              <Text style={styles.clockButtonText}>Outside Office</Text>
+              <Text style={styles.clockButtonText}>Field Duty</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[

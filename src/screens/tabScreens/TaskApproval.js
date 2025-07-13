@@ -52,6 +52,7 @@ const TaskApproval = props => {
   const [taskId, setTaskId] = useState(null);
   const [taskAction, setTaskAction] = useState(null);
   const [endTaskModal, setEndTaskModal] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [addTaskModal, setAddTaskModal] = useState(false);
   const [TaskLocationList, setTaskLocation] = useState([]);
   const [TaskPurposeList, setTaskPurposeList] = useState([]);
@@ -72,8 +73,6 @@ const TaskApproval = props => {
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
-
-  console.log('>>>>>', selectedTaskLocation, selectedTaskPurpose);
 
   const [location, setLocation] = useState({ latitude: null, longitude: null });
   currentLocation = props?.route?.params?.currenLocation;
@@ -120,7 +119,7 @@ const TaskApproval = props => {
         .then(() => {
           dispatch(taskListRequest());
           dispatch(taskLocationRequest());
-          dispatch(complitedTaskListRequest());
+          dispatch(complitedTaskListRequest(`pending,rejected`));
         })
         .catch(err => {
           console.log(err);
@@ -132,6 +131,7 @@ const TaskApproval = props => {
   }, [isFocused]);
 
   const getLocation = async (taskid, buttonRes) => {
+    setLoading(true);
     Geolocation.getCurrentPosition(
       position => {
         const { latitude, longitude } = position.coords;
@@ -151,10 +151,12 @@ const TaskApproval = props => {
     // Validation checks
     if (!selectedTaskLocation?.id) {
       showErrorAlert('Please select task location');
+      setLoading(false);
       return;
     }
     if (!selectedTaskPurpose?.id) {
       showErrorAlert('Please select task purpose');
+      setLoading(false);
       return;
     }
     if (
@@ -162,18 +164,22 @@ const TaskApproval = props => {
       other_location === ''
     ) {
       showErrorAlert('Please enter other location details');
+      setLoading(false);
       return;
     }
     if (selectedTaskPurpose?.title === 'Others' && other_purpose === '') {
       showErrorAlert('Please enter other purpose details');
+      setLoading(false);
       return;
     }
     if (!startDate) {
       showErrorAlert('Please select start date');
+      setLoading(false);
       return;
     }
     if (!endDate) {
       showErrorAlert('Please select end date');
+      setLoading(false);
       return;
     }
 
@@ -186,6 +192,7 @@ const TaskApproval = props => {
 
     if (endDateTime < startDateTime) {
       showErrorAlert('End date and time must be after start date and time');
+      setLoading(false);
       return;
     }
 
@@ -222,7 +229,11 @@ const TaskApproval = props => {
             item?.status == 'approved'
               ? Colors.lightgreen
               : item?.status == 'pending'
+              ? Colors.lightred
+              : item?.status == 'ongoing'
               ? Colors.lightYellow
+              : item?.status == 'complete'
+              ? Colors.lightgreen
               : Colors.lightred,
         },
       ]}
@@ -254,7 +265,7 @@ const TaskApproval = props => {
             style={[
               styles.redText,
               {
-                color: item?.status == 'pending' ? Colors.red : Colors.green,
+                color: item?.status == 'rejected' ? Colors.red : Colors.green,
                 textTransform: 'capitalize',
               },
             ]}
@@ -262,12 +273,12 @@ const TaskApproval = props => {
             {item?.status}
           </Text>
         </Text>
-        <Text style={styles.blackText}>
+        {/* <Text style={styles.blackText}>
           Start Date : <Text style={styles.redText}>{item?.task_duration}</Text>
         </Text>
         <Text style={styles.blackText}>
           End Date : <Text style={styles.redText}>{item?.task_duration}</Text>
-        </Text>
+        </Text> */}
       </View>
     </View>
   );
@@ -369,6 +380,7 @@ const TaskApproval = props => {
         break;
       case 'Profile/addTaskSuccess':
         status = ProfileReducer.status;
+        setLoading(false);
         setAddTaskModal(false);
         // Reset form fields
         setSelectedTasklocatio('');
@@ -379,10 +391,13 @@ const TaskApproval = props => {
         setEndDate(new Date());
         setStartTime(new Date());
         setEndTime(new Date());
-        dispatch(complitedTaskListRequest());
+                  dispatch(complitedTaskListRequest(`pending,rejected`));
+
+
         break;
       case 'Profile/addTaskFailure':
         status = ProfileReducer.status;
+        setLoading(false);
         showErrorAlert('Task add fail due to Network issue, Try again!');
         break;
       case 'Profile/startTaskRequest':
@@ -390,7 +405,8 @@ const TaskApproval = props => {
         break;
       case 'Profile/startTaskSuccess':
         status = ProfileReducer.status;
-        dispatch(complitedTaskListRequest());
+                  dispatch(complitedTaskListRequest(`pending,rejected`));
+
         break;
       case 'Profile/startTaskFailure':
         status = ProfileReducer.status;
@@ -401,7 +417,8 @@ const TaskApproval = props => {
         break;
       case 'Profile/endTaskSuccess':
         status = ProfileReducer.status;
-        dispatch(complitedTaskListRequest());
+                  dispatch(complitedTaskListRequest(`pending,rejected`));
+
         break;
       case 'Profile/endTaskFailure':
         status = ProfileReducer.status;
@@ -414,8 +431,7 @@ const TaskApproval = props => {
     <View style={styles.mainContainer}>
       <Loader
         visible={
-          ProfileReducer?.status == 'Profile/startTaskRequest' ||
-          ProfileReducer?.status == 'Profile/endTaskRequest' ||
+          loading ||
           ProfileReducer?.status == 'Profile/taskLocationRequest' ||
           ProfileReducer?.status == 'Profile/taskListRequest' ||
           ProfileReducer?.status == 'Profile/complitedTaskListRequest' ||
