@@ -436,18 +436,18 @@ const AttendenceReport = () => {
             </View>
 
             {/* Original Leave Reports List */}
-            <FlatList
+            {/* <FlatList
               data={attendenceList}
               keyExtractor={item => item.id}
               renderItem={renderAttendenceReport}
               ListEmptyComponent={() => (
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>No leave data available</Text>
+                <View style={styles.noDataMainContainer}>
+                 <Text style={styles.noDataMainText}>No leave data available</Text>
                 </View>
               )}
               style={styles.flatList}
               showsVerticalScrollIndicator={false}
-            />
+            /> */}
           </>
         ) : (
           <View style={styles.noDataMainContainer}>
@@ -477,6 +477,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    marginBottom:100
   },
   flatList: {
     flex: 1,

@@ -394,7 +394,7 @@ const Home = props => {
       >
         <ImageBackground
           resizeMode="stretch"
-          source={Images.pageBackground}
+          // source={Images.pageBackground}
           style={styles.modalContainer}
         >
           <TouchableOpacity
@@ -409,13 +409,13 @@ const Home = props => {
               style={{ height: normalize(10), width: normalize(10) }}
             />
           </TouchableOpacity>
-          <ScrollView contentContainerStyle={{ paddingTop: 50 }}>
+          <ScrollView contentContainerStyle={{ paddingTop: 50 }} showsVerticalScrollIndicator={false}>
             <Image
               resizeMode="contain"
               style={{
                 alignSelf: 'center',
-                height: normalize(100),
-                width: normalize(100),
+                height: normalize(50),
+                width: normalize(50),
                 marginTop: -50,
               }}
               source={Images.wb_logo}
@@ -426,7 +426,7 @@ const Home = props => {
                 textAlign: 'center',
                 fontFamily: Fonts.MulishExtraBold,
                 fontSize: 22,
-                color: Colors.white,
+                color: Colors.green,
                 marginBottom: normalize(15),
                 marginTop: normalize(20),
               }}
@@ -451,27 +451,27 @@ const Home = props => {
               style={[
                 styles.clockButton,
                 {
-                  backgroundColor: Colors.orange,
+                  backgroundColor: Colors.skyblue,
                 },
               ]}
               onPress={() => {
                 getLocation('outside', 'pending');
               }}
             >
-              <Text style={styles.clockButtonText}>Field Duty</Text>
+              <Text style={styles.clockButtonText}>Official Visit Within ULB Juridiction</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.clockButton,
                 {
-                  backgroundColor: Colors.orange,
+                  backgroundColor: Colors.red,
                 },
               ]}
               onPress={() => {
                 getLocation('other', 'present');
               }}
             >
-              <Text style={styles.clockButtonText}>Other</Text>
+              <Text style={styles.clockButtonText}>Official Visit Outside ULB Juridiction</Text>
             </TouchableOpacity>
           </ScrollView>
         </ImageBackground>
@@ -586,9 +586,10 @@ const styles = StyleSheet.create({
     marginBottom: normalize(20),
   },
   clockButtonText: {
-    fontFamily: Fonts.MulishSemiBold,
-    fontSize: 20,
-    fontWeight: '900',
+    fontFamily: Fonts.MulishBold,
+    fontSize: 18,
+    textAlign:'center',
+    width:'80%',
     color: Colors.white,
   },
 
@@ -605,6 +606,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContainer: {
+    backgroundColor:Colors.white,
     height: normalize(400),
     justifyContent: 'center',
     padding: normalize(20),

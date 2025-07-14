@@ -69,6 +69,8 @@ const TaskApproval = props => {
   const [endDate, setEndDate] = useState(new Date());
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date());
+  console.log("bhjbcshbcsahbc",moment(startTime).format('HH:mm:ss'));
+  
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
@@ -93,7 +95,7 @@ const TaskApproval = props => {
   const onStartTimeChange = (event, selectedTime) => {
     const currentTime = selectedTime || startTime;
     setShowStartTimePicker(Platform.OS === 'ios');
-    setStartTime(currentTime);
+    setStartTime(currentTime) ;
   };
 
   const onEndTimeChange = (event, selectedTime) => {
@@ -205,6 +207,8 @@ const TaskApproval = props => {
     formData.append('time', moment().format('HH:mm:ss'));
     formData.append('createTaskDate', moment(startDate).format('YYYY-MM-DD'));
     formData.append('endTaskDate', moment(endDate).format('YYYY-MM-DD'));
+    formData.append('start_time', moment(startTime).format('HH:mm:ss'));
+    formData.append('end_time', moment(endTime).format('HH:mm:ss'));
     formData.append('latitude', lat);
     formData.append('longitude', long);
     formData.append('address', actualAddress);
@@ -602,14 +606,14 @@ const TaskApproval = props => {
                   📅 {moment(startDate).format('DD/MM/YYYY')}
                 </Text>
               </TouchableOpacity>
-              {/* <TouchableOpacity
+              <TouchableOpacity
                 style={styles.dateTimeButton}
                 onPress={() => setShowStartTimePicker(true)}
               >
                 <Text style={styles.dateTimeButtonText}>
                   🕐 {moment(startTime).format('HH:mm')}
                 </Text>
-              </TouchableOpacity> */}
+              </TouchableOpacity>
             </View>
 
             {/* End Date and Time Section */}
@@ -623,14 +627,14 @@ const TaskApproval = props => {
                   📅 {moment(endDate).format('DD/MM/YYYY')}
                 </Text>
               </TouchableOpacity>
-              {/* <TouchableOpacity
+              <TouchableOpacity
                 style={styles.dateTimeButton}
                 onPress={() => setShowEndTimePicker(true)}
               >
                 <Text style={styles.dateTimeButtonText}>
                   🕐 {moment(endTime).format('HH:mm')}
                 </Text>
-              </TouchableOpacity> */}
+              </TouchableOpacity>
             </View>
 
             <TouchableOpacity
@@ -671,7 +675,7 @@ const TaskApproval = props => {
           onChange={onEndDateChange}
         />
       )}
-      {/* {showStartTimePicker && (
+      {showStartTimePicker && (
         <DateTimePicker
           testID="startTimePicker"
           value={startTime}
@@ -690,7 +694,7 @@ const TaskApproval = props => {
           display="default"
           onChange={onEndTimeChange}
         />
-      )} */}
+      )}
     </View>
   );
 };
