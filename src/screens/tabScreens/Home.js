@@ -86,15 +86,10 @@ const Home = props => {
     );
   };
 
-  // Listen for the returned image from Attendance page
   useEffect(() => {
     if (props?.route?.params?.finalImageUri) {
       setCapturedImageWithGeotag(props.route.params.finalImageUri);
-      // Clear the parameter to avoid re-triggering
       props?.navigation.setParams({ finalImageUri: undefined });
-
-      // Show success message
-      showErrorAlert('Success', 'Photo captured with geotag successfully!');
     }
   }, [props?.route?.params?.finalImageUri]);
   useEffect(() => {
@@ -114,7 +109,6 @@ const Home = props => {
     }
   }, [isFocused]);
   const handleClickPhoto = async (lat, long, isInside, attendenceStatus) => {
-    console.log('>>>', lat, long);
     const result = await LocationGeocoder(lat, long);
     const actualAddress = result?.address || 'Unknown Address';
     setLoading(false);
@@ -130,6 +124,8 @@ const Home = props => {
         ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 2
           ? 'clockout'
           : 'clockin',
+      check_out_remarks:
+        ProfileReducer?.attendenceStatusResponse?.task_tracking_remarks,
     });
   };
 
@@ -303,7 +299,8 @@ const Home = props => {
             'Clocked Out Outside' ||
           ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
             'Clocked Out Inside' ||
-          ProfileReducer?.attendenceStatusResponse?.is_attendence_allowed ===false
+          ProfileReducer?.attendenceStatusResponse?.is_attendence_allowed ===
+            false
         ) && (
           <TouchableOpacity
             disabled={
@@ -369,13 +366,15 @@ const Home = props => {
                   return 'Clock In';
                 if (status === 'present' && is_attendance_given === 1)
                   return 'Clock Out';
-                if (status === 'pending' && is_attendance_given === 2)
-                  return 'Clock in pending...';
                 if (status === 'present' && is_attendance_given === 2)
                   return 'Clock Out';
+                if (status === 'pending' && is_attendance_given === 2)
+                  return 'Clock in pending...';
+                if (status === 'pending' && is_attendance_given === 3)
+                  return 'Clock in pending...';
                 if (status === 'present' && is_attendance_given === 3)
                   return 'Clock Out';
-                return 'Loading...';
+                // return 'Loading...';
               })()}
             </Text>
           </TouchableOpacity>
@@ -409,7 +408,10 @@ const Home = props => {
               style={{ height: normalize(10), width: normalize(10) }}
             />
           </TouchableOpacity>
-          <ScrollView contentContainerStyle={{ paddingTop: 50 }} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={{ paddingTop: 50 }}
+            showsVerticalScrollIndicator={false}
+          >
             <Image
               resizeMode="contain"
               style={{
@@ -458,7 +460,9 @@ const Home = props => {
                 getLocation('outside', 'pending');
               }}
             >
-              <Text style={styles.clockButtonText}>Official Visit Within ULB Juridiction</Text>
+              <Text style={styles.clockButtonText}>
+                Official Visit Within ULB Jurisdiction
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -468,10 +472,12 @@ const Home = props => {
                 },
               ]}
               onPress={() => {
-                getLocation('other', 'present');
+                getLocation('other', 'pending');
               }}
             >
-              <Text style={styles.clockButtonText}>Official Visit Outside ULB Juridiction</Text>
+              <Text style={styles.clockButtonText}>
+                Official Visit Outside ULB Jurisdiction
+              </Text>
             </TouchableOpacity>
           </ScrollView>
         </ImageBackground>
@@ -588,8 +594,8 @@ const styles = StyleSheet.create({
   clockButtonText: {
     fontFamily: Fonts.MulishBold,
     fontSize: 18,
-    textAlign:'center',
-    width:'80%',
+    textAlign: 'center',
+    width: '80%',
     color: Colors.white,
   },
 
@@ -606,7 +612,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContainer: {
-    backgroundColor:Colors.white,
+    backgroundColor: Colors.white,
     height: normalize(400),
     justifyContent: 'center',
     padding: normalize(20),

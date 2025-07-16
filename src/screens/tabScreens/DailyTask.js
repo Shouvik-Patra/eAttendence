@@ -30,6 +30,7 @@ import {
   complitedTaskListRequest,
   endTaskRequest,
   startTaskRequest,
+  taskDoItLaterRequest,
   taskListRequest,
   taskLocationRequest,
 } from '../../redux/reducer/ProfileReducer';
@@ -51,11 +52,16 @@ const TaskApproval = props => {
   const [isClocked, setIsClocked] = useState(false);
   const [taskSubmitId, setTaskSubmitId] = useState(null);
   const [taskTrackingId, setTaskTrackingId] = useState(null);
+
   const [taskAction, setTaskAction] = useState(null);
   const [endTaskModal, setEndTaskModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loader, setLoader] = useState(false);
   const [addTaskModal, setAddTaskModal] = useState(false);
   const [TaskLocationList, setTaskLocation] = useState([]);
+  const [taskSubmit_id, setTaskSubmit_id] = useState();
+  const [taskTracking_id, setTaskTracking_id] = useState();
+
   const [TaskPurposeList, setTaskPurposeList] = useState([]);
   const [complitedTaskData, setComplitedTaskData] = useState([]);
   const [isFocusTask1, setIsFocusTask1] = useState(false);
@@ -120,7 +126,7 @@ const TaskApproval = props => {
         .then(() => {
           dispatch(taskListRequest());
           dispatch(taskLocationRequest());
-          dispatch(complitedTaskListRequest(`approved,ongoing`));
+          dispatch(complitedTaskListRequest(`approved,ongoing,complete`));
         })
         .catch(err => {
           console.log(err);
@@ -130,18 +136,26 @@ const TaskApproval = props => {
       setAddTaskModal(false);
     }
   }, [isFocused]);
-
+  const buttonResRef = useRef(null);
   const getLocation = async (taskid, buttonRes) => {
+    setLoader(true);
+    buttonResRef.current = buttonRes;
     setEndTaskModal(false);
     setAddTaskModal(false);
     Geolocation.getCurrentPosition(
       position => {
         const { latitude, longitude } = position.coords;
+        setLoader(false);
+
         // setLocation({ latitude, longitude });
         if (buttonRes == 'start') {
           onStartTask(latitude, longitude, taskid);
-        } else if (buttonRes == 'end') {
-          onEndTask(latitude, longitude, taskid);
+        } else if (buttonRes == 'end_task') {
+          onEndTask(latitude, longitude, 'end_daily_task');
+        } else if (buttonRes == 'return_office') {
+          onEndTask(latitude, longitude, 'inside');
+        } else if (buttonRes == 'end_day') {
+          onEndTask(latitude, longitude, 'day_end');
         } else {
           onAddNewTask(latitude, longitude);
         }
@@ -157,22 +171,13 @@ const TaskApproval = props => {
     const result = await LocationGeocoder(lat, long);
     const actualAddress = result?.address || 'Unknown Address';
 
-    // Validation checks
-    if (!selectedTaskLocation?.id) {
-      showErrorAlert('Please select task location');
-      setLoading(false);
-      return;
-    }
     if (!selectedTaskPurpose?.id) {
       showErrorAlert('Please select task purpose');
       setLoading(false);
       return;
     }
-    if (
-      selectedTaskLocation?.location_name === 'Others' &&
-      other_location === ''
-    ) {
-      showErrorAlert('Please enter other location details');
+    if (other_location === '') {
+      showErrorAlert('Please enter location details');
       setLoading(false);
       return;
     }
@@ -206,9 +211,9 @@ const TaskApproval = props => {
     }
 
     const formData = new FormData();
+    formData.append('location_id', 4);
+    formData.append('task_name', other_location);
     formData.append('task_id', selectedTaskPurpose?.id);
-    formData.append('location_id', selectedTaskLocation?.id);
-    formData.append('other_location', other_location);
     formData.append('other_purpose', other_purpose);
     formData.append('date', moment(new Date()).format('YYYY-MM-DD'));
     formData.append('time', moment().format('HH:mm:ss'));
@@ -219,7 +224,7 @@ const TaskApproval = props => {
     formData.append('latitude', lat);
     formData.append('longitude', long);
     formData.append('address', actualAddress);
-    formData.append('status', 'approve');
+    formData.append('status', 'approved');
 
     connectionrequest()
       .then(() => {
@@ -254,18 +259,34 @@ const TaskApproval = props => {
         showErrorAlert('Please connect to internet');
       });
   };
+  const onDoTaskLater = async (task_submit_id,tracking_add) => {
+    let obj = {
+      task_submit_id: task_submit_id,
+      id: tracking_add,
+    };
 
-  const onEndTask = async (lat, long, taskid) => {
+    connectionrequest()
+      .then(() => {
+        dispatch(taskDoItLaterRequest(obj));
+      })
+      .catch(err => {
+        console.log(err);
+        showErrorAlert('Please connect to internet');
+      });
+  };
+
+  const onEndTask = async (lat, long, remark) => {
     const result = await LocationGeocoder(lat, long);
     const actualAddress = result?.address || 'Unknown Address';
 
     let obj = {
-      id: taskSubmitId,
-      task_submit_id: taskTrackingId,
+      id: taskTrackingId,
+      task_submit_id: taskSubmitId,
       end_time: moment().format('HH:mm:ss'),
       end_latitude: lat,
       end_longitude: long,
       end_address: actualAddress,
+      task_tracking_remarks: remark,
     };
 
     connectionrequest()
@@ -277,9 +298,8 @@ const TaskApproval = props => {
         showErrorAlert('Please connect to internet');
       });
   };
-  const renderTaskList = ({ item, index }) => (
-    console.log("bjbjhbsdjbdfhjcbdfjhcvb", item),
 
+  const renderTaskList = ({ item, index }) => (
     <View
       style={[
         styles.userInfoContainer,
@@ -288,12 +308,12 @@ const TaskApproval = props => {
             item?.status == 'approved'
               ? Colors.lightgreen
               : item?.status == 'pending'
-                ? Colors.lightred
-                : item?.status == 'ongoing'
-                  ? Colors.lightYellow
-                  : item?.status == 'complete'
-                    ? Colors.lightgreen
-                    : Colors.lightred,
+              ? Colors.lightred
+              : item?.status == 'ongoing'
+              ? Colors.lightYellow
+              : item?.status == 'complete'
+              ? Colors.lightgreen
+              : Colors.lightred,
         },
       ]}
     >
@@ -301,7 +321,7 @@ const TaskApproval = props => {
         <Text style={styles.blackText}>
           Visit Location :{' '}
           <Text style={styles.redText}>
-            {item?.location_name ? item?.location_name : ''}
+            {item?.task_name ? item?.task_name : ''}
           </Text>
         </Text>
         <Text style={styles.blackText}>
@@ -310,10 +330,26 @@ const TaskApproval = props => {
             {item?.task_name ? item?.task_name : ''}
           </Text>
         </Text>
-        <Text style={styles.blackText}>
+        {/* <Text style={styles.blackText}>
           Created at :{' '}
           <Text style={styles.redText}>
             {moment(item?.created_at)
+              .local()
+              .format('ddd, MMM D, YYYY • h:mm A')}
+          </Text>
+        </Text> */}
+        <Text style={styles.blackText}>
+          Start Date :{' '}
+          <Text style={styles.redText}>
+            {moment(item?.createTaskDate)
+              .local()
+              .format('ddd, MMM D, YYYY • h:mm A')}
+          </Text>
+        </Text>
+        <Text style={styles.blackText}>
+          End Date :{' '}
+          <Text style={styles.redText}>
+            {moment(item?.endTaskDate)
               .local()
               .format('ddd, MMM D, YYYY • h:mm A')}
           </Text>
@@ -332,88 +368,128 @@ const TaskApproval = props => {
             {item?.status}
           </Text>
         </Text>
+        <Text style={styles.blackText}>
+          Day :{' '}
+          <Text
+            style={[
+              styles.redText,
+              {
+                color: item?.status === 'ongoing' ? Colors.red : Colors.black,
+                textTransform: 'capitalize',
+              },
+            ]}
+          >
+            {item?.task_activity}
+          </Text>
+        </Text>
       </View>
       {item?.status === 'approved' || item?.status === 'ongoing' ? (
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            width: '100%',
-            alignItems: 'center',
-          }}
-        >
-          <Button
-            height={normalize(45)}
-            width={'48%'}
-            marginTop={normalize(25)}
-            backgroundColor={Colors.green}
-            title={'Start Task'}
-            fontSize={normalize(15)}
-            fontFamily={Fonts.MulishSemiBold}
-            textColor={'white'}
-            opacity={item?.status === 'ongoing' ? 0.5 : 1}
-            disabled={item?.status === 'ongoing'}
-            onPress={() => {
-              if (
-                ProfileReducer?.attendenceStatusResponse?.is_attendance_given !=
-                0
-              ) {
-                getLocation(item?.task_submit_id, 'start');
-              } else {
-                Alert.alert('Please Clock in first to stat your day');
-              }
+        <>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              width: '100%',
+              alignItems: 'center',
             }}
-          />
+          >
+            <Button
+              height={normalize(45)}
+              width={'48%'}
+              marginTop={normalize(25)}
+              backgroundColor={Colors.green}
+              title={'Start Task'}
+              fontSize={normalize(15)}
+              fontFamily={Fonts.MulishSemiBold}
+              textColor={'white'}
+              opacity={item?.status === 'ongoing' ? 0.5 : 1}
+              disabled={item?.status === 'ongoing'}
+              onPress={() => {
+                if (
+                  ProfileReducer?.attendenceStatusResponse
+                    ?.is_attendance_given != 0
+                ) {
+                  getLocation(item?.task_submit_id, 'start');
+                } else {
+                  Alert.alert('Please Clock in first to stat your day');
+                }
+              }}
+            />
+            <Button
+              height={normalize(45)}
+              marginTop={normalize(25)}
+              width={'48%'}
+              backgroundColor={Colors.red}
+              title={'End Task'}
+              fontSize={normalize(15)}
+              fontFamily={Fonts.MulishSemiBold}
+              textColor={'white'}
+              opacity={item?.status === 'approved' ? 0.5 : 1}
+              disabled={item?.status === 'approved'}
+              onPress={() => {
+                setTaskSubmitId(item?.task_submit_id);
+                setTaskTrackingId(item?.task_tracking_id);
+                setTaskAction('end');
+                setEndTaskModal(true);
+              }}
+            />
+          </View>
           <Button
             height={normalize(45)}
-            marginTop={normalize(25)}
-            width={'48%'}
-            backgroundColor={Colors.red}
-            title={'End Task'}
+            width={'100%'}
+            marginTop={normalize(5)}
+            backgroundColor={Colors.skyblue}
+            title={'Do it later'}
             fontSize={normalize(15)}
             fontFamily={Fonts.MulishSemiBold}
             textColor={'white'}
-            opacity={item?.status === 'approved' ? 0.5 : 1}
-            disabled={item?.status === 'approved'}
+            opacity={item?.status === 'ongoing' ? 1 : 0.5}
+            disabled={item?.status != 'ongoing'}
             onPress={() => {
+              console.log('bnjnbsjd0', item);
               setTaskSubmitId(item?.task_submit_id);
               setTaskTrackingId(item?.task_tracking_id);
-              setTaskAction('end');
-              setEndTaskModal(true);
 
-              Alert.alert(
-                'Are you sure?',
-                'Do you want to end the task?',
-                [
-                  {
-                    text: 'Cancel',
-                    style: 'cancel',
+              Alert.alert('Are you sure', 'You want to do this later ?', [
+                {
+                  text: 'No',
+                  onPress: () => console.log('Cancel Pressed'),
+                  style: 'cancel',
+                },
+                {
+                  text: 'Yes',
+                  onPress: () => {
+                    onDoTaskLater(item?.task_submit_id,item?.task_tracking_id);
                   },
-                  {
-                    text: 'Submit',
-                    onPress: () => {
-                      // Call your function here
-                      getLocation(item?.task_submit_id, 'end');
-
-                    },
-                  },
-                ],
-                { cancelable: false }
-              );
+                },
+              ]);
             }}
           />
-        </View>
+        </>
       ) : null}
     </View>
   );
 
-
-
   useEffect(() => {
     if (ProfileReducer?.taskLocationResponse?.length > 0) {
-      setTaskLocation(ProfileReducer.taskLocationResponse);
+      let filteredLocations = ProfileReducer.taskLocationResponse;
+
+      // Filter for high priority locations if attendance status is "Clocked In Other"
+      if (
+        ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
+        'Clocked In Other'
+      ) {
+        filteredLocations = ProfileReducer.taskLocationResponse.filter(
+          location => location.priority === 'high',
+        );
+      }
+
+      setTaskLocation(filteredLocations);
     }
-  }, [ProfileReducer.taskLocationResponse]);
+  }, [
+    ProfileReducer.taskLocationResponse,
+    ProfileReducer.attendenceStatusResponse,
+  ]);
 
   useEffect(() => {
     if (ProfileReducer?.taskListResponse?.length > 0) {
@@ -450,6 +526,7 @@ const TaskApproval = props => {
         break;
       case 'Profile/complitedTaskListRequest':
         status = ProfileReducer.status;
+        setComplitedTaskData([]);
         break;
       case 'Profile/complitedTaskListSuccess':
         status = ProfileReducer.status;
@@ -474,8 +551,7 @@ const TaskApproval = props => {
         setEndDate(new Date());
         setStartTime(new Date());
         setEndTime(new Date());
-        dispatch(complitedTaskListRequest(`approved,ongoing`));
-
+        dispatch(complitedTaskListRequest(`approved,ongoing,complete`));
 
         break;
       case 'Profile/addTaskFailure':
@@ -488,7 +564,7 @@ const TaskApproval = props => {
         break;
       case 'Profile/startTaskSuccess':
         status = ProfileReducer.status;
-        dispatch(complitedTaskListRequest(`approved,ongoing`));
+        dispatch(complitedTaskListRequest(`approved,ongoing,complete`));
 
         break;
       case 'Profile/startTaskFailure':
@@ -500,10 +576,23 @@ const TaskApproval = props => {
         break;
       case 'Profile/endTaskSuccess':
         status = ProfileReducer.status;
-        dispatch(complitedTaskListRequest(`approved,ongoing`));
+        dispatch(complitedTaskListRequest(`approved,ongoing,complete`));
 
         break;
       case 'Profile/endTaskFailure':
+        status = ProfileReducer.status;
+        showErrorAlert('Task add fail due to Network issue, Try again!');
+        break;
+
+      case 'Profile/taskDoItLaterRequest':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/taskDoItLaterSuccess':
+        status = ProfileReducer.status;
+        dispatch(complitedTaskListRequest(`approved,ongoing,complete`));
+
+        break;
+      case 'Profile/taskDoItLaterFailure':
         status = ProfileReducer.status;
         showErrorAlert('Task add fail due to Network issue, Try again!');
         break;
@@ -514,7 +603,6 @@ const TaskApproval = props => {
     <View style={styles.mainContainer}>
       <Loader
         visible={
-          loading ||
           ProfileReducer?.status == 'Profile/taskLocationRequest' ||
           ProfileReducer?.status == 'Profile/taskListRequest' ||
           ProfileReducer?.status == 'Profile/complitedTaskListRequest' ||
@@ -533,17 +621,200 @@ const TaskApproval = props => {
           showsVerticalScrollIndicator={false}
         />
       </ScrollView>
-      <TouchableOpacity
-
-        style={{ backgroundColor: Colors.skyblue, position: 'absolute', borderRadius: 100, padding: normalize(20), right: 20, bottom: 150 }}
-
+      {/* <TouchableOpacity
+        style={{
+          backgroundColor: Colors.skyblue,
+          position: 'absolute',
+          borderRadius: 100,
+          padding: normalize(20),
+          right: 20,
+          bottom: 250,
+        }}
         onPress={() => {
-          setAddTaskModal(true);
+          if (
+            (ProfileReducer?.attendenceStatusResponse
+              ?.attendance_status_text === 'Clocked In Other' &&
+              ProfileReducer?.attendenceStatusResponse?.status === 'pending') ||
+            ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 0
+          ) {
+            Alert.alert(
+              'You are not allowed to add daily task.',
+              ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 0
+                ? 'Please Clock in first'
+                : 'Please ask for Approval',
+            );
+          } else if (
+            ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
+              'Clocked Out Outside' ||
+            ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
+              'Clocked Out Inside' ||
+            ProfileReducer?.attendenceStatusResponse?.is_attendence_allowed ===
+              false
+          ) {
+            Alert.alert(
+              'You are not allowed to add daily task.',
+              'You already clocked Out',
+            );
+          } else {
+            setAddTaskModal(true);
+          }
         }}
       >
-
-        <Image resizeMode='contain' source={Images.addTask} style={{ width: normalize(20), height: normalize(20) }} />
+        <Image
+          resizeMode="contain"
+          source={Images.addTask}
+          style={{ width: normalize(20), height: normalize(20) }}
+        />
+      </TouchableOpacity> */}
+      <TouchableOpacity
+        style={{
+          backgroundColor: Colors.skyblue,
+          position: 'absolute',
+          borderRadius: 100,
+          padding: normalize(20),
+          right: 20,
+          bottom: 150,
+        }}
+        onPress={() => {
+          if (
+            (ProfileReducer?.attendenceStatusResponse
+              ?.attendance_status_text === 'Clocked In Other' &&
+              ProfileReducer?.attendenceStatusResponse?.status === 'pending') ||
+            ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 0
+          ) {
+            Alert.alert(
+              'You are not allowed to add daily task.',
+              ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 0
+                ? 'Please Clock in first'
+                : 'Please ask for Approval',
+            );
+          } else if (
+            ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
+              'Clocked Out Outside' ||
+            ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
+              'Clocked Out Inside' ||
+            ProfileReducer?.attendenceStatusResponse?.is_attendence_allowed ===
+              false
+          ) {
+            Alert.alert(
+              'You are not allowed to add daily task.',
+              'You already clocked Out',
+            );
+          } else {
+            setAddTaskModal(true);
+          }
+        }}
+      >
+        <Image
+          resizeMode="contain"
+          source={Images.addTask}
+          style={{ width: normalize(20), height: normalize(20) }}
+        />
       </TouchableOpacity>
+
+      <Modal
+        animationIn={'slideInUp'}
+        animationOut={'slideOutDown'}
+        backdropTransitionOutTiming={0}
+        backdropOpacity={0.7}
+        hideModalContentWhileAnimating={true}
+        isVisible={endTaskModal}
+        animationInTiming={800}
+        animationOutTiming={1000}
+        onBackdropPress={() => setEndTaskModal(false)}
+      >
+        <ImageBackground
+          resizeMode="stretch"
+          // source={Images.pageBackground}
+          style={[styles.modalContainer, { backgroundColor: Colors.bgColor }]}
+        >
+          <TouchableOpacity
+            style={styles.close}
+            onPress={() => {
+              setEndTaskModal(false);
+            }}
+          >
+            <Image
+              resizeMode="contain"
+              source={Images.close}
+              style={{ height: normalize(10), width: normalize(10) }}
+            />
+          </TouchableOpacity>
+
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.modalScrollContent,
+              { paddingTop: 70 },
+            ]}
+          >
+            <Image
+              resizeMode="contain"
+              style={{
+                alignSelf: 'center',
+                height: normalize(50),
+                width: normalize(50),
+                marginTop: -50,
+              }}
+              source={Images.wb_logo}
+            />
+
+            <Text
+              style={{
+                textAlign: 'center',
+                fontFamily: Fonts.MulishExtraBold,
+                fontSize: 22,
+                color: Colors.white,
+                marginBottom: normalize(15),
+                marginTop: normalize(20),
+              }}
+            >
+              About to end task...
+            </Text>
+
+            <TouchableOpacity
+              style={[
+                styles.clockButton,
+                {
+                  backgroundColor: '#ff7973',
+                },
+              ]}
+              onPress={() => {
+                getLocation('inside', 'end_task');
+              }}
+            >
+              <Text style={[styles.clockButtonText]}>End this task</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.clockButton,
+                {
+                  backgroundColor: Colors.skyblue,
+                },
+              ]}
+              onPress={() => {
+                getLocation('inside', 'return_office');
+              }}
+            >
+              <Text style={styles.clockButtonText}>Returned to office</Text>
+            </TouchableOpacity>
+            {/* <TouchableOpacity
+              style={[
+                styles.clockButton,
+                {
+                  backgroundColor: Colors.red,
+                },
+              ]}
+              onPress={() => {
+                getLocation('inside', 'end_day');
+              }}
+            >
+              <Text style={styles.clockButtonText}>End day</Text>
+            </TouchableOpacity> */}
+          </ScrollView>
+        </ImageBackground>
+      </Modal>
+
       <Modal
         animationIn={'slideInUp'}
         animationOut={'slideOutDown'}
@@ -579,56 +850,35 @@ const TaskApproval = props => {
 
             <Text style={styles.modalTitle}>Add new task</Text>
 
-            <Text style={styles.fieldLabel}>Select visit location</Text>
+            <Text style={styles.fieldLabel}>
+              Describe where are you visiting
+            </Text>
             <View style={styles.dropdownContainer}>
-              <Dropdown
-                style={[
-                  styles.dropdown,
-                  isFocusTask1 && { borderColor: '#24bcf7' },
-                ]}
-                placeholderStyle={styles.placeholderStyle}
-                selectedTextStyle={styles.selectedTextStyle}
-                inputSearchStyle={styles.inputSearchStyle}
-                iconStyle={styles.iconStyle}
-                containerStyle={styles.dropdownListContainer}
-                itemTextStyle={styles.dropdownItemText}
-                data={TaskLocationList}
-                maxHeight={300}
-                labelField="location_name"
-                valueField="id"
-                placeholder={!isFocusTask1 ? 'Select location' : '...'}
-                searchPlaceholder="Search..."
-                value={selectedTaskLocation?.id}
-                onFocus={() => setIsFocusTask1(true)}
-                onBlur={() => setIsFocusTask1(false)}
-                onChange={handleTasklocationSelect}
-                renderLeftIcon={() => <Text style={styles.icon}>📋</Text>}
+              <TextInputWithButton
+                show={true}
+                icon={true}
+                height={normalize(100)}
+                inputWidth={'100%'}
+                marginTop={normalize(2)}
+                backgroundColor={Colors.white}
+                textColor={Colors.textInputColor}
+                InputHeaderText={'Describe'}
+                placeholder={'Describe'}
+                inputheight={normalize(95)}
+                placeholderTextColor={Colors.black}
+                paddingLeft={normalize(25)}
+                borderColor={Colors.skyblue}
+                borderRadius={normalize(5)}
+                editable={true}
+                fontFamily={Fonts.MulishRegular}
+                isheadertext={true}
+                value={other_location}
+                fontSize={normalize(14)}
+                headertxtsize={normalize(13)}
+                multiline
+                onChangeText={e => setOther_location(e)}
+                tintColor={Colors.tintGrey}
               />
-              {selectedTaskLocation?.location_name == 'Others' && (
-                <TextInputWithButton
-                  show={true}
-                  icon={true}
-                  height={normalize(45)}
-                  inputWidth={'100%'}
-                  marginTop={normalize(25)}
-                  backgroundColor={Colors.white}
-                  textColor={Colors.textInputColor}
-                  InputHeaderText={'Other location'}
-                  placeholder={'Other location'}
-                  placeholderTextColor={Colors.black}
-                  paddingLeft={normalize(25)}
-                  borderColor={Colors.skyblue}
-                  borderRadius={normalize(5)}
-                  editable={true}
-                  fontFamily={Fonts.MulishRegular}
-                  isheadertext={true}
-                  value={other_location}
-                  fontSize={normalize(14)}
-                  headertxtsize={normalize(13)}
-                  onChangeText={e => setOther_location(e)}
-                  tintColor={Colors.tintGrey}
-                />
-              )}
             </View>
 
             <Text style={styles.fieldLabel}>Select visit purpose</Text>

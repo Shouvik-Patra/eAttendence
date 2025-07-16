@@ -53,6 +53,7 @@ const Attendence = props => {
   const office_id = props?.route.params?.office_id;
   const isInsideOffice = props?.route?.params?.isInsideOffice;
   const attendenceStatus = props?.route?.params?.attendenceStatus;
+  const check_out_remarks = props?.route?.params?.check_out_remarks;
 
   // UI state
   const [loading, setLoading] = useState(false);
@@ -167,6 +168,7 @@ const Attendence = props => {
     formData.append('check_out_latitude', latitude);
     formData.append('check_out_longitude', longitude);
     formData.append('check_out_address', locationData?.address);
+    formData.append('check_out_remarks', check_out_remarks);
     formData.append('check_out_photo', {
       uri:
         Platform.OS === 'android'

@@ -19,7 +19,7 @@ import { Camera } from 'react-native-vision-camera';
 import normalize from '../../utils/helpers/normalize';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import moment from 'moment';
-import { Dropdown } from 'react-native-element-dropdown';
+import { Dropdown, MultiSelect } from 'react-native-element-dropdown';
 import Modal from 'react-native-modal';
 import { useDispatch, useSelector } from 'react-redux';
 import { useIsFocused } from '@react-navigation/native';
@@ -69,8 +69,10 @@ const TaskApproval = props => {
   const [endDate, setEndDate] = useState(new Date());
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date());
-  console.log("bhjbcshbcsahbc",moment(startTime).format('HH:mm:ss'));
-  
+  const [selectedLocations, setSelectedLocations] = useState([]);
+  const [locationString, setLocationString] = useState('');
+  console.log('locationString>>>>>>>>', locationString);
+
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
@@ -95,7 +97,7 @@ const TaskApproval = props => {
   const onStartTimeChange = (event, selectedTime) => {
     const currentTime = selectedTime || startTime;
     setShowStartTimePicker(Platform.OS === 'ios');
-    setStartTime(currentTime) ;
+    setStartTime(currentTime);
   };
 
   const onEndTimeChange = (event, selectedTime) => {
@@ -151,24 +153,24 @@ const TaskApproval = props => {
     const actualAddress = result?.address || 'Unknown Address';
 
     // Validation checks
-    if (!selectedTaskLocation?.id) {
-      showErrorAlert('Please select task location');
-      setLoading(false);
-      return;
-    }
+    // if (!selectedTaskLocation?.id) {
+    //   showErrorAlert('Please select task location');
+    //   setLoading(false);
+    //   return;
+    // }
     if (!selectedTaskPurpose?.id) {
       showErrorAlert('Please select task purpose');
       setLoading(false);
       return;
     }
-    if (
-      selectedTaskLocation?.location_name === 'Others' &&
-      other_location === ''
-    ) {
-      showErrorAlert('Please enter other location details');
-      setLoading(false);
-      return;
-    }
+    // if (
+    //   selectedTaskLocation?.location_name === 'Others' &&
+    //   other_location === ''
+    // ) {
+    //   showErrorAlert('Please enter other location details');
+    //   setLoading(false);
+    //   return;
+    // }
     if (selectedTaskPurpose?.title === 'Others' && other_purpose === '') {
       showErrorAlert('Please enter other purpose details');
       setLoading(false);
@@ -198,11 +200,28 @@ const TaskApproval = props => {
       return;
     }
 
+    // const formData = new FormData();
+    // // formData.append('task_id', selectedTaskPurpose?.id);
+    // formData.append('task_name', locationString);
+    // formData.append('location_id', selectedTaskPurpose?.id);
+    // formData.append('other_location', other_location);
+    // formData.append('other_purpose', other_purpose);
+    // formData.append('date', moment(new Date()).format('YYYY-MM-DD'));
+    // formData.append('time', moment().format('HH:mm:ss'));
+    // formData.append('createTaskDate', moment(startDate).format('YYYY-MM-DD'));
+    // formData.append('endTaskDate', moment(endDate).format('YYYY-MM-DD'));
+    // formData.append('start_time', moment(startTime).format('HH:mm:ss'));
+    // formData.append('end_time', moment(endTime).format('HH:mm:ss'));
+    // formData.append('latitude', lat);
+    // formData.append('longitude', long);
+    // formData.append('address', actualAddress);
+    // // formData.append('status', 'approved');
+
     const formData = new FormData();
-    formData.append('task_id', selectedTaskPurpose?.id);
-    formData.append('location_id', selectedTaskLocation?.id);
-    formData.append('other_location', other_location);
-    formData.append('other_purpose', other_purpose);
+    formData.append('location_id', selectedTaskPurpose?.id);
+    formData.append('task_name', locationString);
+    // formData.append('task_id', selectedTaskPurpose?.id);
+    formData.append('other_purpose', 'other_purpose');
     formData.append('date', moment(new Date()).format('YYYY-MM-DD'));
     formData.append('time', moment().format('HH:mm:ss'));
     formData.append('createTaskDate', moment(startDate).format('YYYY-MM-DD'));
@@ -212,6 +231,7 @@ const TaskApproval = props => {
     formData.append('latitude', lat);
     formData.append('longitude', long);
     formData.append('address', actualAddress);
+    // formData.append('status', 'approved');
 
     connectionrequest()
       .then(() => {
@@ -244,9 +264,9 @@ const TaskApproval = props => {
     >
       <View style={styles.userTextContainer}>
         <Text style={styles.blackText}>
-          Visit Location :{' '}
+          Visit Location(s) :{' '}
           <Text style={styles.redText}>
-            {item?.location_name ? item?.location_name : ''}
+            {item?.task_name ? item?.task_name : ''}
           </Text>
         </Text>
         <Text style={styles.blackText}>
@@ -299,31 +319,12 @@ const TaskApproval = props => {
         marginBottom: normalize(10),
       }}
       onPress={() => {
-        // const status = ProfileReducer?.attendenceStatusResponse?.status;
-        // const isAttendanceGiven =
-        //   ProfileReducer?.attendenceStatusResponse?.is_attendance_given;
-
-        // if (isAttendanceGiven === 0 && status === 'pending') {
-        //   Alert.alert('You are not allowed to add task', 'Clock In Pending');
-        // } else if (isAttendanceGiven === 1 && status === 'present') {
-        //   setAddTaskModal(true);
-        // } else if (isAttendanceGiven === 2 && status === 'pending') {
-        //   setAddTaskModal(true);
-        // } else {
-        //   setAddTaskModal(true);
-        // }
         setAddTaskModal(true);
       }}
     >
       <Image
         resizeMode="contain"
         style={{ height: 50, width: 50 }}
-        // source={
-        //   ProfileReducer?.attendenceStatusResponse?.attendance_status_text ==
-        //   'Clocked In'
-        //     ? Images.addTask
-        //     : Images.lock
-        // }
         source={Images.addTask}
       />
       <Text style={styles.newTask}>Add New</Text>
@@ -395,38 +396,34 @@ const TaskApproval = props => {
         setEndDate(new Date());
         setStartTime(new Date());
         setEndTime(new Date());
-                  dispatch(complitedTaskListRequest(`pending,rejected`));
-
+        dispatch(complitedTaskListRequest(`pending,rejected`));
 
         break;
       case 'Profile/addTaskFailure':
         status = ProfileReducer.status;
         setLoading(false);
-        showErrorAlert('Task add fail due to Network issue, Try again!');
         break;
       case 'Profile/startTaskRequest':
         status = ProfileReducer.status;
         break;
       case 'Profile/startTaskSuccess':
         status = ProfileReducer.status;
-                  dispatch(complitedTaskListRequest(`pending,rejected`));
+        dispatch(complitedTaskListRequest(`pending,rejected`));
 
         break;
       case 'Profile/startTaskFailure':
         status = ProfileReducer.status;
-        showErrorAlert('Task add fail due to Network issue, Try again!');
         break;
       case 'Profile/endTaskRequest':
         status = ProfileReducer.status;
         break;
       case 'Profile/endTaskSuccess':
         status = ProfileReducer.status;
-                  dispatch(complitedTaskListRequest(`pending,rejected`));
+        dispatch(complitedTaskListRequest(`pending,rejected`));
 
         break;
       case 'Profile/endTaskFailure':
         status = ProfileReducer.status;
-        showErrorAlert('Task add fail due to Network issue, Try again!');
         break;
     }
   }
@@ -435,7 +432,6 @@ const TaskApproval = props => {
     <View style={styles.mainContainer}>
       <Loader
         visible={
-          loading ||
           ProfileReducer?.status == 'Profile/taskLocationRequest' ||
           ProfileReducer?.status == 'Profile/taskListRequest' ||
           ProfileReducer?.status == 'Profile/complitedTaskListRequest' ||
@@ -493,7 +489,7 @@ const TaskApproval = props => {
 
             <Text style={styles.fieldLabel}>Select visit location</Text>
             <View style={styles.dropdownContainer}>
-              <Dropdown
+              <MultiSelect
                 style={[
                   styles.dropdown,
                   isFocusTask1 && { borderColor: '#24bcf7' },
@@ -507,13 +503,17 @@ const TaskApproval = props => {
                 data={TaskLocationList}
                 maxHeight={300}
                 labelField="location_name"
-                valueField="id"
-                placeholder={!isFocusTask1 ? 'Select location' : '...'}
+                valueField="location_name" // value will now be an array of location_name
+                placeholder={!isFocusTask1 ? 'Select location(s)' : '...'}
                 searchPlaceholder="Search..."
-                value={selectedTaskLocation?.id}
+                value={selectedLocations} // array of selected location names
                 onFocus={() => setIsFocusTask1(true)}
                 onBlur={() => setIsFocusTask1(false)}
-                onChange={handleTasklocationSelect}
+                onChange={items => {
+                  // ✅ items is an array of strings like ['DM office', 'SDO']
+                  setSelectedLocations(items);
+                  setLocationString(items.join(',')); // "DM office,SDO"
+                }}
                 renderLeftIcon={() => <Text style={styles.icon}>📋</Text>}
               />
               {selectedTaskLocation?.location_name == 'Others' && (

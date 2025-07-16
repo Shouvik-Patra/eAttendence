@@ -1,4 +1,4 @@
-import {ToastAndroid} from 'react-native';
+import {Platform, ToastAndroid} from 'react-native';
 import Toast from 'react-native-simple-toast';
 import {useSelector} from 'react-redux';
 
@@ -7,7 +7,6 @@ function showErrorAlert(message) {
     ToastAndroid.show(message, ToastAndroid.LONG);
   } else {
     Toast.show(message, Toast.LONG);
-    // ToastAndroid.show(message, ToastAndroid.LONG);
   }
 }
 export default showErrorAlert;

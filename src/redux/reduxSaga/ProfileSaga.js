@@ -46,6 +46,8 @@ import {
   endTaskFailure,
   attendenceReportSuccess,
   attendenceReportFailure,
+  taskDoItLaterSuccess,
+  taskDoItLaterFailure,
 } from '../reducer/ProfileReducer';
 import showErrorAlert from '../../utils/helpers/Toast';
 import {
@@ -253,6 +255,7 @@ export function* addTaskSaga(action) {
       action.payload,
       Header,
     );
+    console.log('addTaskSaga:::response>>', response);
 
     if (response?.data?.meta?.code == 200) {
       yield put(addTaskSuccess(response?.data?.data));
@@ -541,7 +544,12 @@ export function* attendenceReportSaga(action) {
       accesstoken: items?.getTokenResponse,
     };
 
-    const response = yield call(postApi, 'getUserAttendance', action.payload, Header);
+    const response = yield call(
+      postApi,
+      'getUserAttendance',
+      action.payload,
+      Header,
+    );
     if (response?.data?.meta?.code == 200) {
       yield put(attendenceReportSuccess(response?.data?.data));
       showErrorAlert(response?.data?.meta?.message);
@@ -553,6 +561,34 @@ export function* attendenceReportSaga(action) {
     console.log('helooo>>>', error);
 
     yield put(attendenceReportFailure(error?.response?.data));
+    // showErrorAlert(error?.response?.data?.meta?.message);
+  }
+}
+export function* taskDoItLaterSaga(action) {
+  let items = yield select(getItem);
+
+  try {
+    let Header = {
+      Accept: 'application/json',
+      contenttype: 'application/json',
+      accesstoken: items?.getTokenResponse,
+    };
+
+    const response = yield call(
+      postApi,
+      'doitLater-task-tracking',
+      action.payload,
+      Header,
+    );
+    if (response?.data?.meta?.code == 200) {
+      yield put(taskDoItLaterSuccess(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    } else {
+      yield put(taskDoItLaterFailure(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    }
+  } catch (error) {
+    yield put(taskDoItLaterFailure(error?.response?.data));
     // showErrorAlert(error?.response?.data?.meta?.message);
   }
 }
@@ -622,6 +658,9 @@ const watchFunction = [
   })(),
   (function* () {
     yield takeLatest('Profile/attendenceReportRequest', attendenceReportSaga);
+  })(),
+  (function* () {
+    yield takeLatest('Profile/taskDoItLaterRequest', taskDoItLaterSaga);
   })(),
 ];
 

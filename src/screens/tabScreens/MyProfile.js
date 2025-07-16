@@ -53,6 +53,7 @@ const MyProfile = props => {
   );
   const [ward, setWard] = useState(userDetails?.ward || '');
   const [district, setDistrict] = useState(userDetails?.district || '');
+  const [designation, setDesignation] = useState(userDetails?.designation || '');
 
   const [isEditing, setIsEditing] = useState(
     props?.route?.params?.isEditing || false,
@@ -79,6 +80,7 @@ console.log("Profile isEditing>>>>>>>>",isEditing);
       setMunicipality(details?.municipality || '');
       setWard(details?.ward || '');
       setDistrict(details?.district || '');
+      setDesignation(details?.designation || '');
       // setCapturedImageWithGeotag(details?.photo || null);
     }
   }, [ProfileReducer?.userDetailsResponse]);
@@ -108,6 +110,8 @@ console.log("Profile isEditing>>>>>>>>",isEditing);
     setMunicipality(details?.municipality || '');
     setWard(details?.ward || '');
     setDistrict(details?.district || '');
+      setDesignation(details?.designation || '');
+
     setCapturedImageWithGeotag(details?.photo || null);
     setShowDatePicker(false);
   };
@@ -424,9 +428,15 @@ console.log("Profile isEditing>>>>>>>>",isEditing);
               </Text>
             </View>
             <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Designation</Text>
+              <Text style={styles.fieldValue}>
+                {designation || 'Not provided'}
+              </Text>
+            </View>
+            {/* <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>Ward</Text>
               <Text style={styles.fieldValue}>{ward || 'Not provided'}</Text>
-            </View>
+            </View> */}
             <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>District</Text>
               <Text style={styles.fieldValue}>

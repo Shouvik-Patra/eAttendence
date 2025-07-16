@@ -84,7 +84,7 @@ const ProfileMuRegister = props => {
       props?.navigation.setParams({ finalImageUri: undefined });
 
       // Show success message
-      showErrorAlert('Success', 'Photo captured with geotag successfully!');
+      // showErrorAlert('Success', 'Photo captured with geotag successfully!');
     }
   }, [props?.route?.params?.finalImageUri]);
   const handleEdit = () => {
