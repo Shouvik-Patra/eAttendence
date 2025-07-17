@@ -1,7 +1,5 @@
 import {
-  Alert,
   FlatList,
-  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,17 +11,12 @@ import moment from 'moment';
 import Header from '../../components/Header';
 import { Colors, Fonts, Images } from '../../themes/ThemePath';
 import showErrorAlert from '../../utils/helpers/Toast';
-import TextInputWithButton from '../../components/TextInputWithBotton';
-import DatePicker from 'react-native-date-picker';
 import normalize from '../../utils/helpers/normalize';
 import Modal from 'react-native-modal';
 import connectionrequest from '../../utils/helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  applyLeaveRequest,
   attendenceReportRequest,
-  leaveCancelRequest,
-  leaveLogRequest,
 } from '../../redux/reducer/ProfileReducer';
 import Loader from '../../utils/helpers/Loader';
 import { useIsFocused } from '@react-navigation/native';
@@ -40,6 +33,7 @@ const AttendenceReport = () => {
     moment().format('YYYY-MM'),
   );
   const [showMonthPicker, setShowMonthPicker] = useState(false);
+console.log("ProfileReducer?.status>>>",ProfileReducer?.status);
 
   // Generate months from January to current month
   const generateMonthOptions = () => {
@@ -390,8 +384,7 @@ const AttendenceReport = () => {
       />
       <Loader
         visible={
-          ProfileReducer?.status == 'Profile/leaveCancelRequest' ||
-          ProfileReducer?.status == 'Profile/leaveLogRequest'
+          ProfileReducer?.status == 'Profile/attendenceReportRequest'
         }
       />
 

@@ -4,6 +4,7 @@ import {
   ImageBackground,
   Keyboard,
   KeyboardAvoidingView,
+  PermissionsAndroid,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -21,6 +22,9 @@ import showErrorAlert from '../../utils/helpers/Toast';
 import { useDispatch, useSelector } from 'react-redux';
 import { signInRequest } from '../../redux/reducer/AuthReducer';
 import connectionrequest from '../../utils/helpers/NetInfo';
+import ShowMessage from '../../utils/helpers/ShowMessage';
+import constants from '../../utils/helpers/constants';
+import UpdateModal from '../../components/UpdateModal';
 const windowHeight = Dimensions.get('window').height;
 let status = '';
 const Signin = props => {
@@ -28,13 +32,13 @@ const Signin = props => {
   const AuthReducer = useSelector(state => state.AuthReducer);
   console.log('login>>', AuthReducer);
 
-  const [phone, setPhone] = useState('');//8013046678//
+  const [phone, setPhone] = useState(''); //8013046678//
   const [secure1, setSecure1] = useState(true);
-  const [password, setPassword] = useState('');//
+  const [password, setPassword] = useState(''); //
   const [keyboardShown, setKeyboardShown] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-console.log("loading>>>>>>",loading);
+  console.log('loading>>>>>>', loading);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -55,9 +59,33 @@ console.log("loading>>>>>>",loading);
       keyboardDidShowListener.remove();
     };
   }, []);
+  const requestLocationPermission = async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Location Permission',
+            message: 'This app requires access to your location.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
 
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      }
+      return true; // iOS case
+    } catch (err) {
+      console.warn(err);
+      return false;
+    }
+  };
+  useEffect(() => {
+    requestLocationPermission();
+  }, []);
   const employeeLogin = () => {
-    global.user_type ='admin'
+    global.user_type = 'admin';
     setLoading(true);
     if (phone === '') {
       showErrorAlert('Please Enter username');
@@ -67,6 +95,7 @@ console.log("loading>>>>>>",loading);
       let obj = {
         username: phone.trim(),
         password: password,
+        app_version: constants.APP_VERSION,
       };
       console.log('objobjobjobjobj', obj);
       connectionrequest()
@@ -75,7 +104,6 @@ console.log("loading>>>>>>",loading);
         })
         .catch(err => {
           showErrorAlert('Please connect to internet');
-          set
         });
     }
   };
@@ -87,7 +115,6 @@ console.log("loading>>>>>>",loading);
       case 'Auth/signInSuccess':
         status = AuthReducer.status;
         setLoading(false);
-        // props.navigation.navigate('BottomTabNav');
         break;
       case 'Auth/signInFailure':
         status = AuthReducer.status;
@@ -101,13 +128,7 @@ console.log("loading>>>>>>",loading);
       resizeMode="cover"
       style={styles.onbordingStyle}
     >
-
-       <Loader
-            visible={
-              AuthReducer?.status ==
-              'Auth/signInRequest' 
-            }
-          />
+      <Loader visible={AuthReducer?.status == 'Auth/signInRequest'} />
       <SafeAreaView style={{ flex: 1, width: '100%' }}>
         <View style={{ width: '100%', paddingHorizontal: normalize(10) }}>
           <View style={styles.headerContain}>
@@ -117,18 +138,24 @@ console.log("loading>>>>>>",loading);
                 alignSelf: 'center',
                 height: normalize(100),
                 width: normalize(100),
-                marginTop:-30
+                marginTop: -30,
               }}
               source={Images.wb_logo}
             />
 
-            <Text style={[styles.headerText2,{fontSize:18,fontWeight:'bold'}]}>
+            <Text
+              style={[styles.headerText2, { fontSize: 18, fontWeight: 'bold' }]}
+            >
               State Urban Development Agency
             </Text>
             <Text style={styles.headerText2}>
               Under Department of Urban Development & Municipal Affairs
             </Text>
-            <Text style={[styles.headerText2,{fontSize:16,fontWeight:'bold'}]}>Government of West Bengal</Text>
+            <Text
+              style={[styles.headerText2, { fontSize: 16, fontWeight: 'bold' }]}
+            >
+              Government of West Bengal
+            </Text>
           </View>
         </View>
 
@@ -236,6 +263,9 @@ console.log("loading>>>>>>",loading);
             </View>
           </KeyboardAvoidingView>
         </ScrollView>
+
+
+       
       </SafeAreaView>
     </ImageBackground>
   );

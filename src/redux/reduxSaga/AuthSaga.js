@@ -11,6 +11,7 @@ import {
 } from '../reducer/AuthReducer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../utils/helpers/constants';
+import ShowMessage from '../../utils/helpers/ShowMessage';
 export function* getTokenSaga() {
   try {
     const response = yield call(AsyncStorage.getItem, constants.TOKEN);
@@ -39,6 +40,8 @@ export function* signinSaga(action) {
     );
     if (response?.data?.meta?.code == 200) {
       yield put(signInSuccess(response?.data?.data));
+      ShowMessage(response?.data?.meta?.message, 'success');
+
       yield call(
         AsyncStorage.setItem,
         constants.TOKEN,
@@ -47,7 +50,7 @@ export function* signinSaga(action) {
       yield put(getTokenSuccess(response?.data?.data?.access_token));
     } else {
       yield put(signInFailure(response?.data?.data));
-      showErrorAlert(response?.data?.meta?.message);
+      ShowMessage(response?.data?.meta?.message, 'error');
     }
   } catch (error) {
     // Toast('Something went wrong')

@@ -47,6 +47,8 @@ export const Images = {
   call: require('../assets/images/call.png'),
   wb_logo: require('../assets/images/wb_logo.png'),
   addTask: require('../assets/images/addTask.png'),
+  success: require('../assets/images/success.png'),
+  fail: require('../assets/images/fail.png'),
 };
 
 export const Colors = {

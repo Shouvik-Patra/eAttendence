@@ -56,6 +56,7 @@ import {
   logoutSuccess,
 } from '../reducer/AuthReducer';
 import constants from '../../utils/helpers/constants';
+import ShowMessage from '../../utils/helpers/ShowMessage';
 let getItem = state => state.AuthReducer;
 
 //User Profile Details
@@ -127,10 +128,12 @@ export function* clockinSaga(action) {
     const response = yield call(postApi, 'check_in', action.payload, Header);
     if (response?.data?.meta?.code == 200) {
       yield put(clockinSuccess(response?.data?.data));
-      showErrorAlert(response?.data?.meta?.message);
+      // showErrorAlert(response?.data?.meta?.message);
+      ShowMessage(response?.data?.meta?.message, 'success');
     } else {
       yield put(clockinFailure(response?.data?.data));
-      showErrorAlert(response?.data?.meta?.message);
+      // showErrorAlert(response?.data?.meta?.message);
+      ShowMessage(response?.data?.meta?.message, 'error');
     }
   } catch (error) {
     yield put(clockinFailure(error?.response?.data));
@@ -152,14 +155,14 @@ export function* clockoutSaga(action) {
 
     if (response?.data?.meta?.code == 200) {
       yield put(clockoutSuccess(response?.data?.data));
-      showErrorAlert(response?.data?.meta?.message);
+      // showErrorAlert(response?.data?.meta?.message);
+      ShowMessage(response?.data?.meta?.message, 'success');
     } else {
       yield put(clockoutFailure(response?.data?.data));
-      showErrorAlert(response?.data?.meta?.message);
+      // showErrorAlert(response?.data?.meta?.message);
+      ShowMessage(response?.data?.meta?.message, 'error');
     }
   } catch (error) {
-    console.log('helooo>>>', error);
-
     yield put(clockoutFailure(error?.response?.data));
     // showErrorAlert(error?.response?.data?.meta?.message);
   }
@@ -259,10 +262,12 @@ export function* addTaskSaga(action) {
 
     if (response?.data?.meta?.code == 200) {
       yield put(addTaskSuccess(response?.data?.data));
-      showErrorAlert(response?.data?.meta?.message);
+      // showErrorAlert(response?.data?.meta?.message);
+      ShowMessage(response?.data?.meta?.message, 'success');
     } else {
       yield put(addTaskFailure(response?.data?.data));
-      showErrorAlert(response?.data?.meta?.message);
+      // showErrorAlert(response?.data?.meta?.message);
+      ShowMessage(response?.data?.meta?.message, 'error');
     }
   } catch (error) {
     console.log('helooo>>>', error);

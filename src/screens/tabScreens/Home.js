@@ -29,6 +29,8 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { useIsFocused } from '@react-navigation/native';
 import { LocationGeocoder } from '../../components/LocationGeocoder';
+import constants from '../../utils/helpers/constants';
+import UpdateModal from '../../components/UpdateModal';
 let status = '';
 const Home = props => {
   const dispatch = useDispatch();
@@ -39,13 +41,26 @@ const Home = props => {
   const [addTaskModal, setAddTaskModal] = useState(false);
   const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [isInsideOffice, setIsInsideOffice] = useState('');
+
+
+  const [updateModalVisible, setUpdateModalVisible] = useState(false);
 
   const [location, setLocation] = useState({
     latitude: 22.5726,
     longitude: 88.3639,
   });
 
+  useEffect(() => {
+    if (ProfileReducer?.userDetailsResponse?.app_info != undefined) {
+      if (
+      ProfileReducer?.userDetailsResponse?.app_info[0]?.value !=
+      constants?.APP_VERSION
+    ) {
+      setUpdateModalVisible(true);
+    }
+    }
+    
+  }, [isFocused]);
   const requestLocationPermission = async () => {
     if (Platform.OS === 'android') {
       const granted = await PermissionsAndroid.request(
@@ -55,23 +70,57 @@ const Home = props => {
     }
     return true;
   };
-  const getCurrentLocation = async () => {
-    // setLoading(true);
-    Geolocation.getCurrentPosition(
-      position => {
-        const { latitude, longitude } = position.coords;
-        setLocation({ latitude, longitude });
-        setLoading(false);
-      },
-      error => {
-        setLoading(false);
-        console.log('Error getting location', error);
-      },
-      { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 },
-    );
-  };
+  // const getCurrentLocation = async () => {
+  //   setLoading(true);
+  //   console.log('kick====1 - Starting location request');
+
+  //   Geolocation.getCurrentPosition(
+  //     position => {
+  //       console.log('kick====2 - Location received:', position);
+
+  //       const { latitude, longitude } = position.coords;
+  //       console.log('Coordinates:', latitude, longitude);
+
+  //       setLocation({ latitude, longitude });
+
+  //       // Make sure LocationGeocoder is properly imported and available
+  //       const result = LocationGeocoder(latitude, longitude);
+  //       console.log('Geocoder result:', result);
+
+  //       setCurrentAddress(result?.address || 'Unknown Address');
+  //       setLoading(false);
+  //     },
+  //     error => {
+  //       setLoading(false);
+  //       console.log('Error getting location:', error);
+  //       console.log('Error code:', error.code);
+  //       console.log('Error message:', error.message);
+
+  //       // Handle different error types
+  //       switch(error.code) {
+  //         case 1: // PERMISSION_DENIED
+  //           console.log('Location permission denied');
+  //           break;
+  //         case 2: // POSITION_UNAVAILABLE
+  //           console.log('Location position unavailable');
+  //           break;
+  //         case 3: // TIMEOUT
+  //           console.log('Location request timeout');
+  //           break;
+  //         default:
+  //           console.log('Unknown location error');
+  //       }
+  //     },
+  //     {
+  //       enableHighAccuracy: false,  // Changed to true for better accuracy
+  //       timeout: 15000,
+  //       maximumAge: 10000
+  //     }
+  //   );
+  // };
   const getLocation = async (isInside, attendenceStatus) => {
     setLoading(true);
+
     Geolocation.getCurrentPosition(
       position => {
         const { latitude, longitude } = position.coords;
@@ -94,7 +143,7 @@ const Home = props => {
   }, [props?.route?.params?.finalImageUri]);
   useEffect(() => {
     if (isFocused) {
-      getCurrentLocation();
+      // getCurrentLocation();
       connectionrequest()
         .then(() => {
           dispatch(attendenceStatusRequest());
@@ -140,15 +189,6 @@ const Home = props => {
 
   if (status == '' || ProfileReducer.status != status) {
     switch (ProfileReducer.status) {
-      case 'Profile/clockinRequest':
-        status = ProfileReducer.status;
-        break;
-      case 'Profile/clockinSuccess':
-        status = ProfileReducer.status;
-        break;
-      case 'Profile/clockinSuccessFailure':
-        status = ProfileReducer.status;
-        break;
       case 'Profile/userDetailsRequest':
         status = ProfileReducer.status;
         break;
@@ -185,6 +225,7 @@ const Home = props => {
       />
       <Loader
         visible={
+          loading ||
           ProfileReducer?.status == 'Profile/clockinRequest' ||
           ProfileReducer?.status == 'Profile/userDetailsRequest'
         }
@@ -200,8 +241,27 @@ const Home = props => {
             <Text style={styles.userName}>
               {ProfileReducer?.userDetailsResponse?.name}
             </Text>
-            <Text style={styles.userAddress}>
-              Uttar Rajyadharpur, Baidyabati, Hooghly, 712222
+            <Text
+              style={[
+                styles.userAddress,
+                { color: Colors.orange, textTransform: 'capitalize' },
+              ]}
+            >
+              {ProfileReducer?.userDetailsResponse?.municipality}
+            </Text>
+            <Text style={styles.blackText}>
+              Designation :{' '}
+              <Text
+                style={[
+                  styles.redText,
+                  {
+                    color: Colors.black,
+                    fontFamily: Fonts.MulishMedium,
+                  },
+                ]}
+              >
+                {ProfileReducer?.userDetailsResponse?.designation}
+              </Text>
             </Text>
             <Text style={styles.blackText}>
               Attendence :{' '}
@@ -482,6 +542,10 @@ const Home = props => {
           </ScrollView>
         </ImageBackground>
       </Modal>
+       <UpdateModal
+        isVisible={updateModalVisible}
+        onClose={() => setUpdateModalVisible(false)}
+      />
     </View>
   );
 };
@@ -519,29 +583,29 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   userAddress: {
-    fontFamily: Fonts.MulishSemiBold,
+    fontFamily: Fonts.MulishBold,
     fontSize: 16,
-    fontWeight: '500',
+    // fontWeight: '500',
     marginTop: 5,
   },
   blackText: {
     fontFamily: Fonts.MulishSemiBold,
     fontSize: 16,
-    fontWeight: '700',
+    // fontWeight: '700',
     marginTop: 5,
     color: Colors.black,
   },
   redText: {
     fontFamily: Fonts.MulishSemiBold,
     fontSize: 16,
-    fontWeight: '700',
+    // fontWeight: '700',
     marginTop: 5,
     color: Colors.red,
   },
   todayText: {
     fontFamily: Fonts.MulishSemiBold,
     fontSize: 16,
-    fontWeight: '700',
+    // fontWeight: '700',
     marginTop: 5,
     color: Colors.green,
   },

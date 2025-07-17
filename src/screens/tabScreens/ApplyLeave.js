@@ -26,6 +26,7 @@ import {
 import Loader from '../../utils/helpers/Loader';
 import { Dropdown } from 'react-native-element-dropdown';
 import { useIsFocused } from '@react-navigation/native';
+import constants from '../../utils/helpers/constants';
 let status = '';
 const ApplyLeave = () => {
   const dispatch = useDispatch();
@@ -198,6 +199,8 @@ console.log("selectedLeaveType>>>>>>>>>>>>>>>>>>>",selectedLeaveType);
         end_date: formatDate(endDate),
         leave_gov_type: selectedLeaveType,
         reason: reason,
+        app_version: constants.APP_VERSION,
+
       };
       connectionrequest()
         .then(() => {

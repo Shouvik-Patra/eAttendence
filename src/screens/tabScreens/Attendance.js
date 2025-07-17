@@ -26,6 +26,7 @@ import {
   municipalityRegisterRequest,
 } from '../../redux/reducer/ProfileReducer';
 import Loader from '../../utils/helpers/Loader';
+import constants from '../../utils/helpers/constants';
 let status = '';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -136,6 +137,7 @@ const Attendence = props => {
     const imageName = capturedimage.split('/').pop();
     const imageType = 'image/jpeg';
     const formData = new FormData();
+    formData.append('app_version', constants.APP_VERSION);
     formData.append('check_in', moment().format('HH:mm:ss'));
     formData.append('status', attendenceStatus);
     formData.append('check_in_latitude', latitude);

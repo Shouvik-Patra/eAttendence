@@ -27,6 +27,7 @@ import Geolocation from '@react-native-community/geolocation';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   addTaskRequest,
+  attendenceStatusRequest,
   complitedTaskListRequest,
   endTaskRequest,
   startTaskRequest,
@@ -39,10 +40,11 @@ import Loader from '../../utils/helpers/Loader';
 import { LocationGeocoder } from '../../components/LocationGeocoder';
 import TextInputWithButton from '../../components/TextInputWithBotton';
 import Button from '../../components/Button';
+import constants from '../../utils/helpers/constants';
 
 let status = '';
 
-const TaskApproval = props => {
+const DailyTask = props => {
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
@@ -123,6 +125,7 @@ const TaskApproval = props => {
           dispatch(taskListRequest());
           dispatch(taskLocationRequest());
           dispatch(complitedTaskListRequest(`approved,ongoing,complete`));
+          dispatch(attendenceStatusRequest());
         })
         .catch(err => {
           console.log(err);
@@ -219,6 +222,7 @@ const TaskApproval = props => {
     formData.append('longitude', long);
     formData.append('address', actualAddress);
     formData.append('status', 'approved');
+    formData.append('app_version', constants.APP_VERSION);
 
     connectionrequest()
       .then(() => {
@@ -294,7 +298,11 @@ const TaskApproval = props => {
       });
   };
 
-  const renderTaskList = ({ item, index }) => (
+const renderTaskList = ({ item, index }) => {
+  // Check if any task is currently ongoing
+  const isAnyTaskOngoing = complitedTaskData.some(task => task.status === 'ongoing');
+  
+  return (
     <View
       style={[
         styles.userInfoContainer,
@@ -325,14 +333,6 @@ const TaskApproval = props => {
             {item?.task_name ? item?.task_name : ''}
           </Text>
         </Text>
-        {/* <Text style={styles.blackText}>
-          Created at :{' '}
-          <Text style={styles.redText}>
-            {moment(item?.created_at)
-              .local()
-              .format('ddd, MMM D, YYYY • h:mm A')}
-          </Text>
-        </Text> */}
         <Text style={styles.blackText}>
           Start Date :{' '}
           <Text style={styles.redText}>
@@ -378,7 +378,9 @@ const TaskApproval = props => {
           </Text>
         </Text>
       </View>
-      {item?.status === 'approved' || item?.status === 'ongoing' ? (
+      
+      {/* Only show buttons if current task is approved or ongoing */}
+      {(item?.status === 'approved' || item?.status === 'ongoing') && (
         <>
           <View
             style={{
@@ -388,6 +390,7 @@ const TaskApproval = props => {
               alignItems: 'center',
             }}
           >
+            {/* Start Task Button */}
             <Button
               height={normalize(45)}
               width={'48%'}
@@ -397,8 +400,16 @@ const TaskApproval = props => {
               fontSize={normalize(15)}
               fontFamily={Fonts.MulishSemiBold}
               textColor={'white'}
-              opacity={item?.status === 'ongoing' ? 0.5 : 1}
-              disabled={item?.status === 'ongoing'}
+              opacity={
+                item?.status === 'ongoing' || 
+                (isAnyTaskOngoing && item?.status !== 'ongoing')
+                  ? 0.5 
+                  : 1
+              }
+              disabled={
+                item?.status === 'ongoing' || 
+                (isAnyTaskOngoing && item?.status !== 'ongoing')
+              }
               onPress={() => {
                 if (
                   ProfileReducer?.attendenceStatusResponse
@@ -406,10 +417,12 @@ const TaskApproval = props => {
                 ) {
                   getLocation(item?.task_submit_id, 'start');
                 } else {
-                  Alert.alert('Please Clock in first to stat your day');
+                  Alert.alert('Please Clock in first to start your day');
                 }
               }}
             />
+            
+            {/* End Task Button */}
             <Button
               height={normalize(45)}
               marginTop={normalize(25)}
@@ -419,8 +432,16 @@ const TaskApproval = props => {
               fontSize={normalize(15)}
               fontFamily={Fonts.MulishSemiBold}
               textColor={'white'}
-              opacity={item?.status === 'approved' ? 0.5 : 1}
-              disabled={item?.status === 'approved'}
+              opacity={
+                item?.status === 'approved' || 
+                (isAnyTaskOngoing && item?.status !== 'ongoing')
+                  ? 0.5 
+                  : 1
+              }
+              disabled={
+                item?.status === 'approved' || 
+                (isAnyTaskOngoing && item?.status !== 'ongoing')
+              }
               onPress={() => {
                 setTaskSubmitId(item?.task_submit_id);
                 setTaskTrackingId(item?.task_tracking_id);
@@ -429,6 +450,8 @@ const TaskApproval = props => {
               }}
             />
           </View>
+          
+          {/* Do it later Button */}
           <Button
             height={normalize(45)}
             width={'100%'}
@@ -438,8 +461,16 @@ const TaskApproval = props => {
             fontSize={normalize(15)}
             fontFamily={Fonts.MulishSemiBold}
             textColor={'white'}
-            opacity={item?.status === 'ongoing' ? 1 : 0.5}
-            disabled={item?.status != 'ongoing'}
+            opacity={
+              item?.status !== 'ongoing' || 
+              (isAnyTaskOngoing && item?.status !== 'ongoing')
+                ? 0.5 
+                : 1
+            }
+            disabled={
+              item?.status !== 'ongoing' || 
+              (isAnyTaskOngoing && item?.status !== 'ongoing')
+            }
             onPress={() => {
               console.log('bnjnbsjd0', item);
               setTaskSubmitId(item?.task_submit_id);
@@ -461,9 +492,10 @@ const TaskApproval = props => {
             }}
           />
         </>
-      ) : null}
+      )}
     </View>
   );
+};
 
   useEffect(() => {
     if (ProfileReducer?.taskLocationResponse?.length > 0) {
@@ -495,6 +527,7 @@ const TaskApproval = props => {
   useEffect(() => {
     if (ProfileReducer?.complitedTaskResponse?.length > 0) {
       setComplitedTaskData(ProfileReducer.complitedTaskResponse);
+      dispatch(attendenceStatusRequest());
     }
   }, [ProfileReducer.complitedTaskResponse]);
 
@@ -548,6 +581,7 @@ const TaskApproval = props => {
         setStartTime(new Date());
         setEndTime(new Date());
         dispatch(complitedTaskListRequest(`approved,ongoing,complete`));
+        dispatch(attendenceStatusRequest());
 
         break;
       case 'Profile/addTaskFailure':
@@ -561,6 +595,7 @@ const TaskApproval = props => {
       case 'Profile/startTaskSuccess':
         status = ProfileReducer.status;
         dispatch(complitedTaskListRequest(`approved,ongoing,complete`));
+        dispatch(attendenceStatusRequest());
 
         break;
       case 'Profile/startTaskFailure':
@@ -573,6 +608,7 @@ const TaskApproval = props => {
       case 'Profile/endTaskSuccess':
         status = ProfileReducer.status;
         dispatch(complitedTaskListRequest(`approved,ongoing,complete`));
+        dispatch(attendenceStatusRequest());
 
         break;
       case 'Profile/endTaskFailure':
@@ -586,6 +622,7 @@ const TaskApproval = props => {
       case 'Profile/taskDoItLaterSuccess':
         status = ProfileReducer.status;
         dispatch(complitedTaskListRequest(`approved,ongoing,complete`));
+        dispatch(attendenceStatusRequest());
 
         break;
       case 'Profile/taskDoItLaterFailure':
@@ -599,7 +636,7 @@ const TaskApproval = props => {
     <View style={styles.mainContainer}>
       <Loader
         visible={
-          loader ||
+          // loader ||
           ProfileReducer?.status == 'Profile/taskLocationRequest' ||
           ProfileReducer?.status == 'Profile/taskListRequest' ||
           ProfileReducer?.status == 'Profile/complitedTaskListRequest' ||
@@ -1034,7 +1071,7 @@ const TaskApproval = props => {
   );
 };
 
-export default TaskApproval;
+export default DailyTask;
 
 const styles = StyleSheet.create({
   mainContainer: {

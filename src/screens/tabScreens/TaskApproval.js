@@ -11,9 +11,13 @@ import {
   Platform,
 } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
+import Header from '../../components/Header';
 import { Colors, Fonts, Images } from '../../themes/ThemePath';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import showErrorAlert from '../../utils/helpers/Toast';
+import { Camera } from 'react-native-vision-camera';
 import normalize from '../../utils/helpers/normalize';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import moment from 'moment';
 import { Dropdown, MultiSelect } from 'react-native-element-dropdown';
 import Modal from 'react-native-modal';
@@ -31,21 +35,24 @@ import connectionrequest from '../../utils/helpers/NetInfo';
 import Loader from '../../utils/helpers/Loader';
 import { LocationGeocoder } from '../../components/LocationGeocoder';
 import TextInputWithButton from '../../components/TextInputWithBotton';
+import Button from '../../components/Button';
+import constants from '../../utils/helpers/constants';
 
 let status = '';
-let currentLocation = '';
 
 const TaskApproval = props => {
   const dispatch = useDispatch();
   const ProfileReducer = useSelector(state => state.ProfileReducer);
-  console.log('Reducer Status:', ProfileReducer.status);
 
   const isFocused = useIsFocused();
   const [loading, setLoading] = useState(false);
+  const [loader, setLoader] = useState(false);
   const [addTaskModal, setAddTaskModal] = useState(false);
   const [TaskLocationList, setTaskLocation] = useState([]);
+  const [selectedLocations, setSelectedLocations] = useState([]);
+  const [locationString, setLocationString] = useState('');
   const [TaskPurposeList, setTaskPurposeList] = useState([]);
-  const [complitedTaskData, setComplitedTaskData] = useState([]);
+  const [taskApprovalData, setTaskApprovalData] = useState([]);
   const [isFocusTask1, setIsFocusTask1] = useState(false);
   const [isFocusTask2, setIsFocusTask2] = useState(false);
   const [selectedTaskLocation, setSelectedTasklocatio] = useState('');
@@ -58,15 +65,10 @@ const TaskApproval = props => {
   const [endDate, setEndDate] = useState(new Date());
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date());
-  const [selectedLocations, setSelectedLocations] = useState([]);
-  const [locationString, setLocationString] = useState('');
-  console.log('locationString>>>>>>>>', locationString);
-
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
-  currentLocation = props?.route?.params?.currenLocation;
 
   // Date/Time picker handlers
   const onStartDateChange = (event, selectedDate) => {
@@ -93,12 +95,6 @@ const TaskApproval = props => {
     setEndTime(currentTime);
   };
 
-  // Fixed dropdown handlers and state management
-  const handleTasklocationSelect = async item => {
-    setSelectedTasklocatio(item);
-    setIsFocusTask1(false);
-  };
-
   const handleTaskPurposeSelect = async item => {
     setSelectedTaskPurpose(item);
     setIsFocusTask2(false);
@@ -120,7 +116,7 @@ const TaskApproval = props => {
       setAddTaskModal(false);
     }
   }, [isFocused]);
-
+  const buttonResRef = useRef(null);
   const getLocation = async (taskid, buttonRes) => {
     setLoading(true);
     setAddTaskModal(false);
@@ -187,6 +183,7 @@ const TaskApproval = props => {
       setLoading(false);
       return;
     }
+    setTaskApprovalData([]);
 
     const formData = new FormData();
     formData.append('location_id', selectedTaskPurpose?.id);
@@ -201,6 +198,7 @@ const TaskApproval = props => {
     formData.append('latitude', lat);
     formData.append('longitude', long);
     formData.append('address', actualAddress);
+    formData.append('app_version', constants.APP_VERSION);
 
     connectionrequest()
       .then(() => {
@@ -302,9 +300,24 @@ const TaskApproval = props => {
 
   useEffect(() => {
     if (ProfileReducer?.taskLocationResponse?.length > 0) {
-      setTaskLocation(ProfileReducer.taskLocationResponse);
+      let filteredLocations = ProfileReducer.taskLocationResponse;
+
+      // Filter for high priority locations if attendance status is "Clocked In Other"
+      if (
+        ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
+        'Clocked In Other'
+      ) {
+        filteredLocations = ProfileReducer.taskLocationResponse.filter(
+          location => location.priority === 'high',
+        );
+      }
+
+      setTaskLocation(filteredLocations);
     }
-  }, [ProfileReducer.taskLocationResponse]);
+  }, [
+    ProfileReducer.taskLocationResponse,
+    ProfileReducer.attendenceStatusResponse,
+  ]);
 
   useEffect(() => {
     if (ProfileReducer?.taskListResponse?.length > 0) {
@@ -314,28 +327,9 @@ const TaskApproval = props => {
 
   useEffect(() => {
     if (ProfileReducer?.complitedTaskResponse?.length > 0) {
-      setComplitedTaskData(ProfileReducer.complitedTaskResponse);
+      setTaskApprovalData(ProfileReducer.complitedTaskResponse);
     }
   }, [ProfileReducer.complitedTaskResponse]);
-  useEffect(() => {
-    if (ProfileReducer.status === 'Profile/addTaskSuccess') {
-      setLoading(false);
-      Alert.alert('Hello');
-      setAddTaskModal(false);
-      // Reset form fields
-      setSelectedTasklocatio('');
-      setSelectedTaskPurpose('');
-      setOther_location('');
-      setOther_purpose('');
-      setStartDate(new Date());
-      setEndDate(new Date());
-      setStartTime(new Date());
-      setEndTime(new Date());
-      dispatch(complitedTaskListRequest(`pending,rejected`));
-    } else if (ProfileReducer.status === 'Profile/addTaskFailure') {
-      setLoading(false);
-    }
-  }, [ProfileReducer.status]);
 
   if (status == '' || ProfileReducer.status != status) {
     switch (ProfileReducer.status) {
@@ -360,6 +354,7 @@ const TaskApproval = props => {
         break;
       case 'Profile/complitedTaskListRequest':
         status = ProfileReducer.status;
+        setTaskApprovalData([]);
         break;
       case 'Profile/complitedTaskListSuccess':
         status = ProfileReducer.status;
@@ -373,33 +368,23 @@ const TaskApproval = props => {
         break;
       case 'Profile/addTaskSuccess':
         status = ProfileReducer.status;
+        setLoading(false);
+        setAddTaskModal(false);
+        // Reset form fields
+        setSelectedTasklocatio('');
+        setSelectedTaskPurpose('');
+        setOther_location('');
+        setOther_purpose('');
+        setStartDate(new Date());
+        setEndDate(new Date());
+        setStartTime(new Date());
+        setEndTime(new Date());
+        dispatch(complitedTaskListRequest(`pending,rejected`));
 
         break;
       case 'Profile/addTaskFailure':
         status = ProfileReducer.status;
         setLoading(false);
-        break;
-      case 'Profile/startTaskRequest':
-        status = ProfileReducer.status;
-        break;
-      case 'Profile/startTaskSuccess':
-        status = ProfileReducer.status;
-        dispatch(complitedTaskListRequest(`pending,rejected`));
-
-        break;
-      case 'Profile/startTaskFailure':
-        status = ProfileReducer.status;
-        break;
-      case 'Profile/endTaskRequest':
-        status = ProfileReducer.status;
-        break;
-      case 'Profile/endTaskSuccess':
-        status = ProfileReducer.status;
-        dispatch(complitedTaskListRequest(`pending,rejected`));
-
-        break;
-      case 'Profile/endTaskFailure':
-        status = ProfileReducer.status;
         break;
     }
   }
@@ -408,6 +393,7 @@ const TaskApproval = props => {
     <View style={styles.mainContainer}>
       <Loader
         visible={
+          loader ||
           ProfileReducer?.status == 'Profile/taskLocationRequest' ||
           ProfileReducer?.status == 'Profile/taskListRequest' ||
           ProfileReducer?.status == 'Profile/complitedTaskListRequest' ||
@@ -420,7 +406,7 @@ const TaskApproval = props => {
         showsVerticalScrollIndicator={false}
       >
         <FlatList
-          data={complitedTaskData}
+          data={taskApprovalData}
           keyExtractor={item => item.id}
           renderItem={renderTaskList}
           ListFooterComponent={renderFooter}
