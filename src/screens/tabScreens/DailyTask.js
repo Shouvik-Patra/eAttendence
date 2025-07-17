@@ -41,7 +41,6 @@ import TextInputWithButton from '../../components/TextInputWithBotton';
 import Button from '../../components/Button';
 
 let status = '';
-let currentLocation = '';
 
 const TaskApproval = props => {
   const dispatch = useDispatch();
@@ -80,9 +79,6 @@ const TaskApproval = props => {
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
-
-  const [location, setLocation] = useState({ latitude: null, longitude: null });
-  currentLocation = props?.route?.params?.currenLocation;
 
   // Date/Time picker handlers
   const onStartDateChange = (event, selectedDate) => {
@@ -145,9 +141,7 @@ const TaskApproval = props => {
     Geolocation.getCurrentPosition(
       position => {
         const { latitude, longitude } = position.coords;
-        setLoader(false);
 
-        // setLocation({ latitude, longitude });
         if (buttonRes == 'start') {
           onStartTask(latitude, longitude, taskid);
         } else if (buttonRes == 'end_task') {
@@ -170,7 +164,7 @@ const TaskApproval = props => {
   const onAddNewTask = async (lat, long) => {
     const result = await LocationGeocoder(lat, long);
     const actualAddress = result?.address || 'Unknown Address';
-
+    setLoader(false);
     if (!selectedTaskPurpose?.id) {
       showErrorAlert('Please select task purpose');
       setLoading(false);
@@ -239,7 +233,7 @@ const TaskApproval = props => {
   const onStartTask = async (lat, long, taskid) => {
     const result = await LocationGeocoder(lat, long);
     const actualAddress = result?.address || 'Unknown Address';
-
+    setLoader(false);
     let obj = {
       id: taskid,
       start_time: moment().format('HH:mm:ss'),
@@ -259,7 +253,8 @@ const TaskApproval = props => {
         showErrorAlert('Please connect to internet');
       });
   };
-  const onDoTaskLater = async (task_submit_id,tracking_add) => {
+  const onDoTaskLater = async (task_submit_id, tracking_add) => {
+    setLoader(false);
     let obj = {
       task_submit_id: task_submit_id,
       id: tracking_add,
@@ -278,7 +273,7 @@ const TaskApproval = props => {
   const onEndTask = async (lat, long, remark) => {
     const result = await LocationGeocoder(lat, long);
     const actualAddress = result?.address || 'Unknown Address';
-
+    setLoader(false);
     let obj = {
       id: taskTrackingId,
       task_submit_id: taskSubmitId,
@@ -459,7 +454,7 @@ const TaskApproval = props => {
                 {
                   text: 'Yes',
                   onPress: () => {
-                    onDoTaskLater(item?.task_submit_id,item?.task_tracking_id);
+                    onDoTaskLater(item?.task_submit_id, item?.task_tracking_id);
                   },
                 },
               ]);
@@ -542,6 +537,7 @@ const TaskApproval = props => {
         status = ProfileReducer.status;
         setLoading(false);
         setAddTaskModal(false);
+
         // Reset form fields
         setSelectedTasklocatio('');
         setSelectedTaskPurpose('');
@@ -603,6 +599,7 @@ const TaskApproval = props => {
     <View style={styles.mainContainer}>
       <Loader
         visible={
+          loader ||
           ProfileReducer?.status == 'Profile/taskLocationRequest' ||
           ProfileReducer?.status == 'Profile/taskListRequest' ||
           ProfileReducer?.status == 'Profile/complitedTaskListRequest' ||

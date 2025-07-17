@@ -87,7 +87,7 @@ export default function Loader({ visible, text }) {
         flex: 1,
         position: 'absolute',
         backgroundColor: 'rgba(0,0,0,0.7)',
-        zIndex: 10,
+        zIndex: 99,
         top: 0,
         bottom: 0,
         left: 0,

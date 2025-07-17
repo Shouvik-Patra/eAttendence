@@ -53,16 +53,18 @@ const MyProfile = props => {
   );
   const [ward, setWard] = useState(userDetails?.ward || '');
   const [district, setDistrict] = useState(userDetails?.district || '');
-  const [designation, setDesignation] = useState(userDetails?.designation || '');
-
-  const [isEditing, setIsEditing] = useState(
-    props?.route?.params?.isEditing || false,
+  const [designation, setDesignation] = useState(
+    userDetails?.designation || '',
   );
+
+  const [isEditing, setIsEditing] = useState(false);
+
+  console.log('isEditing>>', isEditing);
+
   const [loading, setLoading] = useState(false);
   const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(
     userDetails?.photo || null,
   );
-console.log("Profile isEditing>>>>>>>>",isEditing);
 
   useEffect(() => {
     getuserDetails();
@@ -110,7 +112,7 @@ console.log("Profile isEditing>>>>>>>>",isEditing);
     setMunicipality(details?.municipality || '');
     setWard(details?.ward || '');
     setDistrict(details?.district || '');
-      setDesignation(details?.designation || '');
+    setDesignation(details?.designation || '');
 
     setCapturedImageWithGeotag(details?.photo || null);
     setShowDatePicker(false);
@@ -143,7 +145,14 @@ console.log("Profile isEditing>>>>>>>>",isEditing);
     formData.append('name', name);
     formData.append('email', email);
     formData.append('dob', dob);
-    formData.append('photo', capturedImageWithGeotag);
+    formData.append('photo', {
+      uri:
+        Platform.OS === 'android'
+          ? capturedImageWithGeotag
+          : capturedImageWithGeotag.replace('file://', ''),
+      name: imageName,
+      type: imageType,
+    });
 
     connectionrequest()
       .then(() => {

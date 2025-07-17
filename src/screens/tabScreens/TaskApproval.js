@@ -11,13 +11,9 @@ import {
   Platform,
 } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import Header from '../../components/Header';
 import { Colors, Fonts, Images } from '../../themes/ThemePath';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import showErrorAlert from '../../utils/helpers/Toast';
-import { Camera } from 'react-native-vision-camera';
 import normalize from '../../utils/helpers/normalize';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import moment from 'moment';
 import { Dropdown, MultiSelect } from 'react-native-element-dropdown';
 import Modal from 'react-native-modal';
@@ -28,8 +24,6 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   addTaskRequest,
   complitedTaskListRequest,
-  endTaskRequest,
-  startTaskRequest,
   taskListRequest,
   taskLocationRequest,
 } from '../../redux/reducer/ProfileReducer';
@@ -37,21 +31,16 @@ import connectionrequest from '../../utils/helpers/NetInfo';
 import Loader from '../../utils/helpers/Loader';
 import { LocationGeocoder } from '../../components/LocationGeocoder';
 import TextInputWithButton from '../../components/TextInputWithBotton';
-import Button from '../../components/Button';
 
 let status = '';
 let currentLocation = '';
 
 const TaskApproval = props => {
   const dispatch = useDispatch();
-  const AuthReducer = useSelector(state => state.AuthReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
+  console.log('Reducer Status:', ProfileReducer.status);
 
   const isFocused = useIsFocused();
-  const [isClocked, setIsClocked] = useState(false);
-  const [taskId, setTaskId] = useState(null);
-  const [taskAction, setTaskAction] = useState(null);
-  const [endTaskModal, setEndTaskModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [addTaskModal, setAddTaskModal] = useState(false);
   const [TaskLocationList, setTaskLocation] = useState([]);
@@ -77,8 +66,6 @@ const TaskApproval = props => {
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
-
-  const [location, setLocation] = useState({ latitude: null, longitude: null });
   currentLocation = props?.route?.params?.currenLocation;
 
   // Date/Time picker handlers
@@ -136,6 +123,7 @@ const TaskApproval = props => {
 
   const getLocation = async (taskid, buttonRes) => {
     setLoading(true);
+    setAddTaskModal(false);
     Geolocation.getCurrentPosition(
       position => {
         const { latitude, longitude } = position.coords;
@@ -200,28 +188,10 @@ const TaskApproval = props => {
       return;
     }
 
-    // const formData = new FormData();
-    // // formData.append('task_id', selectedTaskPurpose?.id);
-    // formData.append('task_name', locationString);
-    // formData.append('location_id', selectedTaskPurpose?.id);
-    // formData.append('other_location', other_location);
-    // formData.append('other_purpose', other_purpose);
-    // formData.append('date', moment(new Date()).format('YYYY-MM-DD'));
-    // formData.append('time', moment().format('HH:mm:ss'));
-    // formData.append('createTaskDate', moment(startDate).format('YYYY-MM-DD'));
-    // formData.append('endTaskDate', moment(endDate).format('YYYY-MM-DD'));
-    // formData.append('start_time', moment(startTime).format('HH:mm:ss'));
-    // formData.append('end_time', moment(endTime).format('HH:mm:ss'));
-    // formData.append('latitude', lat);
-    // formData.append('longitude', long);
-    // formData.append('address', actualAddress);
-    // // formData.append('status', 'approved');
-
     const formData = new FormData();
     formData.append('location_id', selectedTaskPurpose?.id);
     formData.append('task_name', locationString);
-    // formData.append('task_id', selectedTaskPurpose?.id);
-    formData.append('other_purpose', 'other_purpose');
+    formData.append('other_purpose', other_purpose);
     formData.append('date', moment(new Date()).format('YYYY-MM-DD'));
     formData.append('time', moment().format('HH:mm:ss'));
     formData.append('createTaskDate', moment(startDate).format('YYYY-MM-DD'));
@@ -231,7 +201,6 @@ const TaskApproval = props => {
     formData.append('latitude', lat);
     formData.append('longitude', long);
     formData.append('address', actualAddress);
-    // formData.append('status', 'approved');
 
     connectionrequest()
       .then(() => {
@@ -348,6 +317,25 @@ const TaskApproval = props => {
       setComplitedTaskData(ProfileReducer.complitedTaskResponse);
     }
   }, [ProfileReducer.complitedTaskResponse]);
+  useEffect(() => {
+    if (ProfileReducer.status === 'Profile/addTaskSuccess') {
+      setLoading(false);
+      Alert.alert('Hello');
+      setAddTaskModal(false);
+      // Reset form fields
+      setSelectedTasklocatio('');
+      setSelectedTaskPurpose('');
+      setOther_location('');
+      setOther_purpose('');
+      setStartDate(new Date());
+      setEndDate(new Date());
+      setStartTime(new Date());
+      setEndTime(new Date());
+      dispatch(complitedTaskListRequest(`pending,rejected`));
+    } else if (ProfileReducer.status === 'Profile/addTaskFailure') {
+      setLoading(false);
+    }
+  }, [ProfileReducer.status]);
 
   if (status == '' || ProfileReducer.status != status) {
     switch (ProfileReducer.status) {
@@ -385,18 +373,6 @@ const TaskApproval = props => {
         break;
       case 'Profile/addTaskSuccess':
         status = ProfileReducer.status;
-        setLoading(false);
-        setAddTaskModal(false);
-        // Reset form fields
-        setSelectedTasklocatio('');
-        setSelectedTaskPurpose('');
-        setOther_location('');
-        setOther_purpose('');
-        setStartDate(new Date());
-        setEndDate(new Date());
-        setStartTime(new Date());
-        setEndTime(new Date());
-        dispatch(complitedTaskListRequest(`pending,rejected`));
 
         break;
       case 'Profile/addTaskFailure':
