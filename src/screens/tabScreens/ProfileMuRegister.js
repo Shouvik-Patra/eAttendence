@@ -109,11 +109,7 @@ const ProfileMuRegister = props => {
     const imageName = capturedImageWithGeotag?.split('/').pop(); // extract file name
     const imageType = 'image/jpeg'; // or dynamically detect
 
-    // let obj = {
-    //   name: 'Shouvik Patra',
-    //   email: 'shouvik@yopmail.com',
-    //   photo: capturedImageWithGeotag ? capturedImageWithGeotag : null,
-    // };
+ 
     const formData = new FormData();
     formData.append('name', name);
     formData.append('email', email);

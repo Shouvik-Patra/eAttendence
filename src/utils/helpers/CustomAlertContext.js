@@ -56,7 +56,7 @@ export const CustomAlertProvider = ({ children }) => {
               styles.iconImage,
               { tintColor: alertType != 'success' && Colors.red },
             ]}
-            source={Images.fail}
+            source={Images.mailbox}
           />
 
           <Text style={styles.modalTitle}>{message}</Text>

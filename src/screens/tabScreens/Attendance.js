@@ -154,7 +154,7 @@ const Attendence = props => {
     });
 
     connectionrequest()
-      .then(() => { 
+      .then(() => {
         dispatch(clockinRequest(formData));
       })
       .catch(err => {
@@ -293,7 +293,6 @@ const Attendence = props => {
           onMuRegister(finalImagePath);
         } else {
           console.log('hitting else');
-          
         }
         console.log(
           'Final compressed square image with geotag:',
@@ -350,30 +349,6 @@ const Attendence = props => {
 
         props?.navigation.navigate('BottomTabNav', {
           screen: 'Home',
-          params: {
-            finalImageUri: finalImage,
-          },
-        });
-        break;
-
-      case 'Profile/addTaskRequest':
-        status = ProfileReducer.status;
-        break;
-      case 'Profile/addTaskSuccess':
-        status = ProfileReducer.status;
-        props?.navigation.navigate('BottomTabNav', {
-          screen: 'ActiveTask',
-          params: {
-            finalImageUri: finalImage,
-          },
-        });
-        break;
-      case 'Profile/addTaskFailure':
-        status = ProfileReducer.status;
-        showErrorAlert('Task add fail due to Network issue, Try again!');
-
-        props?.navigation.navigate('BottomTabNav', {
-          screen: 'ActiveTask',
           params: {
             finalImageUri: finalImage,
           },

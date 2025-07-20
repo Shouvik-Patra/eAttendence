@@ -48,6 +48,10 @@ import {
   attendenceReportFailure,
   taskDoItLaterSuccess,
   taskDoItLaterFailure,
+  taskApprovalListFailure,
+  taskApprovalListSuccess,
+  holidayListFailure,
+  holidayListSuccess,
 } from '../reducer/ProfileReducer';
 import showErrorAlert from '../../utils/helpers/Toast';
 import {
@@ -242,6 +246,32 @@ export function* complitedTaskListSaga(action) {
     yield put(complitedTaskListFailure(error?.response?.data));
   }
 }
+
+export function* taskApprovalListSaga(action) {
+  let items = yield select(getItem);
+
+  let header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: items?.getTokenResponse,
+  };
+  try {
+    let response = yield call(
+      getApi,
+      'get-task-submit-rejected-or-pending',
+      header,
+    );
+
+    if (response?.data?.meta?.code == 200) {
+      yield put(taskApprovalListSuccess(response?.data?.data));
+    } else {
+      yield put(taskApprovalListFailure(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    }
+  } catch (error) {
+    yield put(taskApprovalListFailure(error?.response?.data));
+  }
+}
 export function* addTaskSaga(action) {
   let items = yield select(getItem);
 
@@ -262,12 +292,12 @@ export function* addTaskSaga(action) {
 
     if (response?.data?.meta?.code == 200) {
       yield put(addTaskSuccess(response?.data?.data));
-      // showErrorAlert(response?.data?.meta?.message);
-      ShowMessage(response?.data?.meta?.message, 'success');
+      showErrorAlert(response?.data?.meta?.message);
+      // ShowMessage(response?.data?.meta?.message, 'success');
     } else {
       yield put(addTaskFailure(response?.data?.data));
-      // showErrorAlert(response?.data?.meta?.message);
-      ShowMessage(response?.data?.meta?.message, 'error');
+      showErrorAlert(response?.data?.meta?.message);
+      // ShowMessage(response?.data?.meta?.message, 'error');
     }
   } catch (error) {
     console.log('helooo>>>', error);
@@ -276,13 +306,16 @@ export function* addTaskSaga(action) {
     // showErrorAlert(error?.response?.data?.meta?.message);
   }
 }
+
+
+
 export function* applyleaveSaga(action) {
   let items = yield select(getItem);
 
   try {
     let Header = {
       Accept: 'application/json',
-      contenttype: 'application/json',
+       contenttype: 'multipart/form-data',
       accesstoken: items?.getTokenResponse,
     };
 
@@ -597,6 +630,28 @@ export function* taskDoItLaterSaga(action) {
     // showErrorAlert(error?.response?.data?.meta?.message);
   }
 }
+
+export function* holidayListSaga(action) {
+  let items = yield select(getItem);
+
+  let header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: items?.getTokenResponse,
+  };
+  try {
+    let response = yield call(getApi, `get-holiday-list?municipalityId=${action.payload}`, header);
+
+    if (response?.data?.meta?.code == 200) {
+      yield put(holidayListSuccess(response?.data?.data));
+    } else {
+      yield put(holidayListFailure(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    }
+  } catch (error) {
+    yield put(holidayListFailure(error?.response?.data));
+  }
+}
 const watchFunction = [
   (function* () {
     yield takeLatest('Profile/userDetailsRequest', userDetailsSaga);
@@ -618,6 +673,9 @@ const watchFunction = [
   })(),
   (function* () {
     yield takeLatest('Profile/complitedTaskListRequest', complitedTaskListSaga);
+  })(),
+  (function* () {
+    yield takeLatest('Profile/taskApprovalListRequest', taskApprovalListSaga);
   })(),
   (function* () {
     yield takeLatest('Profile/addTaskRequest', addTaskSaga);
@@ -666,6 +724,9 @@ const watchFunction = [
   })(),
   (function* () {
     yield takeLatest('Profile/taskDoItLaterRequest', taskDoItLaterSaga);
+  })(),
+  (function* () {
+    yield takeLatest('Profile/holidayListRequest', holidayListSaga);
   })(),
 ];
 

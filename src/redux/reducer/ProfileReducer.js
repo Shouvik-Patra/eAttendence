@@ -25,6 +25,7 @@ const initialState = {
   attendenceReportResponse: {},
   taskDoItLaterResponse: {},
   holidayListResponse: {},
+  taskApprovalListResponse: {},
 };
 
 const ProfileSlice = createSlice({
@@ -110,6 +111,18 @@ const ProfileSlice = createSlice({
       state.status = action.type;
     },
     complitedTaskListFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
+
+    taskApprovalListRequest(state, action) {
+      state.status = action.type;
+    },
+    taskApprovalListSuccess(state, action) {
+      state.taskApprovalListResponse = action.payload;
+      state.status = action.type;
+    },
+    taskApprovalListFailure(state, action) {
       state.error = action.error;
       state.status = action.type;
     },
@@ -310,6 +323,10 @@ export const {
   complitedTaskListSuccess,
   complitedTaskListFailure,
 
+  taskApprovalListRequest,
+  taskApprovalListSuccess,
+  taskApprovalListFailure,
+
   addTaskRequest,
   addTaskSuccess,
   addTaskFailure,
@@ -365,7 +382,6 @@ export const {
   holidayListRequest,
   holidayListSuccess,
   holidayListFailure,
-  
 } = ProfileSlice.actions;
 
 export default ProfileSlice.reducer;

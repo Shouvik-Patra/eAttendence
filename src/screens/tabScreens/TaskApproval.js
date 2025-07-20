@@ -11,13 +11,9 @@ import {
   Platform,
 } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import Header from '../../components/Header';
 import { Colors, Fonts, Images } from '../../themes/ThemePath';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import showErrorAlert from '../../utils/helpers/Toast';
-import { Camera } from 'react-native-vision-camera';
 import normalize from '../../utils/helpers/normalize';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import moment from 'moment';
 import { Dropdown, MultiSelect } from 'react-native-element-dropdown';
 import Modal from 'react-native-modal';
@@ -27,7 +23,8 @@ import Geolocation from '@react-native-community/geolocation';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   addTaskRequest,
-  complitedTaskListRequest,
+  attendenceStatusRequest,
+  taskApprovalListRequest,
   taskListRequest,
   taskLocationRequest,
 } from '../../redux/reducer/ProfileReducer';
@@ -35,14 +32,16 @@ import connectionrequest from '../../utils/helpers/NetInfo';
 import Loader from '../../utils/helpers/Loader';
 import { LocationGeocoder } from '../../components/LocationGeocoder';
 import TextInputWithButton from '../../components/TextInputWithBotton';
-import Button from '../../components/Button';
 import constants from '../../utils/helpers/constants';
-
+import MessageModal from '../../components/MessageModal';
+import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 let status = '';
 
-const TaskApproval = props => {
+const TaskApproval = () => {
   const dispatch = useDispatch();
   const ProfileReducer = useSelector(state => state.ProfileReducer);
+  // console.log("PAGE NAME===========>>>>>",props?.route?.name);
+  const [refreshing, setRefreshing] = useState(false);
 
   const isFocused = useIsFocused();
   const [loading, setLoading] = useState(false);
@@ -59,6 +58,7 @@ const TaskApproval = props => {
   const [selectedTaskPurpose, setSelectedTaskPurpose] = useState('');
   const [other_location, setOther_location] = useState('');
   const [other_purpose, setOther_purpose] = useState('');
+  const [showMessageModal, setShowMessageModal] = useState(false);
 
   // New state variables for date/time pickers
   const [startDate, setStartDate] = useState(new Date());
@@ -69,7 +69,95 @@ const TaskApproval = props => {
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [supportingDocument, setSupportingDocument] = useState(null);
+  const [showFileOptions, setShowFileOptions] = useState(false);
+  console.log("supportingDocument>>>>>>>",supportingDocument);
+  
+  // Request camera permission
+  const requestCameraPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          {
+            title: 'Camera Permission',
+            message: 'App needs camera permission to take photos',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn(err);
+        return false;
+      }
+    }
+    return true;
+  };
 
+  // Handle file selection options
+  const handleFileOptions = () => {
+    setShowFileOptions(true);
+  };
+
+  // Handle camera option
+  const handleCamera = async () => {
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) {
+      showErrorAlert('Camera permission is required');
+      return;
+    }
+
+    const options = {
+      mediaType: 'photo',
+      quality: 0.7,
+      maxWidth: 1000,
+      maxHeight: 1000,
+    };
+
+    launchCamera(options, response => {
+      setShowFileOptions(false);
+      if (response.didCancel || response.errorMessage) {
+        return;
+      }
+      if (response.assets && response.assets[0]) {
+        setSupportingDocument(response.assets[0]);
+      }
+    });
+  };
+
+  // Handle gallery option
+  const handleGallery = () => {
+    const options = {
+      mediaType: 'mixed', // Allow both photos and videos
+      quality: 0.7,
+      maxWidth: 1000,
+      maxHeight: 1000,
+    };
+
+    launchImageLibrary(options, response => {
+      setShowFileOptions(false);
+      if (response.didCancel || response.errorMessage) {
+        return;
+      }
+      if (response.assets && response.assets[0]) {
+        setSupportingDocument(response.assets[0]);
+      }
+    });
+  };
+
+  // Remove selected file
+  const removeFile = () => {
+    setSupportingDocument(null);
+  };
+  const onRefresh = () => {
+    setRefreshing(true);
+    dispatch(taskApprovalListRequest('pending,rejected'));
+
+    // simulate wait or use Redux status to stop refreshing
+    setTimeout(() => setRefreshing(false), 1000);
+  };
   // Date/Time picker handlers
   const onStartDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || startDate;
@@ -99,14 +187,16 @@ const TaskApproval = props => {
     setSelectedTaskPurpose(item);
     setIsFocusTask2(false);
   };
-
+  // useEffect(() => {
+  //   dispatch(taskApprovalListRequest(`pending,rejected`));
+  // }, [props?.route?.name]);
   useEffect(() => {
     if (isFocused) {
       connectionrequest()
         .then(() => {
           dispatch(taskListRequest());
           dispatch(taskLocationRequest());
-          dispatch(complitedTaskListRequest(`pending,rejected`));
+          dispatch(taskApprovalListRequest(`pending,rejected`));
         })
         .catch(err => {
           console.log(err);
@@ -135,7 +225,9 @@ const TaskApproval = props => {
   const onAddNewTask = async (lat, long) => {
     const result = await LocationGeocoder(lat, long);
     const actualAddress = result?.address || 'Unknown Address';
-
+    const imageName = supportingDocument?.uri?.split('/').pop();
+    const imageType = 'image/jpeg';
+    
     // Validation checks
     // if (!selectedTaskLocation?.id) {
     //   showErrorAlert('Please select task location');
@@ -183,7 +275,6 @@ const TaskApproval = props => {
       setLoading(false);
       return;
     }
-    setTaskApprovalData([]);
 
     const formData = new FormData();
     formData.append('location_id', selectedTaskPurpose?.id);
@@ -198,6 +289,14 @@ const TaskApproval = props => {
     formData.append('latitude', lat);
     formData.append('longitude', long);
     formData.append('address', actualAddress);
+    formData.append('photo', {
+      uri:
+        Platform.OS === 'android'
+          ? supportingDocument?.uri
+          : supportingDocument?.uri?.replace('file://', ''),
+      name: imageName,
+      type: imageType,
+    });
     formData.append('app_version', constants.APP_VERSION);
 
     connectionrequest()
@@ -326,10 +425,11 @@ const TaskApproval = props => {
   }, [ProfileReducer.taskListResponse]);
 
   useEffect(() => {
-    if (ProfileReducer?.complitedTaskResponse?.length > 0) {
-      setTaskApprovalData(ProfileReducer.complitedTaskResponse);
+    if (ProfileReducer?.taskApprovalListResponse?.length > 0) {
+      setTaskApprovalData(ProfileReducer.taskApprovalListResponse);
+      dispatch(attendenceStatusRequest());
     }
-  }, [ProfileReducer.complitedTaskResponse]);
+  }, [ProfileReducer.taskApprovalListResponse]);
 
   if (status == '' || ProfileReducer.status != status) {
     switch (ProfileReducer.status) {
@@ -338,6 +438,7 @@ const TaskApproval = props => {
         break;
       case 'Profile/taskLocationSuccess':
         status = ProfileReducer.status;
+
         break;
       case 'Profile/taskLocationFailure':
         status = ProfileReducer.status;
@@ -347,27 +448,30 @@ const TaskApproval = props => {
         break;
       case 'Profile/taskListSuccess':
         status = ProfileReducer.status;
+
         break;
       case 'Profile/taskListFailure':
         status = ProfileReducer.status;
-        showErrorAlert('Something went wrong!');
         break;
-      case 'Profile/complitedTaskListRequest':
+      case 'Profile/taskApprovalListRequest':
         status = ProfileReducer.status;
-        setTaskApprovalData([]);
+
         break;
-      case 'Profile/complitedTaskListSuccess':
+      case 'Profile/taskApprovalListSuccess':
         status = ProfileReducer.status;
+        console.log('Kick1===========>>Profile/taskApprovalListSuccess');
+
         break;
-      case 'Profile/complitedTaskListFailure':
+      case 'Profile/taskApprovalListSuccess':
         status = ProfileReducer.status;
-        showErrorAlert('Something went wrong! ');
         break;
       case 'Profile/addTaskRequest':
         status = ProfileReducer.status;
         break;
       case 'Profile/addTaskSuccess':
         status = ProfileReducer.status;
+        console.log('Kick1===========>>Profile/addTaskSuccess');
+        setShowMessageModal(true);
         setLoading(false);
         setAddTaskModal(false);
         // Reset form fields
@@ -379,7 +483,7 @@ const TaskApproval = props => {
         setEndDate(new Date());
         setStartTime(new Date());
         setEndTime(new Date());
-        dispatch(complitedTaskListRequest(`pending,rejected`));
+        dispatch(taskApprovalListRequest(`pending,rejected`));
 
         break;
       case 'Profile/addTaskFailure':
@@ -396,23 +500,27 @@ const TaskApproval = props => {
           loader ||
           ProfileReducer?.status == 'Profile/taskLocationRequest' ||
           ProfileReducer?.status == 'Profile/taskListRequest' ||
-          ProfileReducer?.status == 'Profile/complitedTaskListRequest' ||
+          ProfileReducer?.status == 'Profile/taskApprovalListRequest' ||
           ProfileReducer?.status == 'Profile/addTaskRequest'
         }
       />
-      <ScrollView
+      {/* <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
         showsVerticalScrollIndicator={false}
-      >
-        <FlatList
-          data={taskApprovalData}
-          keyExtractor={item => item.id}
-          renderItem={renderTaskList}
-          ListFooterComponent={renderFooter}
-          showsVerticalScrollIndicator={false}
-        />
-      </ScrollView>
+      > */}
+      <FlatList
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollViewContent}
+        data={taskApprovalData}
+        keyExtractor={item => item.id}
+        renderItem={renderTaskList}
+        ListFooterComponent={renderFooter}
+        showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+      />
+      {/* </ScrollView> */}
 
       <Modal
         animationIn={'slideInUp'}
@@ -598,7 +706,41 @@ const TaskApproval = props => {
                 </Text>
               </TouchableOpacity>
             </View>
+            {/* Supporting Document Section */}
+            <View style={styles.section}>
+              <Text style={styles.fieldLabel}>Supporting Document </Text>
 
+              {supportingDocument ? (
+                <View style={styles.fileContainer}>
+                  <View style={styles.fileInfo}>
+                    <Text style={styles.fileName}>
+                      {supportingDocument.fileName || 'Selected file'}
+                    </Text>
+                    <Text style={styles.fileSize}>
+                      {supportingDocument.fileSize
+                        ? `${(supportingDocument.fileSize / 1024).toFixed(
+                            1,
+                          )} KB`
+                        : ''}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.removeButton}
+                    onPress={removeFile}
+                  >
+                    <Text style={styles.removeButtonText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.uploadButton}
+                  onPress={handleFileOptions}
+                >
+                  <Text style={styles.uploadIcon}>📎</Text>
+                  <Text style={styles.uploadText}>Upload Photo/Document</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             <TouchableOpacity
               style={[
                 styles.clockButton,
@@ -615,7 +757,48 @@ const TaskApproval = props => {
           </ScrollView>
         </ImageBackground>
       </Modal>
+      {/* File Options Modal */}
+      <Modal
+        animationIn={'slideInUp'}
+        animationOut={'slideOutDown'}
+        backdropTransitionOutTiming={0}
+        backdropOpacity={0.5}
+        hideModalContentWhileAnimating={true}
+        isVisible={showFileOptions}
+        style={{ justifyContent: 'flex-end', margin: 0 }}
+        animationInTiming={300}
+        animationOutTiming={300}
+        onBackdropPress={() => setShowFileOptions(false)}
+      >
+        <View style={styles.fileOptionsContainer}>
+          <Text style={styles.fileOptionsTitle}>Select Option</Text>
 
+          <TouchableOpacity style={styles.fileOption} onPress={handleCamera}>
+            <Text style={styles.fileOptionIcon}>📷</Text>
+            <Text style={styles.fileOptionText}>Take Photo</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.fileOption} onPress={handleGallery}>
+            <Text style={styles.fileOptionIcon}>📁</Text>
+            <Text style={styles.fileOptionText}>Choose from Files</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.cancelOption}
+            onPress={() => setShowFileOptions(false)}
+          >
+            <Text style={styles.cancelOptionText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+      <MessageModal
+        isVisible={showMessageModal}
+        onClose={() => {
+          setShowMessageModal(false);
+        }}
+        message="Task added successfully"
+        okLabel="OK"
+      />
       {/* Date/Time Pickers */}
       {showStartDatePicker && (
         <DateTimePicker
@@ -908,5 +1091,110 @@ const styles = StyleSheet.create({
     color: Colors.black,
     fontFamily: Fonts.MulishSemiBold,
     textAlign: 'left',
+  },
+
+  // File upload styles
+  uploadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+    borderWidth: 2,
+    borderColor: '#ddd',
+    borderStyle: 'dashed',
+    borderRadius: 8,
+    paddingVertical: 20,
+    paddingHorizontal: 15,
+    elevation: 1,
+  },
+  uploadIcon: {
+    fontSize: 24,
+    marginRight: 10,
+  },
+  uploadText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
+  },
+  fileContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#27ae60',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    elevation: 1,
+  },
+  fileInfo: {
+    flex: 1,
+  },
+  fileName: {
+    fontSize: 14,
+    color: '#2c3e50',
+    fontWeight: '500',
+  },
+  fileSize: {
+    fontSize: 12,
+    color: '#95a5a6',
+    marginTop: 2,
+  },
+  removeButton: {
+    backgroundColor: '#e74c3c',
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10,
+  },
+  removeButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  // File options modal styles
+  fileOptionsContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 20,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+  },
+  fileOptionsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+    color: '#2c3e50',
+  },
+  fileOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  fileOptionIcon: {
+    fontSize: 24,
+    marginRight: 15,
+  },
+  fileOptionText: {
+    fontSize: 16,
+    color: '#2c3e50',
+    fontWeight: '500',
+  },
+  cancelOption: {
+    alignItems: 'center',
+    paddingVertical: 15,
+    marginTop: 10,
+  },
+  cancelOptionText: {
+    fontSize: 16,
+    color: '#e74c3c',
+    fontWeight: '600',
   },
 });

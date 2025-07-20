@@ -7,6 +7,8 @@ import {
   Text,
   TouchableOpacity,
   View,
+  PermissionsAndroid,
+  Platform,
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
@@ -21,85 +23,48 @@ import connectionrequest from '../../utils/helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   applyLeaveRequest,
+  holidayListRequest,
   leaveTypeRequest,
 } from '../../redux/reducer/ProfileReducer';
 import Loader from '../../utils/helpers/Loader';
 import { Dropdown } from 'react-native-element-dropdown';
 import { useIsFocused } from '@react-navigation/native';
 import constants from '../../utils/helpers/constants';
+import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
+
 let status = '';
 const ApplyLeave = () => {
   const dispatch = useDispatch();
-  const AuthReducer = useSelector(state => state.AuthReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
+
   const isFocused = useIsFocused();
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [leaveType, setLeaveType] = useState([]);
-  const [selectedLeaveType, setSelectedLeaveType] = useState(null);
   const [isFocusTask, setIsFocusTask] = useState(false);
-console.log("selectedLeaveType>>>>>>>>>>>>>>>>>>>",selectedLeaveType);
-
+  const [selectedLeaveTypeId, setSelectedLeaveTypeId] = useState(null);
+  const [selectedLeaveTypeName, setSelectedLeaveTypeName] = useState('');
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isHolidayVisible, setIsHolidayVisible] = useState(false);
+  const [holidays, setHolidays] = useState([]);
+  const [supportingDocument, setSupportingDocument] = useState(null);
+  console.log('supportingDocument>>>>>>>>>', supportingDocument);
 
-  const holidays = [
-    {
-      id: '1',
-      name: 'Republic Day',
-      date: 'January 26, 2025',
-      type: 'National',
-    },
-    {
-      id: '2',
-      name: 'Maha Shivratri',
-      date: 'February 26, 2025',
-      type: 'Religious',
-    },
-    { id: '3', name: 'Holi', date: 'March 14, 2025', type: 'Religious' },
-    { id: '4', name: 'Good Friday', date: 'April 18, 2025', type: 'Religious' },
-    { id: '5', name: 'Ram Navami', date: 'April 6, 2025', type: 'Religious' },
-    {
-      id: '6',
-      name: 'Independence Day',
-      date: 'August 15, 2025',
-      type: 'National',
-    },
-    {
-      id: '7',
-      name: 'Janmashtami',
-      date: 'August 16, 2025',
-      type: 'Religious',
-    },
-    {
-      id: '8',
-      name: 'Gandhi Jayanti',
-      date: 'October 2, 2025',
-      type: 'National',
-    },
-    { id: '9', name: 'Dussehra', date: 'October 2, 2025', type: 'Religious' },
-    { id: '10', name: 'Diwali', date: 'October 20, 2025', type: 'Religious' },
-    {
-      id: '11',
-      name: 'Guru Nanak Jayanti',
-      date: 'November 5, 2025',
-      type: 'Religious',
-    },
-    {
-      id: '12',
-      name: 'Christmas Day',
-      date: 'December 25, 2025',
-      type: 'Religious',
-    },
-  ];
+  const [showFileOptions, setShowFileOptions] = useState(false);
+
   useEffect(() => {
     if (isFocused) {
       connectionrequest()
         .then(() => {
           dispatch(leaveTypeRequest());
+          dispatch(
+            holidayListRequest(
+              ProfileReducer?.userDetailsResponse?.municipality_id,
+            ),
+          );
         })
         .catch(err => {
           console.log(err);
@@ -107,6 +72,86 @@ console.log("selectedLeaveType>>>>>>>>>>>>>>>>>>>",selectedLeaveType);
         });
     }
   }, [isFocused]);
+
+  // Request camera permission
+  const requestCameraPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          {
+            title: 'Camera Permission',
+            message: 'App needs camera permission to take photos',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn(err);
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Handle file selection options
+  const handleFileOptions = () => {
+    setShowFileOptions(true);
+  };
+
+  // Handle camera option
+  const handleCamera = async () => {
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) {
+      showErrorAlert('Camera permission is required');
+      return;
+    }
+
+    const options = {
+      mediaType: 'photo',
+      quality: 0.7,
+      maxWidth: 1000,
+      maxHeight: 1000,
+    };
+
+    launchCamera(options, response => {
+      setShowFileOptions(false);
+      if (response.didCancel || response.errorMessage) {
+        return;
+      }
+      if (response.assets && response.assets[0]) {
+        setSupportingDocument(response.assets[0]);
+      }
+    });
+  };
+
+  // Handle gallery option
+  const handleGallery = () => {
+    const options = {
+      mediaType: 'mixed', // Allow both photos and videos
+      quality: 0.7,
+      maxWidth: 1000,
+      maxHeight: 1000,
+    };
+
+    launchImageLibrary(options, response => {
+      setShowFileOptions(false);
+      if (response.didCancel || response.errorMessage) {
+        return;
+      }
+      if (response.assets && response.assets[0]) {
+        setSupportingDocument(response.assets[0]);
+      }
+    });
+  };
+
+  // Remove selected file
+  const removeFile = () => {
+    setSupportingDocument(null);
+  };
+
   const renderHeader = () => (
     <View style={styles.headerContainer}>
       <View style={styles.headerRow}>
@@ -124,9 +169,11 @@ console.log("selectedLeaveType>>>>>>>>>>>>>>>>>>>",selectedLeaveType);
       ]}
     >
       <Text style={[styles.itemText, styles.nameColumn, styles.holidayName]}>
-        {item.name}
+        {item.holiday_name}
       </Text>
-      <Text style={[styles.itemText, styles.dateColumn]}>{item.date}</Text>
+      <Text style={[styles.itemText, styles.dateColumn]}>
+        {moment(item?.holiday_date).format('YYYY-MM-DD')}
+      </Text>
     </View>
   );
 
@@ -147,19 +194,12 @@ console.log("selectedLeaveType>>>>>>>>>>>>>>>>>>>",selectedLeaveType);
   const calculateLeaveDays = () => {
     const timeDiff = endDate.getTime() - startDate.getTime();
     const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
-
-    // if (leaveType === 'half' && daysDiff === 1) {
-    //   return 0.5;
-    // }
     return daysDiff;
   };
 
   const handleStartDateConfirm = selectedDate => {
-    console.log(selectedDate);
-
     setShowStartDatePicker(false);
     setStartDate(selectedDate);
-    // If end date is before start date, update end date
     if (selectedDate > endDate) {
       setEndDate(selectedDate);
     }
@@ -167,7 +207,6 @@ console.log("selectedLeaveType>>>>>>>>>>>>>>>>>>>",selectedLeaveType);
 
   const handleEndDateConfirm = selectedDate => {
     setShowEndDatePicker(false);
-    // Ensure end date is not before start date
     if (selectedDate >= startDate) {
       setEndDate(selectedDate);
     } else {
@@ -184,28 +223,30 @@ console.log("selectedLeaveType>>>>>>>>>>>>>>>>>>>",selectedLeaveType);
   };
 
   function handleSubmit() {
-    // Check if start date is today
-    const today = new Date();
-    const isStartDateToday = startDate.toDateString() === today.toDateString();
-
-    // Validation checks
-     if (selectedLeaveType == null) {
+    const imageName = supportingDocument?.uri.split('/').pop();
+    const imageType = 'image/jpeg';
+    if (selectedLeaveTypeId == null) {
       showErrorAlert('Please Select leave Type.');
     } else if (reason == '') {
       showErrorAlert('Please describe reason for leave.');
     } else {
-      const obj = {
-        start_date: formatDate(startDate),
-        end_date: formatDate(endDate),
-        leave_gov_type: selectedLeaveType,
-        reason: reason,
-        app_version: constants.APP_VERSION,
-
-      };
+      const formData = new FormData();
+      formData.append('start_date', formatDate(startDate));
+      formData.append('end_date', formatDate(endDate));
+      formData.append('leave_gov_type', selectedLeaveTypeId);
+      formData.append('reason', reason);
+      formData.append('app_version', constants.APP_VERSION);
+      formData.append('photo', {
+        uri:
+          Platform.OS === 'android'
+            ? supportingDocument?.uri
+            : supportingDocument?.uri.replace('file://', ''),
+        name: imageName,
+        type: imageType,
+      });
       connectionrequest()
         .then(() => {
-          console.log('applyLeaveRequest:obj>>>>>>>', obj);
-          dispatch(applyLeaveRequest(obj));
+          dispatch(applyLeaveRequest(formData));
         })
         .catch(err => {
           console.log(err);
@@ -229,9 +270,10 @@ console.log("selectedLeaveType>>>>>>>>>>>>>>>>>>>",selectedLeaveType);
         status = ProfileReducer.status;
         setStartDate(new Date());
         setEndDate(new Date());
-        setSelectedLeaveType(null);
+        setSelectedLeaveTypeId(null);
+        setSelectedLeaveTypeName('');
         setReason('');
-
+        setSupportingDocument(null); // Reset supporting document on success
         break;
       case 'Profile/applyLeaveFailure':
         status = ProfileReducer.status;
@@ -246,8 +288,19 @@ console.log("selectedLeaveType>>>>>>>>>>>>>>>>>>>",selectedLeaveType);
       case 'Profile/leaveTypeFailure':
         status = ProfileReducer.status;
         break;
+      case 'Profile/holidayListRequest':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/holidayListSuccess':
+        status = ProfileReducer.status;
+        setHolidays(ProfileReducer?.holidayListResponse);
+        break;
+      case 'Profile/holidayListFailure':
+        status = ProfileReducer.status;
+        break;
     }
   }
+
   return (
     <>
       <Loader
@@ -309,10 +362,10 @@ console.log("selectedLeaveType>>>>>>>>>>>>>>>>>>>",selectedLeaveType);
             <Text style={styles.dateIcon}>📅</Text>
           </TouchableOpacity>
         </View>
-        {/* End Date Section */}
+
+        {/* Leave Type Section */}
         <View style={styles.section}>
           <Text style={styles.label}>Leave Type *</Text>
-
           <Dropdown
             style={[styles.dropdown, isFocusTask && { borderColor: '#24bcf7' }]}
             placeholderStyle={styles.placeholderStyle}
@@ -327,11 +380,12 @@ console.log("selectedLeaveType>>>>>>>>>>>>>>>>>>>",selectedLeaveType);
             valueField="id"
             placeholder={!isFocusTask ? 'Select Leave Type' : '...'}
             searchPlaceholder="Search..."
-            value={'selectedLeaveType'}
+            value={selectedLeaveTypeId}
             onFocus={() => setIsFocusTask(true)}
             onBlur={() => setIsFocusTask(false)}
             onChange={item => {
-              setSelectedLeaveType(item.name); // or item.name, depending on use
+              setSelectedLeaveTypeId(item.id);
+              setSelectedLeaveTypeName(item.name);
               setIsFocusTask(false);
             }}
             renderLeftIcon={() => <Text style={styles.icon}>🗓️</Text>}
@@ -352,7 +406,6 @@ console.log("selectedLeaveType>>>>>>>>>>>>>>>>>>>",selectedLeaveType);
         {/* Reason Section */}
         <View style={styles.section}>
           <Text style={styles.label}>Reason for Leave *</Text>
-
           <TextInputWithButton
             show={true}
             icon={true}
@@ -376,6 +429,40 @@ console.log("selectedLeaveType>>>>>>>>>>>>>>>>>>>",selectedLeaveType);
             maxLength={500}
           />
           <Text style={styles.characterCount}>{reason.length}/500</Text>
+        </View>
+
+        {/* Supporting Document Section */}
+        <View style={styles.section}>
+          <Text style={styles.label}>Supporting Document (Optional)</Text>
+
+          {supportingDocument ? (
+            <View style={styles.fileContainer}>
+              <View style={styles.fileInfo}>
+                <Text style={styles.fileName}>
+                  {supportingDocument.fileName || 'Selected file'}
+                </Text>
+                <Text style={styles.fileSize}>
+                  {supportingDocument.fileSize
+                    ? `${(supportingDocument.fileSize / 1024).toFixed(1)} KB`
+                    : ''}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.removeButton}
+                onPress={removeFile}
+              >
+                <Text style={styles.removeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.uploadButton}
+              onPress={handleFileOptions}
+            >
+              <Text style={styles.uploadIcon}>📎</Text>
+              <Text style={styles.uploadText}>Upload Photo</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Apply Button */}
@@ -424,6 +511,42 @@ console.log("selectedLeaveType>>>>>>>>>>>>>>>>>>>",selectedLeaveType);
         cancelText="Cancel"
       />
 
+      {/* File Options Modal */}
+      <Modal
+        animationIn={'slideInUp'}
+        animationOut={'slideOutDown'}
+        backdropTransitionOutTiming={0}
+        backdropOpacity={0.5}
+        hideModalContentWhileAnimating={true}
+        isVisible={showFileOptions}
+        style={{ justifyContent: 'flex-end', margin: 0 }}
+        animationInTiming={300}
+        animationOutTiming={300}
+        onBackdropPress={() => setShowFileOptions(false)}
+      >
+        <View style={styles.fileOptionsContainer}>
+          <Text style={styles.fileOptionsTitle}>Select Option</Text>
+
+          <TouchableOpacity style={styles.fileOption} onPress={handleCamera}>
+            <Text style={styles.fileOptionIcon}>📷</Text>
+            <Text style={styles.fileOptionText}>Take Photo</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.fileOption} onPress={handleGallery}>
+            <Text style={styles.fileOptionIcon}>📁</Text>
+            <Text style={styles.fileOptionText}>Choose from Files</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.cancelOption}
+            onPress={() => setShowFileOptions(false)}
+          >
+            <Text style={styles.cancelOptionText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
+      {/* Holiday Modal */}
       <Modal
         animationIn={'slideInUp'}
         animationOut={'slideOutDown'}
@@ -457,7 +580,7 @@ console.log("selectedLeaveType>>>>>>>>>>>>>>>>>>>",selectedLeaveType);
               }}
             />
           </TouchableOpacity>
-          <Text style={styles.title}>2025 Holiday Calendar</Text>
+          <Text style={styles.title}>Holiday Calendar</Text>
 
           <FlatList
             data={holidays}
@@ -540,50 +663,6 @@ const styles = StyleSheet.create({
   dateIcon: {
     fontSize: 20,
   },
-  radioContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: 'white',
-    borderRadius: 8,
-    paddingVertical: 15,
-    paddingHorizontal: 10,
-    elevation: 1,
-  },
-  radioOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  radio: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#bdc3c7',
-    marginRight: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioSelected: {
-    borderColor: '#3498db',
-  },
-  radioDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#3498db',
-  },
-  radioText: {
-    fontSize: 16,
-    color: '#2c3e50',
-  },
-  warningText: {
-    fontSize: 12,
-    color: '#e74c3c',
-    marginTop: 5,
-    fontStyle: 'italic',
-  },
   summaryCard: {
     backgroundColor: '#e8f6f3',
     borderRadius: 8,
@@ -602,18 +681,6 @@ const styles = StyleSheet.create({
     color: '#27ae60',
     fontWeight: 'bold',
     marginTop: 2,
-  },
-  textArea: {
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#2c3e50',
-    textAlignVertical: 'top',
-    elevation: 1,
   },
   characterCount: {
     fontSize: 12,
@@ -717,23 +784,6 @@ const styles = StyleSheet.create({
   dateColumn: {
     flex: 1.5,
   },
-  typeColumn: {
-    flex: 1,
-    alignItems: 'flex-start',
-  },
-  typeBadge: {
-    backgroundColor: '#d4edda',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#c3e6cb',
-  },
-  typeBadgeText: {
-    color: '#155724',
-    fontSize: 12,
-    fontWeight: '600',
-  },
   footerContainer: {
     paddingVertical: 16,
     paddingHorizontal: 16,
@@ -743,11 +793,6 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 14,
     color: '#6c757d',
-  },
-  dropdownContainer: {
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 20,
   },
   dropdown: {
     height: 50,
@@ -766,9 +811,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.22,
     shadowRadius: 2.22,
   },
-  // New styles for dropdown list styling
   dropdownListContainer: {
-    backgroundColor: Colors.greytext, // Green background for dropdown list
+    backgroundColor: Colors.greytext,
     borderRadius: 8,
     elevation: 5,
     shadowColor: '#000',
@@ -780,12 +824,116 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   dropdownItemText: {
-    color: '#000000', // Black text color for dropdown items
+    color: '#000000',
     fontSize: 16,
     fontWeight: '600',
   },
   icon: {
     marginRight: 10,
     fontSize: 18,
+  },
+  // File upload styles
+  uploadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+    borderWidth: 2,
+    borderColor: '#ddd',
+    borderStyle: 'dashed',
+    borderRadius: 8,
+    paddingVertical: 20,
+    paddingHorizontal: 15,
+    elevation: 1,
+  },
+  uploadIcon: {
+    fontSize: 24,
+    marginRight: 10,
+  },
+  uploadText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
+  },
+  fileContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#27ae60',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    elevation: 1,
+  },
+  fileInfo: {
+    flex: 1,
+  },
+  fileName: {
+    fontSize: 14,
+    color: '#2c3e50',
+    fontWeight: '500',
+  },
+  fileSize: {
+    fontSize: 12,
+    color: '#95a5a6',
+    marginTop: 2,
+  },
+  removeButton: {
+    backgroundColor: '#e74c3c',
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10,
+  },
+  removeButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  // File options modal styles
+  fileOptionsContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 20,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+  },
+  fileOptionsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+    color: '#2c3e50',
+  },
+  fileOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  fileOptionIcon: {
+    fontSize: 24,
+    marginRight: 15,
+  },
+  fileOptionText: {
+    fontSize: 16,
+    color: '#2c3e50',
+    fontWeight: '500',
+  },
+  cancelOption: {
+    alignItems: 'center',
+    paddingVertical: 15,
+    marginTop: 10,
+  },
+  cancelOptionText: {
+    fontSize: 16,
+    color: '#e74c3c',
+    fontWeight: '600',
   },
 });

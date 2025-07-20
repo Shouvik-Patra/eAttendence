@@ -13,6 +13,7 @@ export const Images = {
   tab4: require('../assets/images/tab4.png'),
   tab5: require('../assets/images/tab5.png'),
   tab6: require('../assets/images/tab6.png'),
+  tab7: require('../assets/images/tab7.png'),
 
   backbutton1: require('../assets/images/backbutton1.png'),
   downArrow: require('../assets/images/downArrow.png'),

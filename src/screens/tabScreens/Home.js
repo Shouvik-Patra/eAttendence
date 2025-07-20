@@ -36,12 +36,12 @@ const Home = props => {
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
+  console.log('PAGE NAME===========>>>>>', props?.route?.name);
 
   const isFocused = useIsFocused();
   const [addTaskModal, setAddTaskModal] = useState(false);
   const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(null);
   const [loading, setLoading] = useState(false);
-
 
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
 
@@ -53,13 +53,12 @@ const Home = props => {
   useEffect(() => {
     if (ProfileReducer?.userDetailsResponse?.app_info != undefined) {
       if (
-      ProfileReducer?.userDetailsResponse?.app_info[0]?.value !=
-      constants?.APP_VERSION
-    ) {
-      setUpdateModalVisible(true);
+        ProfileReducer?.userDetailsResponse?.app_info[0]?.value !=
+        constants?.APP_VERSION
+      ) {
+        setUpdateModalVisible(true);
+      }
     }
-    }
-    
   }, [isFocused]);
   const requestLocationPermission = async () => {
     if (Platform.OS === 'android') {
@@ -366,7 +365,9 @@ const Home = props => {
             disabled={
               ProfileReducer?.attendenceStatusResponse?.status === 'pending' &&
               ProfileReducer?.attendenceStatusResponse?.is_attendance_given ===
-                2
+                2 || ProfileReducer?.attendenceStatusResponse?.status === 'pending' &&
+              ProfileReducer?.attendenceStatusResponse?.is_attendance_given ===
+                3
             }
             style={[
               styles.clockButton,
@@ -377,6 +378,8 @@ const Home = props => {
                   if (status === 'pending' && is_attendance_given === 0)
                     return Colors.green;
                   if (status === 'pending' && is_attendance_given === 2)
+                    return Colors.green;
+                  if (status === 'pending' && is_attendance_given === 3)
                     return Colors.green;
                   if (status === 'present') return '#FFA500'; // Orange
                   return Colors.grey; // fallback
@@ -404,7 +407,7 @@ const Home = props => {
                     {
                       text: 'OK',
                       onPress: () => {
-                        props?.navigation?.navigate('ActiveTask', {
+                        props?.navigation?.navigate('DailyTask', {
                           currenLocation: 'Home',
                         });
                       },
@@ -542,7 +545,7 @@ const Home = props => {
           </ScrollView>
         </ImageBackground>
       </Modal>
-       <UpdateModal
+      <UpdateModal
         isVisible={updateModalVisible}
         onClose={() => setUpdateModalVisible(false)}
       />

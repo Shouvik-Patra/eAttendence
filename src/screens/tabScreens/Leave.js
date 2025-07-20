@@ -1,11 +1,9 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import { NavigationContainer } from '@react-navigation/native';
 import Header from '../../components/Header';
 import ApplyLeave from './ApplyLeave';
 import Leavelog from './Leavelog';
-import Loader from '../../utils/helpers/Loader';
 import { useSelector } from 'react-redux';
 import { Colors, Fonts } from '../../themes/ThemePath';
 

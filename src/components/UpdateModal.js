@@ -46,6 +46,21 @@ const UpdateModal = ({ isVisible, onClose }) => {
           <Text style={styles.appName}>e-Attendence</Text>
         </View>
 
+        <Text
+          style={[styles.updateTitle, { textAlign: 'center', color: 'blue' }]}
+        >
+          App Installation guide:
+        </Text>
+        <Text style={[styles.updateTitle, { textAlign: 'left' }]}>
+          Step 1 : Download the latest version
+        </Text>
+        <Text style={[styles.updateTitle, { textAlign: 'left' }]}>
+          Step 2 : Uninstall the current version.
+        </Text>
+        <Text style={[styles.updateTitle, { textAlign: 'left' }]}>
+          Step 3 : Install the updated app.
+        </Text>
+
         <Text style={styles.infoText}>
           For any further information please contact to Hr.
         </Text>
@@ -62,7 +77,7 @@ const UpdateModal = ({ isVisible, onClose }) => {
             style={styles.primaryBtn}
             onPress={() =>
               Linking.openURL(
-                'https://drive.google.com/file/d/1LbKVjYr3DRT56u-XQkczdd4oFHRuzk88/view?usp=sharing'
+                'https://drive.google.com/drive/folders/17x4ZTExKGBLBli1GfJXvlV9S__cp91Ka?usp=sharing',
               )
             }
           >

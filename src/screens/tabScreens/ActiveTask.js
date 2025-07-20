@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import { NavigationContainer } from '@react-navigation/native';
 import Header from '../../components/Header';
 import { useSelector } from 'react-redux';
 import { Colors, Fonts } from '../../themes/ThemePath';
@@ -13,6 +12,7 @@ const Tab = createMaterialTopTabNavigator();
 const TaskTabs = () => {
   return (
     <Tab.Navigator
+      lazy={true}
       screenOptions={{
         tabBarLabelStyle: {
           fontSize: 16,
@@ -29,7 +29,7 @@ const TaskTabs = () => {
       }}
     >
       <Tab.Screen name="Daily Task" component={DailyTask} />
-      <Tab.Screen name="Task Approval" component={TaskApproval} />
+      <Tab.Screen name="Task Approval" component={TaskApproval} options={{ unmountOnBlur: true }}/>
     </Tab.Navigator>
   );
 };

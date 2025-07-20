@@ -161,6 +161,8 @@ const Leavelog = () => {
         break;
       case 'Profile/leaveLogSuccess':
         status = ProfileReducer.status;
+        console.log('Kick===========>>leaveLogSuccess');
+        
         break;
       case 'Profile/leaveLogFailure':
         status = ProfileReducer.status;
@@ -170,6 +172,8 @@ const Leavelog = () => {
         break;
       case 'Profile/leaveCancelSuccess':
         status = ProfileReducer.status;
+        console.log('Kick===========>>leaveCancelSuccess');
+
         connectionrequest()
           .then(() => {
             dispatch(leaveLogRequest());

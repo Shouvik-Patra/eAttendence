@@ -97,7 +97,6 @@ const Signin = props => {
         password: password,
         app_version: constants.APP_VERSION,
       };
-      console.log('objobjobjobjobj', obj);
       connectionrequest()
         .then(() => {
           dispatch(signInRequest(obj));
@@ -115,6 +114,7 @@ const Signin = props => {
       case 'Auth/signInSuccess':
         status = AuthReducer.status;
         setLoading(false);
+        
         break;
       case 'Auth/signInFailure':
         status = AuthReducer.status;

@@ -34,7 +34,7 @@ import connectionrequest from '../../utils/helpers/NetInfo';
 import Loader from '../../utils/helpers/Loader';
 import { LocationGeocoder } from '../../components/LocationGeocoder';
 let status = '';
-const ActiveTask = props => {
+const MuRegister = props => {
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
@@ -483,7 +483,7 @@ const ActiveTask = props => {
   );
 };
 
-export default ActiveTask;
+export default MuRegister;
 
 const styles = StyleSheet.create({
   mainContainer: {

@@ -44,10 +44,10 @@ import constants from '../../utils/helpers/constants';
 
 let status = '';
 
-const DailyTask = props => {
+const DailyTask = (props) => {
   const dispatch = useDispatch();
-  const AuthReducer = useSelector(state => state.AuthReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
+  // console.log("PAGE NAME===========>>>>>",props?.route?.name);
 
   const isFocused = useIsFocused();
   const [isClocked, setIsClocked] = useState(false);
@@ -81,7 +81,15 @@ const DailyTask = props => {
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
+  const onRefresh = () => {
+    setRefreshing(true);
+    dispatch(complitedTaskListRequest(`approved,ongoing,complete`));
+
+    // simulate wait or use Redux status to stop refreshing
+    setTimeout(() => setRefreshing(false), 1000);
+  };
   // Date/Time picker handlers
   const onStartDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || startDate;
@@ -119,7 +127,7 @@ const DailyTask = props => {
   };
 
   useEffect(() => {
-    if (isFocused) {
+    if (isFocused && props?.route?.name == "Daily Task") {
       connectionrequest()
         .then(() => {
           dispatch(taskListRequest());
@@ -298,204 +306,209 @@ const DailyTask = props => {
       });
   };
 
-const renderTaskList = ({ item, index }) => {
-  // Check if any task is currently ongoing
-  const isAnyTaskOngoing = complitedTaskData.some(task => task.status === 'ongoing');
-  
-  return (
-    <View
-      style={[
-        styles.userInfoContainer,
-        {
-          backgroundColor:
-            item?.status == 'approved'
-              ? Colors.lightgreen
-              : item?.status == 'pending'
-              ? Colors.lightred
-              : item?.status == 'ongoing'
-              ? Colors.lightYellow
-              : item?.status == 'complete'
-              ? Colors.lightgreen
-              : Colors.lightred,
-        },
-      ]}
-    >
-      <View style={styles.userTextContainer}>
-        <Text style={styles.blackText}>
-          Visit Location :{' '}
-          <Text style={styles.redText}>
-            {item?.task_name ? item?.task_name : ''}
+  const renderTaskList = ({ item, index }) => {
+    // Check if any task is currently ongoing
+    const isAnyTaskOngoing = complitedTaskData.some(
+      task => task.status === 'ongoing',
+    );
+
+    return (
+      <View
+        style={[
+          styles.userInfoContainer,
+          {
+            backgroundColor:
+              item?.status == 'approved'
+                ? Colors.lightgreen
+                : item?.status == 'pending'
+                ? Colors.lightred
+                : item?.status == 'ongoing'
+                ? Colors.lightYellow
+                : item?.status == 'complete'
+                ? Colors.lightgreen
+                : Colors.lightred,
+          },
+        ]}
+      >
+        <View style={styles.userTextContainer}>
+          <Text style={styles.blackText}>
+            Visit Location :{' '}
+            <Text style={styles.redText}>
+              {item?.task_name ? item?.task_name : ''}
+            </Text>
           </Text>
-        </Text>
-        <Text style={styles.blackText}>
-          Visit Purpose :{' '}
-          <Text style={styles.redText}>
-            {item?.task_name ? item?.task_name : ''}
+          <Text style={styles.blackText}>
+            Visit Purpose :{' '}
+            <Text style={styles.redText}>
+              {item?.task_name ? item?.task_name : ''}
+            </Text>
           </Text>
-        </Text>
-        <Text style={styles.blackText}>
-          Start Date :{' '}
-          <Text style={styles.redText}>
-            {moment(item?.createTaskDate)
-              .local()
-              .format('ddd, MMM D, YYYY • h:mm A')}
+          <Text style={styles.blackText}>
+            Start Date :{' '}
+            <Text style={styles.redText}>
+              {moment(item?.createTaskDate)
+                .local()
+                .format('ddd, MMM D, YYYY • h:mm A')}
+            </Text>
           </Text>
-        </Text>
-        <Text style={styles.blackText}>
-          End Date :{' '}
-          <Text style={styles.redText}>
-            {moment(item?.endTaskDate)
-              .local()
-              .format('ddd, MMM D, YYYY • h:mm A')}
+          <Text style={styles.blackText}>
+            End Date :{' '}
+            <Text style={styles.redText}>
+              {moment(item?.endTaskDate)
+                .local()
+                .format('ddd, MMM D, YYYY • h:mm A')}
+            </Text>
           </Text>
-        </Text>
-        <Text style={styles.blackText}>
-          Status :{' '}
-          <Text
-            style={[
-              styles.redText,
-              {
-                color: item?.status == 'rejected' ? Colors.red : Colors.green,
-                textTransform: 'capitalize',
-              },
-            ]}
-          >
-            {item?.status}
+          <Text style={styles.blackText}>
+            Status :{' '}
+            <Text
+              style={[
+                styles.redText,
+                {
+                  color: item?.status == 'rejected' ? Colors.red : Colors.green,
+                  textTransform: 'capitalize',
+                },
+              ]}
+            >
+              {item?.status}
+            </Text>
           </Text>
-        </Text>
-        <Text style={styles.blackText}>
-          Day :{' '}
-          <Text
-            style={[
-              styles.redText,
-              {
-                color: item?.status === 'ongoing' ? Colors.red : Colors.black,
-                textTransform: 'capitalize',
-              },
-            ]}
-          >
-            {item?.task_activity}
+          <Text style={styles.blackText}>
+            Day :{' '}
+            <Text
+              style={[
+                styles.redText,
+                {
+                  color: item?.status === 'ongoing' ? Colors.red : Colors.black,
+                  textTransform: 'capitalize',
+                },
+              ]}
+            >
+              {item?.task_activity}
+            </Text>
           </Text>
-        </Text>
-      </View>
-      
-      {/* Only show buttons if current task is approved or ongoing */}
-      {(item?.status === 'approved' || item?.status === 'ongoing') && (
-        <>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              width: '100%',
-              alignItems: 'center',
-            }}
-          >
-            {/* Start Task Button */}
-            <Button
-              height={normalize(45)}
-              width={'48%'}
-              marginTop={normalize(25)}
-              backgroundColor={Colors.green}
-              title={'Start Task'}
-              fontSize={normalize(15)}
-              fontFamily={Fonts.MulishSemiBold}
-              textColor={'white'}
-              opacity={
-                item?.status === 'ongoing' || 
-                (isAnyTaskOngoing && item?.status !== 'ongoing')
-                  ? 0.5 
-                  : 1
-              }
-              disabled={
-                item?.status === 'ongoing' || 
-                (isAnyTaskOngoing && item?.status !== 'ongoing')
-              }
-              onPress={() => {
-                if (
-                  ProfileReducer?.attendenceStatusResponse
-                    ?.is_attendance_given != 0
-                ) {
-                  getLocation(item?.task_submit_id, 'start');
-                } else {
-                  Alert.alert('Please Clock in first to start your day');
-                }
+        </View>
+
+        {/* Only show buttons if current task is approved or ongoing */}
+        {(item?.status === 'approved' || item?.status === 'ongoing') && (
+          <>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                width: '100%',
+                alignItems: 'center',
               }}
-            />
-            
-            {/* End Task Button */}
+            >
+              {/* Start Task Button */}
+              <Button
+                height={normalize(45)}
+                width={'48%'}
+                marginTop={normalize(25)}
+                backgroundColor={Colors.green}
+                title={'Start Task'}
+                fontSize={normalize(15)}
+                fontFamily={Fonts.MulishSemiBold}
+                textColor={'white'}
+                opacity={
+                  item?.status === 'ongoing' ||
+                  (isAnyTaskOngoing && item?.status !== 'ongoing')
+                    ? 0.5
+                    : 1
+                }
+                disabled={
+                  item?.status === 'ongoing' ||
+                  (isAnyTaskOngoing && item?.status !== 'ongoing')
+                }
+                onPress={() => {
+                  if (
+                    ProfileReducer?.attendenceStatusResponse
+                      ?.is_attendance_given != 0
+                  ) {
+                    getLocation(item?.task_submit_id, 'start');
+                  } else {
+                    Alert.alert('Please Clock in first to start your day');
+                  }
+                }}
+              />
+
+              {/* End Task Button */}
+              <Button
+                height={normalize(45)}
+                marginTop={normalize(25)}
+                width={'48%'}
+                backgroundColor={Colors.red}
+                title={'End Task'}
+                fontSize={normalize(15)}
+                fontFamily={Fonts.MulishSemiBold}
+                textColor={'white'}
+                opacity={
+                  item?.status === 'approved' ||
+                  (isAnyTaskOngoing && item?.status !== 'ongoing')
+                    ? 0.5
+                    : 1
+                }
+                disabled={
+                  item?.status === 'approved' ||
+                  (isAnyTaskOngoing && item?.status !== 'ongoing')
+                }
+                onPress={() => {
+                  setTaskSubmitId(item?.task_submit_id);
+                  setTaskTrackingId(item?.task_tracking_id);
+                  setTaskAction('end');
+                  setEndTaskModal(true);
+                }}
+              />
+            </View>
+
+            {/* Do it later Button */}
             <Button
               height={normalize(45)}
-              marginTop={normalize(25)}
-              width={'48%'}
-              backgroundColor={Colors.red}
-              title={'End Task'}
+              width={'100%'}
+              marginTop={normalize(5)}
+              backgroundColor={Colors.skyblue}
+              title={'Do it later'}
               fontSize={normalize(15)}
               fontFamily={Fonts.MulishSemiBold}
               textColor={'white'}
               opacity={
-                item?.status === 'approved' || 
+                item?.status !== 'ongoing' ||
                 (isAnyTaskOngoing && item?.status !== 'ongoing')
-                  ? 0.5 
+                  ? 0.5
                   : 1
               }
               disabled={
-                item?.status === 'approved' || 
+                item?.status !== 'ongoing' ||
                 (isAnyTaskOngoing && item?.status !== 'ongoing')
               }
               onPress={() => {
+                console.log('bnjnbsjd0', item);
                 setTaskSubmitId(item?.task_submit_id);
                 setTaskTrackingId(item?.task_tracking_id);
-                setTaskAction('end');
-                setEndTaskModal(true);
+
+                Alert.alert('Are you sure', 'You want to do this later ?', [
+                  {
+                    text: 'No',
+                    onPress: () => console.log('Cancel Pressed'),
+                    style: 'cancel',
+                  },
+                  {
+                    text: 'Yes',
+                    onPress: () => {
+                      onDoTaskLater(
+                        item?.task_submit_id,
+                        item?.task_tracking_id,
+                      );
+                    },
+                  },
+                ]);
               }}
             />
-          </View>
-          
-          {/* Do it later Button */}
-          <Button
-            height={normalize(45)}
-            width={'100%'}
-            marginTop={normalize(5)}
-            backgroundColor={Colors.skyblue}
-            title={'Do it later'}
-            fontSize={normalize(15)}
-            fontFamily={Fonts.MulishSemiBold}
-            textColor={'white'}
-            opacity={
-              item?.status !== 'ongoing' || 
-              (isAnyTaskOngoing && item?.status !== 'ongoing')
-                ? 0.5 
-                : 1
-            }
-            disabled={
-              item?.status !== 'ongoing' || 
-              (isAnyTaskOngoing && item?.status !== 'ongoing')
-            }
-            onPress={() => {
-              console.log('bnjnbsjd0', item);
-              setTaskSubmitId(item?.task_submit_id);
-              setTaskTrackingId(item?.task_tracking_id);
-
-              Alert.alert('Are you sure', 'You want to do this later ?', [
-                {
-                  text: 'No',
-                  onPress: () => console.log('Cancel Pressed'),
-                  style: 'cancel',
-                },
-                {
-                  text: 'Yes',
-                  onPress: () => {
-                    onDoTaskLater(item?.task_submit_id, item?.task_tracking_id);
-                  },
-                },
-              ]);
-            }}
-          />
-        </>
-      )}
-    </View>
-  );
-};
+          </>
+        )}
+      </View>
+    );
+  };
 
   useEffect(() => {
     if (ProfileReducer?.taskLocationResponse?.length > 0) {
@@ -538,6 +551,8 @@ const renderTaskList = ({ item, index }) => {
         break;
       case 'Profile/taskLocationSuccess':
         status = ProfileReducer.status;
+        console.log('Kick==========>>Profile/taskLocationSuccess');
+
         break;
       case 'Profile/taskLocationFailure':
         status = ProfileReducer.status;
@@ -547,6 +562,8 @@ const renderTaskList = ({ item, index }) => {
         break;
       case 'Profile/taskListSuccess':
         status = ProfileReducer.status;
+        console.log('Kick==========>>Profile/taskListSuccess');
+
         break;
       case 'Profile/taskListFailure':
         status = ProfileReducer.status;
@@ -554,10 +571,13 @@ const renderTaskList = ({ item, index }) => {
         break;
       case 'Profile/complitedTaskListRequest':
         status = ProfileReducer.status;
+
         setComplitedTaskData([]);
         break;
       case 'Profile/complitedTaskListSuccess':
         status = ProfileReducer.status;
+        console.log('Kick==========>>Profile/complitedTaskListSuccess');
+
         break;
       case 'Profile/complitedTaskListFailure':
         status = ProfileReducer.status;
@@ -568,6 +588,8 @@ const renderTaskList = ({ item, index }) => {
         break;
       case 'Profile/addTaskSuccess':
         status = ProfileReducer.status;
+        console.log('Kick==========>>Profile/addTaskSuccess');
+
         setLoading(false);
         setAddTaskModal(false);
 
@@ -594,6 +616,8 @@ const renderTaskList = ({ item, index }) => {
         break;
       case 'Profile/startTaskSuccess':
         status = ProfileReducer.status;
+        console.log('Kick==========>>Profile/startTaskSuccess');
+
         dispatch(complitedTaskListRequest(`approved,ongoing,complete`));
         dispatch(attendenceStatusRequest());
 
@@ -607,6 +631,8 @@ const renderTaskList = ({ item, index }) => {
         break;
       case 'Profile/endTaskSuccess':
         status = ProfileReducer.status;
+        console.log('Kick==========>>Profile/endTaskSuccess');
+
         dispatch(complitedTaskListRequest(`approved,ongoing,complete`));
         dispatch(attendenceStatusRequest());
 
@@ -621,9 +647,9 @@ const renderTaskList = ({ item, index }) => {
         break;
       case 'Profile/taskDoItLaterSuccess':
         status = ProfileReducer.status;
+        console.log('Kick==========>>Profile/taskDoItLaterSuccess');
         dispatch(complitedTaskListRequest(`approved,ongoing,complete`));
         dispatch(attendenceStatusRequest());
-
         break;
       case 'Profile/taskDoItLaterFailure':
         status = ProfileReducer.status;
@@ -653,6 +679,8 @@ const renderTaskList = ({ item, index }) => {
           keyExtractor={item => item.id}
           renderItem={renderTaskList}
           showsVerticalScrollIndicator={false}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
         />
       </ScrollView>
       {/* <TouchableOpacity
