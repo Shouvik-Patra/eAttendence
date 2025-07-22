@@ -25,12 +25,14 @@ import {
   applyLeaveRequest,
   holidayListRequest,
   leaveTypeRequest,
+  remainingLeavesRequest,
 } from '../../redux/reducer/ProfileReducer';
 import Loader from '../../utils/helpers/Loader';
 import { Dropdown } from 'react-native-element-dropdown';
 import { useIsFocused } from '@react-navigation/native';
 import constants from '../../utils/helpers/constants';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
+import MessageModal from '../../components/MessageModal';
 
 let status = '';
 const ApplyLeave = () => {
@@ -51,7 +53,8 @@ const ApplyLeave = () => {
   const [isHolidayVisible, setIsHolidayVisible] = useState(false);
   const [holidays, setHolidays] = useState([]);
   const [supportingDocument, setSupportingDocument] = useState(null);
-  console.log('supportingDocument>>>>>>>>>', supportingDocument);
+  console.log('leaveType>>>>>>>>>', leaveType);
+  const [showMessageModal, setShowMessageModal] = useState(false);
 
   const [showFileOptions, setShowFileOptions] = useState(false);
 
@@ -59,7 +62,8 @@ const ApplyLeave = () => {
     if (isFocused) {
       connectionrequest()
         .then(() => {
-          dispatch(leaveTypeRequest());
+          dispatch(remainingLeavesRequest());
+
           dispatch(
             holidayListRequest(
               ProfileReducer?.userDetailsResponse?.municipality_id,
@@ -226,7 +230,7 @@ const ApplyLeave = () => {
     const imageName = supportingDocument?.uri.split('/').pop();
     const imageType = 'image/jpeg';
     if (selectedLeaveTypeId == null) {
-      showErrorAlert('Please Select leave Type.');
+      showErrorAlert('Please Select a valid leave Type.');
     } else if (reason == '') {
       showErrorAlert('Please describe reason for leave.');
     } else {
@@ -236,14 +240,15 @@ const ApplyLeave = () => {
       formData.append('leave_gov_type', selectedLeaveTypeId);
       formData.append('reason', reason);
       formData.append('app_version', constants.APP_VERSION);
-      formData.append('photo', {
-        uri:
-          Platform.OS === 'android'
-            ? supportingDocument?.uri
-            : supportingDocument?.uri.replace('file://', ''),
-        name: imageName,
-        type: imageType,
-      });
+      supportingDocument?.uri != undefined &&
+        formData.append('photo', {
+          uri:
+            Platform.OS === 'android'
+              ? supportingDocument?.uri
+              : supportingDocument?.uri.replace('file://', ''),
+          name: imageName,
+          type: imageType,
+        });
       connectionrequest()
         .then(() => {
           dispatch(applyLeaveRequest(formData));
@@ -256,10 +261,10 @@ const ApplyLeave = () => {
   }
 
   useEffect(() => {
-    if (ProfileReducer?.leaveTypeResponse?.length > 0) {
-      setLeaveType(ProfileReducer?.leaveTypeResponse);
+    if (ProfileReducer?.remainingLeavesResponse?.length > 0) {
+      setLeaveType(ProfileReducer?.remainingLeavesResponse);
     }
-  }, [ProfileReducer?.leaveTypeResponse]);
+  }, [ProfileReducer?.remainingLeavesResponse]);
 
   if (status == '' || ProfileReducer.status != status) {
     switch (ProfileReducer.status) {
@@ -276,16 +281,6 @@ const ApplyLeave = () => {
         setSupportingDocument(null); // Reset supporting document on success
         break;
       case 'Profile/applyLeaveFailure':
-        status = ProfileReducer.status;
-        break;
-      case 'Profile/leaveTypeRequest':
-        status = ProfileReducer.status;
-        break;
-      case 'Profile/leaveTypeSuccess':
-        status = ProfileReducer.status;
-        setLeaveType(ProfileReducer?.leaveTypeResponse);
-        break;
-      case 'Profile/leaveTypeFailure':
         status = ProfileReducer.status;
         break;
       case 'Profile/holidayListRequest':
@@ -376,22 +371,34 @@ const ApplyLeave = () => {
             itemTextStyle={styles.dropdownItemText}
             data={leaveType}
             maxHeight={300}
-            labelField="name"
-            valueField="id"
+            labelField="leave_type_name"
+            valueField="leave_type_id"
             placeholder={!isFocusTask ? 'Select Leave Type' : '...'}
             searchPlaceholder="Search..."
             value={selectedLeaveTypeId}
             onFocus={() => setIsFocusTask(true)}
             onBlur={() => setIsFocusTask(false)}
             onChange={item => {
-              setSelectedLeaveTypeId(item.id);
-              setSelectedLeaveTypeName(item.name);
-              setIsFocusTask(false);
+              setSelectedLeaveTypeName(item.leave_type_name);
+
+              if (item?.remaining_leaves == 0) {
+                setShowMessageModal(true);
+              } else {
+                setSelectedLeaveTypeId(item.leave_type_id);
+                setIsFocusTask(false);
+              }
             }}
             renderLeftIcon={() => <Text style={styles.icon}>🗓️</Text>}
           />
         </View>
-
+        <MessageModal
+          isVisible={showMessageModal}
+          onClose={() => {
+            setShowMessageModal(false);
+          }}
+          message={`You have no available ${selectedLeaveTypeName}`}
+          okLabel="OK"
+        />
         {/* Total Days Display */}
         <View style={styles.section}>
           <View style={styles.summaryCard}>

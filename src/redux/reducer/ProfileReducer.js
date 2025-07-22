@@ -26,6 +26,8 @@ const initialState = {
   taskDoItLaterResponse: {},
   holidayListResponse: {},
   taskApprovalListResponse: {},
+  remainingLeavesResponse: {},
+  userActivityResponse: {},
 };
 
 const ProfileSlice = createSlice({
@@ -291,6 +293,30 @@ const ProfileSlice = createSlice({
       state.error = action.error;
       state.status = action.type;
     },
+
+    remainingLeavesRequest(state, action) {
+      state.status = action.type;
+    },
+    remainingLeavesSuccess(state, action) {
+      state.remainingLeavesResponse = action.payload;
+      state.status = action.type;
+    },
+    remainingLeavesFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
+
+    userActivityRequest(state, action) {
+      state.status = action.type;
+    },
+    userActivitySuccess(state, action) {
+      state.userActivityResponse = action.payload;
+      state.status = action.type;
+    },
+    userActivityFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
   },
 });
 
@@ -382,6 +408,16 @@ export const {
   holidayListRequest,
   holidayListSuccess,
   holidayListFailure,
+
+  remainingLeavesRequest,
+  remainingLeavesSuccess,
+  remainingLeavesFailure,
+
+  userActivityRequest,
+  userActivitySuccess,
+  userActivityFailure,
+
+  
 } = ProfileSlice.actions;
 
 export default ProfileSlice.reducer;

@@ -23,6 +23,7 @@ import {
   applyLeaveRequest,
   leaveCancelRequest,
   leaveLogRequest,
+  remainingLeavesRequest,
 } from '../../redux/reducer/ProfileReducer';
 import Loader from '../../utils/helpers/Loader';
 import { useIsFocused } from '@react-navigation/native';
@@ -33,6 +34,8 @@ const Leavelog = () => {
   const isFocused = useIsFocused();
   const [loading, setLoading] = useState(false);
   const [LeavelogList, setLeavelogList] = useState([]);
+  const [remainingLeaves, setRemainingLeaves] = useState([]);
+  
   const formatDate = date => {
     return moment(date).format('YYYY-MM-DD');
   };
@@ -47,6 +50,56 @@ const Leavelog = () => {
         showErrorAlert('Please connect to internet');
       });
   }
+
+  // Render leave summary card
+  const renderLeaveSummaryCard = ({ item }) => (
+    <View style={styles.leaveSummaryCard}>
+      <View style={styles.leaveTypeHeader}>
+        <Text style={styles.leaveTypeName}>{item?.leave_type_name}</Text>
+        <View style={styles.leaveBadge}>
+          <Text style={styles.leaveBadgeText}>
+            {item?.remaining_leaves}/{item?.total_leaves}
+          </Text>
+        </View>
+      </View>
+      
+      <View style={styles.leaveProgressContainer}>
+        <View style={styles.leaveProgressBar}>
+          <View 
+            style={[
+              styles.leaveProgressFill, 
+              { 
+                width: `${(item?.used_leaves / item?.total_leaves) * 100}%`,
+                backgroundColor: item?.remaining_leaves === 0 ? Colors.red : 
+                                item?.remaining_leaves <= 1 ? Colors.orange : Colors.primary
+              }
+            ]} 
+          />
+        </View>
+        <Text style={styles.usedLeavesText}>
+          {item?.used_leaves} used
+        </Text>
+      </View>
+      
+      <View style={styles.leaveStatsRow}>
+        <View style={styles.leaveStat}>
+          <Text style={styles.leaveStatNumber}>{item?.total_leaves}</Text>
+          <Text style={styles.leaveStatLabel}>Total</Text>
+        </View>
+        <View style={styles.leaveStat}>
+          <Text style={styles.leaveStatNumber}>{item?.used_leaves}</Text>
+          <Text style={styles.leaveStatLabel}>Used</Text>
+        </View>
+        <View style={styles.leaveStat}>
+          <Text style={[styles.leaveStatNumber, {color: Colors.green}]}>
+            {item?.remaining_leaves}
+          </Text>
+          <Text style={styles.leaveStatLabel}>Remaining</Text>
+        </View>
+      </View>
+    </View>
+  );
+
   const renderLeavelog = ({ item, index }) => (
     <View
       style={[
@@ -139,6 +192,7 @@ const Leavelog = () => {
     if (isFocused) {
       connectionrequest()
         .then(() => {
+          dispatch(remainingLeavesRequest());
           dispatch(leaveLogRequest());
         })
         .catch(err => {
@@ -153,6 +207,12 @@ const Leavelog = () => {
       setLeavelogList(ProfileReducer?.leaveLogResponse);
     }
   }, [ProfileReducer?.leaveLogResponse]);
+
+  useEffect(() => {
+    if (ProfileReducer?.remainingLeavesResponse?.length > 0) {
+      setRemainingLeaves(ProfileReducer?.remainingLeavesResponse);
+    }
+  }, [ProfileReducer?.remainingLeavesResponse]);
 
   if (status == '' || ProfileReducer.status != status) {
     switch (ProfileReducer.status) {
@@ -196,13 +256,40 @@ const Leavelog = () => {
           ProfileReducer?.status == 'Profile/leaveLogRequest'
         }
       />
-      <FlatList
-        data={LeavelogList}
-        keyExtractor={item => item.id}
-        renderItem={renderLeavelog}
-        style={styles.flatList}
-        showsVerticalScrollIndicator={false}
-      />
+      
+      {/* Leave Summary Section */}
+      {remainingLeaves.length > 0 && (
+        <View style={styles.leaveSummarySection}>
+          <View style={styles.sectionHeaderContainer}>
+            <Text style={styles.sectionTitle}>Leave Summary</Text>
+            <View style={styles.sectionUnderline} />
+          </View>
+          <FlatList
+            data={remainingLeaves}
+            keyExtractor={item => item.leave_type_id.toString()}
+            renderItem={renderLeaveSummaryCard}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.leaveSummaryList}
+            ItemSeparatorComponent={() => <View style={{width: normalize(10)}} />}
+          />
+        </View>
+      )}
+
+      {/* Leave History Section */}
+      <View style={styles.leaveHistorySection}>
+        <View style={styles.sectionHeaderContainer}>
+          <Text style={styles.sectionTitle}>Leave History</Text>
+          <View style={styles.sectionUnderline} />
+        </View>
+        <FlatList
+          data={LeavelogList}
+          keyExtractor={item => item.id}
+          renderItem={renderLeavelog}
+          style={styles.flatList}
+          showsVerticalScrollIndicator={false}
+        />
+      </View>
     </View>
   );
 };
@@ -215,6 +302,113 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: Colors.bgColor,
     paddingHorizontal: 10,
+  },
+  
+  // Leave Summary Styles
+  leaveSummarySection: {
+    marginTop: normalize(10),
+    marginBottom: normalize(20),
+  },
+  sectionHeaderContainer: {
+    marginBottom: normalize(15),
+  },
+  sectionTitle: {
+    fontSize: normalize(18),
+    fontFamily: Fonts.MulishBold,
+    color: Colors.white,
+    marginBottom: normalize(5),
+  },
+  sectionUnderline: {
+    width: normalize(35),
+    height: normalize(3),
+    backgroundColor: Colors.primary || '#007bff',
+    borderRadius: normalize(2),
+  },
+  leaveSummaryList: {
+    paddingVertical: normalize(5),
+  },
+  leaveSummaryCard: {
+    backgroundColor: Colors.white,
+    borderRadius: normalize(10),
+    padding: normalize(14),
+    width: normalize(220),
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+  },
+  leaveTypeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: normalize(12),
+  },
+  leaveTypeName: {
+    fontSize: normalize(14),
+    fontFamily: Fonts.MulishBold,
+    color: Colors.black,
+    flex: 1,
+    marginRight: normalize(8),
+  },
+  leaveBadge: {
+    backgroundColor: Colors.lightBlue || '#e3f2fd',
+    paddingHorizontal: normalize(10),
+    paddingVertical: normalize(5),
+    borderRadius: normalize(18),
+  },
+  leaveBadgeText: {
+    fontSize: normalize(11),
+    fontFamily: Fonts.MulishBold,
+    color: Colors.primary || '#007bff',
+  },
+  leaveProgressContainer: {
+    marginBottom: normalize(12),
+  },
+  leaveProgressBar: {
+    height: normalize(5),
+    backgroundColor: Colors.lightGray || '#f0f0f0',
+    borderRadius: normalize(3),
+    marginBottom: normalize(6),
+    overflow: 'hidden',
+  },
+  leaveProgressFill: {
+    height: '100%',
+    borderRadius: normalize(3),
+  },
+  usedLeavesText: {
+    fontSize: normalize(10),
+    fontFamily: Fonts.MulishSemiBold,
+    color: Colors.gray || '#666',
+    textAlign: 'right',
+  },
+  leaveStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  leaveStat: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  leaveStatNumber: {
+    fontSize: normalize(16),
+    fontFamily: Fonts.MulishBold,
+    color: Colors.black,
+    marginBottom: normalize(2),
+  },
+  leaveStatLabel: {
+    fontSize: normalize(10),
+    fontFamily: Fonts.MulishRegular,
+    color: Colors.gray || '#666',
+  },
+
+  // Leave History Styles
+  leaveHistorySection: {
+    flex: 1,
   },
   flatList: {
     flex: 1,
@@ -239,7 +433,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   itemContainer: {
-    borderRadius: normalize(8),
+    borderRadius: normalize(2),
     backgroundColor: Colors.white,
     width: '100%',
     padding: normalize(10),

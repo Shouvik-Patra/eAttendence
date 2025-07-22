@@ -1,10 +1,12 @@
 import {
+  Alert,
   FlatList,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  Image,
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
@@ -17,6 +19,7 @@ import connectionrequest from '../../utils/helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   attendenceReportRequest,
+  userActivityRequest,
 } from '../../redux/reducer/ProfileReducer';
 import Loader from '../../utils/helpers/Loader';
 import { useIsFocused } from '@react-navigation/native';
@@ -33,7 +36,21 @@ const AttendenceReport = () => {
     moment().format('YYYY-MM'),
   );
   const [showMonthPicker, setShowMonthPicker] = useState(false);
-console.log("ProfileReducer?.status>>>",ProfileReducer?.status);
+  const [showActivityModal, setShowActivityModal] = useState(false);
+  const [activityData, setActivityData] = useState(null);
+
+    console.log('activityData::>>>>>>>', activityData);
+
+  const onPressDate = date => {
+    connectionrequest()
+      .then(() => {
+        dispatch(userActivityRequest(date));
+      })
+      .catch(err => {
+        console.log(err);
+        showErrorAlert('Please connect to internet');
+      });
+  };
 
   // Generate months from January to current month
   const generateMonthOptions = () => {
@@ -56,6 +73,10 @@ console.log("ProfileReducer?.status>>>",ProfileReducer?.status);
 
   const formatDate = date => {
     return moment(date).format('YYYY-MM-DD');
+  };
+
+  const formatTime = time => {
+    return time ? moment(time, 'HH:mm:ss').format('hh:mm A') : 'Not recorded';
   };
 
   const formatCalendarDate = dateString => {
@@ -173,11 +194,6 @@ console.log("ProfileReducer?.status>>>",ProfileReducer?.status);
             '#2196F3',
           )}
         </View>
-        {/* <View style={styles.workingHoursContainer}>
-          <Text style={styles.workingHoursText}>
-             Working Hours: {summary.expected_working_hours}h
-          </Text>
-        </View> */}
       </View>
     );
   };
@@ -240,8 +256,182 @@ console.log("ProfileReducer?.status>>>",ProfileReducer?.status);
     </Modal>
   );
 
+  const renderActivityModal = () => {
+    if (!activityData) return null;
+
+    const { attendance, tracking } = activityData;
+
+    return (
+      <Modal
+        isVisible={showActivityModal}
+        onBackdropPress={() => setShowActivityModal(false)}
+        style={styles.modalContainer}
+      >
+        <View style={styles.activityModalContent}>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {/* Header */}
+            <View style={styles.activityModalHeader}>
+              <Text style={styles.activityModalTitle}>
+                Daily Activity Details
+              </Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowActivityModal(false)}
+              >
+                <Text style={styles.closeButtonText}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Employee Info */}
+            <View style={styles.employeeSection}>
+              <Text style={styles.employeeName}>{ProfileReducer?.userDetailsResponse?.name}</Text>
+              <Text style={styles.employeeDate}>
+                {moment(attendance?.date).format('dddd, MMMM DD, YYYY')}
+              </Text>
+              {attendance?.status &&<View
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor: getStatusBadgeColor(attendance?.status),
+                    alignSelf: 'center',
+                    marginTop: normalize(8),
+                  },
+                ]}
+              >
+                <Text style={styles.statusText}>
+                  {attendance?.status?.charAt(0).toUpperCase() +
+                    attendance?.status?.slice(1)}
+                </Text>
+              </View>}
+            </View>
+
+            {/* Attendance Details */}
+            <View style={styles.attendanceSection}>
+              <Text style={styles.sectionTitle}>📍 Attendance Details</Text>
+
+              {/* Check In */}
+              <View style={styles.checkInOutContainer}>
+                <View style={styles.checkInOut}>
+                  <View style={styles.checkInOutHeader}>
+                    <Text style={styles.checkInOutTitle}>Check In</Text>
+                    <Text style={styles.checkInOutTime}>
+                      {formatTime(attendance?.check_in_time)}
+                    </Text>
+                  </View>
+                  <Text style={styles.addressText}>
+                    📍 {attendance?.check_in_address || 'Address not available'}
+                  </Text>
+                  {attendance?.check_in_photo && (
+                    <Image
+                      source={{ uri: attendance.check_in_photo }}
+                      style={styles.attendancePhoto}
+                      resizeMode="cover"
+                    />
+                  )}
+                </View>
+
+                {/* Check Out */}
+                <View style={styles.checkInOut}>
+                  <View style={styles.checkInOutHeader}>
+                    <Text style={styles.checkInOutTitle}>Check Out</Text>
+                    <Text style={styles.checkInOutTime}>
+                      {formatTime(attendance?.check_out_time)}
+                    </Text>
+                  </View>
+                  <Text style={styles.addressText}>
+                    📍 {attendance?.check_out_address || 'Not checked out yet'}
+                  </Text>
+                  {attendance?.check_out_photo && (
+                    <Image
+                      source={{ uri: attendance.check_out_photo }}
+                      style={styles.attendancePhoto}
+                      resizeMode="cover"
+                    />
+                  )}
+                </View>
+              </View>
+
+              {attendance?.remarks && (
+                <View style={styles.remarksContainer}>
+                  <Text style={styles.remarksLabel}>Remarks:</Text>
+                  <Text style={styles.remarksText}>{attendance.remarks}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Tracking Details */}
+            {tracking && tracking.length > 0 && (
+              <View style={styles.trackingSection}>
+                <Text style={styles.sectionTitle}>🚶‍♂️ Activity Tracking</Text>
+                {tracking.map((track, index) => (
+                  <View key={index} style={styles.trackingItem}>
+                    <View style={styles.trackingHeader}>
+                      <Text style={styles.trackingNumber}>
+                        Activity {index + 1}
+                      </Text>
+                      <View
+                        style={[
+                          styles.trackingStatusBadge,
+                          {
+                            backgroundColor:
+                              track.status === 'complete'
+                                ? '#4CAF50'
+                                : '#FF9800',
+                          },
+                        ]}
+                      >
+                        <Text style={styles.trackingStatusText}>
+                          {track.status}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.trackingDetails}>
+                      <View style={styles.trackingTimeContainer}>
+                        <Text style={styles.trackingTimeLabel}>Start:</Text>
+                        <Text style={styles.trackingTimeValue}>
+                          {formatTime(track.start_time)}
+                        </Text>
+                      </View>
+                      <Text style={styles.trackingAddress}>
+                        📍 {track.start_address}
+                      </Text>
+
+                      <View style={styles.trackingTimeContainer}>
+                        <Text style={styles.trackingTimeLabel}>End:</Text>
+                        <Text style={styles.trackingTimeValue}>
+                          {formatTime(track.end_time)}
+                        </Text>
+                      </View>
+                      <Text style={styles.trackingAddress}>
+                        📍 {track.end_address}
+                      </Text>
+
+                      {track.photo && (
+                        <Image
+                          source={{ uri: track.photo }}
+                          style={styles.trackingPhoto}
+                          resizeMode="cover"
+                        />
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
+    );
+  };
+
   const renderCalendarItem = ({ item }) => (
-    <View style={[styles.tableRow, { backgroundColor: item.backgroundColor }]}>
+    <TouchableOpacity
+      style={[styles.tableRow, { backgroundColor: item.backgroundColor }]}
+      onPress={() => {
+        onPressDate(item?.id);
+      }}
+    >
       <View style={styles.dateColumn}>
         <Text style={styles.dateText}>{item.formattedDate}</Text>
       </View>
@@ -254,7 +444,7 @@ console.log("ProfileReducer?.status>>>",ProfileReducer?.status);
           </Text>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   const renderTableHeader = () => (
@@ -288,55 +478,6 @@ console.log("ProfileReducer?.status>>>",ProfileReducer?.status);
     </View>
   );
 
-  const renderAttendenceReport = ({ item, index }) => (
-    <View
-      style={[
-        styles.itemContainer,
-        {
-          backgroundColor:
-            item?.status === 'pending'
-              ? Colors.lightYellow
-              : item?.status === 'approved'
-              ? Colors.lightgreen
-              : Colors.lightred,
-        },
-      ]}
-    >
-      <View style={styles.row1}>
-        <Text style={styles.lebel}>Leave Status : </Text>
-        <Text style={[styles.lebelValue, { textTransform: 'capitalize' }]}>
-          {item?.status}
-        </Text>
-      </View>
-      <View style={styles.row1}>
-        <Text style={styles.lebel}>Leave Type : </Text>
-        <Text style={styles.lebelValue}>{item?.leave_gov_type}</Text>
-      </View>
-      <View style={styles.row1}>
-        <Text style={styles.lebel}>From : </Text>
-        <Text style={styles.lebelValue}>{formatDate(item?.start_date)}</Text>
-      </View>
-      <View style={styles.row1}>
-        <Text style={styles.lebel}>To : </Text>
-        <Text style={styles.lebelValue}>{formatDate(item?.end_date)}</Text>
-      </View>
-      <View style={styles.row1}>
-        <Text style={styles.lebel}>Applyed on : </Text>
-        <Text style={styles.lebelValue}>{formatDate(item?.applied_at)}</Text>
-      </View>
-      <View style={[styles.row1, { width: '75%', alignItems: 'baseline' }]}>
-        <Text style={styles.lebel}>Leave Reason : </Text>
-        <Text style={styles.lebelValue}>{item?.reason}</Text>
-      </View>
-      {item?.status === 'rejected' && (
-        <View style={[styles.row1, { width: '75%', alignItems: 'baseline' }]}>
-          <Text style={styles.lebel}>Reject Reason : </Text>
-          <Text style={styles.lebelValue}>{item?.leaves_status}</Text>
-        </View>
-      )}
-    </View>
-  );
-
   useEffect(() => {
     if (isFocused) {
       connectionrequest()
@@ -367,6 +508,21 @@ console.log("ProfileReducer?.status>>>",ProfileReducer?.status);
       case 'Profile/attendenceReportFailure':
         status = ProfileReducer.status;
         break;
+
+      case 'Profile/userActivityRequest':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/userActivitySuccess':
+        status = ProfileReducer.status;
+        // Instead of Alert.alert('helooo'), show the activity modal
+        if (ProfileReducer?.userActivityResponse) {
+          setActivityData(ProfileReducer.userActivityResponse);
+          setShowActivityModal(true);
+        }
+        break;
+      case 'Profile/userActivityFailure':
+        status = ProfileReducer.status;
+        break;
     }
   }
 
@@ -383,9 +539,7 @@ console.log("ProfileReducer?.status>>>",ProfileReducer?.status);
         onPress_back_button={() => navigation.goBack()}
       />
       <Loader
-        visible={
-          ProfileReducer?.status == 'Profile/attendenceReportRequest'
-        }
+        visible={ProfileReducer?.status == 'Profile/attendenceReportRequest'}
       />
 
       {/* Month Selector at top-right */}
@@ -403,9 +557,7 @@ console.log("ProfileReducer?.status>>>",ProfileReducer?.status);
             {/* Calendar Section */}
             <View style={styles.tableContainer}>
               <View style={styles.tableTopSection}>
-                <Text style={styles.tableTitle}>
-                  Monthly Attendance
-                </Text>
+                <Text style={styles.tableTitle}>Monthly Attendance</Text>
               </View>
               {calendarData.length > 0 ? (
                 <>
@@ -427,20 +579,6 @@ console.log("ProfileReducer?.status>>>",ProfileReducer?.status);
                 </View>
               )}
             </View>
-
-            {/* Original Leave Reports List */}
-            {/* <FlatList
-              data={attendenceList}
-              keyExtractor={item => item.id}
-              renderItem={renderAttendenceReport}
-              ListEmptyComponent={() => (
-                <View style={styles.noDataMainContainer}>
-                 <Text style={styles.noDataMainText}>No leave data available</Text>
-                </View>
-              )}
-              style={styles.flatList}
-              showsVerticalScrollIndicator={false}
-            /> */}
           </>
         ) : (
           <View style={styles.noDataMainContainer}>
@@ -455,6 +593,7 @@ console.log("ProfileReducer?.status>>>",ProfileReducer?.status);
       </ScrollView>
 
       {renderMonthPicker()}
+      {renderActivityModal()}
     </View>
   );
 };
@@ -470,7 +609,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    marginBottom:100
+    marginBottom: 100,
   },
   flatList: {
     flex: 1,
@@ -517,7 +656,20 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.MulishSemiBold,
     color: Colors.black,
   },
-
+  // Calendar Table Styles
+  tableContainer: {
+    backgroundColor: Colors.white,
+    marginVertical: normalize(10),
+    borderRadius: normalize(12),
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+  },
   // Summary Section Styles
   summaryContainer: {
     backgroundColor: Colors.white,
@@ -587,121 +739,6 @@ const styles = StyleSheet.create({
   summaryIconText: {
     fontSize: 16,
     fontFamily: Fonts.MulishBold,
-  },
-  workingHoursContainer: {
-    backgroundColor: '#f8f9fa',
-    padding: normalize(12),
-    borderRadius: normalize(8),
-    marginTop: normalize(8),
-  },
-  workingHoursText: {
-    fontSize: 14,
-    fontFamily: Fonts.MulishSemiBold,
-    color: Colors.black,
-    textAlign: 'center',
-  },
-
-  // Top Right Container
-  topRightContainer: {
-    marginTop: normalize(10),
-  },
-
-  // Month Selector Styles
-  monthSelectorContainer: {
-    alignItems: 'flex-end',
-  },
-  monthSelectorTitle: {
-    fontSize: 12,
-    fontFamily: Fonts.MulishRegular,
-    color: Colors.black,
-    marginBottom: normalize(4),
-  },
-  monthSelectorButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.white,
-    paddingHorizontal: normalize(12),
-    paddingVertical: normalize(8),
-    borderRadius: normalize(6),
-    borderWidth: 1,
-    borderColor: Colors.lightGray || '#e9ecef',
-    minWidth: normalize(120),
-  },
-  monthSelectorText: {
-    fontSize: 12,
-    fontFamily: Fonts.MulishSemiBold,
-    color: Colors.black,
-    flex: 1,
-  },
-  monthSelectorArrow: {
-    fontSize: 10,
-    color: Colors.black,
-    marginLeft: normalize(4),
-  },
-
-  // Modal Styles
-  modalContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    margin: 0,
-  },
-  modalContent: {
-    backgroundColor: Colors.white,
-    borderRadius: normalize(12),
-    padding: normalize(20),
-    width: '90%',
-    maxHeight: '70%',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontFamily: Fonts.MulishBold,
-    color: Colors.black,
-    textAlign: 'center',
-    marginBottom: normalize(16),
-  },
-  monthOption: {
-    paddingVertical: normalize(12),
-    paddingHorizontal: normalize(16),
-    borderRadius: normalize(8),
-    marginBottom: normalize(8),
-  },
-  selectedMonthOption: {
-    backgroundColor: Colors.lightBlue || '#e3f2fd',
-  },
-  monthOptionText: {
-    fontSize: 16,
-    fontFamily: Fonts.MulishSemiBold,
-    color: Colors.black,
-  },
-  selectedMonthOptionText: {
-    color: Colors.blue || '#2196F3',
-  },
-  modalCloseButton: {
-    backgroundColor: Colors.blue || '#2196F3',
-    paddingVertical: normalize(12),
-    borderRadius: normalize(8),
-    marginTop: normalize(16),
-  },
-  modalCloseButtonText: {
-    fontSize: 16,
-    fontFamily: Fonts.MulishBold,
-    color: Colors.white,
-    textAlign: 'center',
-  },
-
-  // Calendar Table Styles
-  tableContainer: {
-    backgroundColor: Colors.white,
-    marginVertical: normalize(10),
-    borderRadius: normalize(12),
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
   },
   // Table Top Section (Updated)
   tableTopSection: {
@@ -821,32 +858,275 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: Fonts.MulishSemiBold,
     color: Colors.black,
-    textAlign:'center'
+    textAlign: 'center',
   },
-  noDataText:{
-  textAlign:'center',
+  noDataText: {
+    textAlign: 'center',
     fontSize: 16,
     fontFamily: Fonts.MulishRegular,
     color: Colors.black,
   },
 
-  noDataMainContainer:{
-   backgroundColor:Colors.white,
-   borderRadius:8,
-   marginTop:80,
-   padding:15,
-   alignItems:'center'
+  noDataMainContainer: {
+    backgroundColor: Colors.white,
+    borderRadius: 8,
+    marginTop: 80,
+    padding: 15,
+    alignItems: 'center',
   },
-noDataMainText:{
+  noDataMainText: {
     fontSize: 16,
     fontFamily: Fonts.MulishSemiBold,
     color: Colors.black,
-    textAlign:'center'
+    textAlign: 'center',
   },
-noDataSubText:{
-  textAlign:'center',
+  noDataSubText: {
+    textAlign: 'center',
     fontSize: 16,
     fontFamily: Fonts.MulishRegular,
     color: Colors.black,
   },
+  // Top Right Container
+  topRightContainer: {
+    marginTop: normalize(10),
+  },
+
+  // Month Selector Styles
+  monthSelectorContainer: {
+    alignItems: 'flex-end',
+  },
+  monthSelectorTitle: {
+    fontSize: 12,
+    fontFamily: Fonts.MulishRegular,
+    color: Colors.black,
+    marginBottom: normalize(4),
+  },
+  monthSelectorButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    paddingHorizontal: normalize(12),
+    paddingVertical: normalize(8),
+    borderRadius: normalize(6),
+    borderWidth: 1,
+    borderColor: Colors.lightGray || '#e9ecef',
+    minWidth: normalize(120),
+  },
+  monthSelectorText: {
+    fontSize: 12,
+    fontFamily: Fonts.MulishSemiBold,
+    color: Colors.black,
+    flex: 1,
+  },
+  monthSelectorArrow: {
+    fontSize: 10,
+    color: Colors.black,
+    marginLeft: normalize(4),
+  },
+
+  // Modal Styles
+  modalContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: 0,
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: normalize(12),
+    padding: normalize(20),
+    width: '90%',
+    maxHeight: '70%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: Fonts.MulishBold,
+    color: Colors.black,
+    textAlign: 'center',
+    marginBottom: normalize(16),
+  },
+  monthOption: {
+    paddingVertical: normalize(12),
+    paddingHorizontal: normalize(16),
+    borderRadius: normalize(8),
+    marginBottom: normalize(8),
+  },
+  selectedMonthOption: {
+    backgroundColor: Colors.lightBlue || '#e3f2fd',
+  },
+  monthOptionText: {
+    fontSize: 16,
+    fontFamily: Fonts.MulishSemiBold,
+    color: Colors.black,
+  },
+  selectedMonthOptionText: {
+    color: Colors.blue || '#2196F3',
+  },
+  modalCloseButton: {
+    backgroundColor: Colors.blue || '#2196F3',
+    paddingVertical: normalize(12),
+    borderRadius: normalize(8),
+    marginTop: normalize(16),
+  },
+  modalCloseButtonText: {
+    fontSize: 16,
+    fontFamily: Fonts.MulishBold,
+    color: Colors.white,
+    textAlign: 'center',
+  },
+
+  // Activity Modal Styles
+  activityModalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: normalize(16),
+    maxHeight: '90%',
+    width: '95%',
+    margin: 0,
+  },
+  activityModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: normalize(20),
+    paddingVertical: normalize(16),
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.lightGray || '#e9ecef',
+  },
+  activityModalTitle: {
+    fontSize: 20,
+    fontFamily: Fonts.MulishBold,
+    color: Colors.black,
+    flex: 1,
+  },
+  closeButton: {
+    width: normalize(30),
+    height: normalize(30),
+    borderRadius: normalize(15),
+    backgroundColor: Colors.lightGray || '#f0f0f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeButtonText: {
+    fontSize: 20,
+    fontFamily: Fonts.MulishBold,
+    color: Colors.black,
+  },
+
+  // Employee Section
+  employeeSection: {
+    padding: normalize(20),
+    alignItems: 'center',
+    backgroundColor: Colors.lightBlue || '#f8f9ff',
+    marginHorizontal: normalize(20),
+    marginTop: normalize(20),
+    borderRadius: normalize(12),
+  },
+  employeeName: {
+    fontSize: 22,
+    fontFamily: Fonts.MulishBold,
+    color: Colors.black,
+    textAlign: 'center',
+  },
+  employeeDate: {
+    fontSize: 16,
+    fontFamily: Fonts.MulishSemiBold,
+    color: Colors.gray || '#666',
+    textAlign: 'center',
+    marginTop: normalize(4),
+  },
+
+  // Attendance Section
+  attendanceSection: {
+    padding: normalize(20),
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontFamily: Fonts.MulishBold,
+    color: Colors.black,
+    marginBottom: normalize(16),
+  },
+  checkInOutContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: normalize(16),
+  },
+  checkInOut: {
+    flex: 0.48,
+    backgroundColor: Colors.lightGray || '#f8f9fa',
+    borderRadius: normalize(12),
+    padding: normalize(12),
+  },
+  checkInOutHeader: {
+    alignItems: 'center',
+    marginBottom: normalize(8),
+  },
+  checkInOutTitle: {
+    fontSize: 14,
+    fontFamily: Fonts.MulishBold,
+    color: Colors.black,
+  },
+  checkInOutTime: {
+    fontSize: 16,
+    fontFamily: Fonts.MulishBold,
+    color: Colors.blue || '#2196F3',
+    marginTop: normalize(4),
+  },
+  addressText: {
+    fontSize: 12,
+    fontFamily: Fonts.MulishRegular,
+    color: Colors.gray || '#666',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  attendancePhoto: {
+    width: '100%',
+    height: normalize(80),
+    borderRadius: normalize(8),
+    marginTop: normalize(8),
+  },
+  remarksContainer: {
+    backgroundColor: Colors.lightYellow || '#fff9c4',
+    padding: normalize(12),
+    borderRadius: normalize(8),
+    marginTop: normalize(12),
+  },
+  remarksLabel: {
+    fontSize: 14,
+    fontFamily: Fonts.MulishBold,
+    color: Colors.black,
+  },
+  remarksText: {
+    fontSize: 14,
+    fontFamily: Fonts.MulishRegular,
+    color: Colors.black,
+    marginTop: normalize(4),
+  },
+
+  // Tracking Section
+  trackingSection: {
+    padding: normalize(20),
+    paddingTop: 0,
+  },
+  trackingItem: {
+    backgroundColor: Colors.lightGray || '#f8f9fa',
+    borderRadius: normalize(12),
+    padding: normalize(16),
+    marginBottom: normalize(12),
+  },
+  trackingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: normalize(12),
+  },
+  trackingNumber: {
+    fontSize: 16,
+    fontFamily: Fonts.MulishBold,
+    color: Colors.black,
+  },
+  trackingStatusBadge: {
+    paddingHorizontal: normalize(8),
+    paddingVertical: normalize(4),
+    borderRadius: normalize(12),
+  },
+  trackingStatus: {},
 });

@@ -50,6 +50,7 @@ export const Images = {
   addTask: require('../assets/images/addTask.png'),
   success: require('../assets/images/success.png'),
   fail: require('../assets/images/fail.png'),
+  alert: require('../assets/images/alert.png'),
 };
 
 export const Colors = {

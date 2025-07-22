@@ -54,9 +54,9 @@ export const CustomAlertProvider = ({ children }) => {
             resizeMode="cover"
             style={[
               styles.iconImage,
-              { tintColor: alertType != 'success' && Colors.red },
+              { tintColor: alertType != 'success' ? Colors.red :Colors.skyblue },
             ]}
-            source={Images.mailbox}
+            source={Images.alert}
           />
 
           <Text style={styles.modalTitle}>{message}</Text>
@@ -78,8 +78,8 @@ const styles = StyleSheet.create({
     right: -20,
   },
   iconImage: {
-    width: normalize(80),
-    height: normalize(80),
+    width: normalize(70),
+    height: normalize(70),
     alignSelf: 'center',
   },
   modalContainer: {

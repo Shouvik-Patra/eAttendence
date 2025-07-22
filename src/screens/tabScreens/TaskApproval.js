@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
   Platform,
+  PermissionsAndroid,
 } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { Colors, Fonts, Images } from '../../themes/ThemePath';

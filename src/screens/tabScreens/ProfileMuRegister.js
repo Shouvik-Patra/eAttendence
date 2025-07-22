@@ -109,7 +109,6 @@ const ProfileMuRegister = props => {
     const imageName = capturedImageWithGeotag?.split('/').pop(); // extract file name
     const imageType = 'image/jpeg'; // or dynamically detect
 
- 
     const formData = new FormData();
     formData.append('name', name);
     formData.append('email', email);
@@ -233,7 +232,8 @@ const ProfileMuRegister = props => {
           <Text style={styles.headerName}>
             {ProfileReducer?.userDetailsResponse?.name
               ? ProfileReducer?.userDetailsResponse?.name
-              : ''} municipality
+              : ''}{' '}
+            municipality
           </Text>
         </View>
 
@@ -280,8 +280,8 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginTop:20,
-    paddingBottom:30,
+    marginTop: 20,
+    paddingBottom: 30,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: Colors.white,
-    textTransform:'capitalize'
+    textTransform: 'capitalize',
   },
   content: {
     backgroundColor: '#fff',

@@ -163,7 +163,7 @@ const Signin = props => {
           showsVerticalScrollIndicator={false}
           style={{
             // paddingHorizontal: normalize(20),
-            maxHeight: windowHeight - normalize(200),
+            maxHeight: windowHeight - normalize(220),
             backgroundColor: '#FFF',
             borderRadius: normalize(10),
             padding: normalize(15),
