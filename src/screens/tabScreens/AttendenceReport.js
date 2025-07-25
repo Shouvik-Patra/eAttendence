@@ -39,7 +39,7 @@ const AttendenceReport = () => {
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [activityData, setActivityData] = useState(null);
 
-    console.log('activityData::>>>>>>>', activityData);
+  console.log('activityData::>>>>>>>', activityData);
 
   const onPressDate = date => {
     connectionrequest()
@@ -284,25 +284,29 @@ const AttendenceReport = () => {
 
             {/* Employee Info */}
             <View style={styles.employeeSection}>
-              <Text style={styles.employeeName}>{ProfileReducer?.userDetailsResponse?.name}</Text>
+              <Text style={styles.employeeName}>
+                {ProfileReducer?.userDetailsResponse?.name}
+              </Text>
               <Text style={styles.employeeDate}>
                 {moment(attendance?.date).format('dddd, MMMM DD, YYYY')}
               </Text>
-              {attendance?.status &&<View
-                style={[
-                  styles.statusBadge,
-                  {
-                    backgroundColor: getStatusBadgeColor(attendance?.status),
-                    alignSelf: 'center',
-                    marginTop: normalize(8),
-                  },
-                ]}
-              >
-                <Text style={styles.statusText}>
-                  {attendance?.status?.charAt(0).toUpperCase() +
-                    attendance?.status?.slice(1)}
-                </Text>
-              </View>}
+              {attendance?.status && (
+                <View
+                  style={[
+                    styles.statusBadge,
+                    {
+                      backgroundColor: getStatusBadgeColor(attendance?.status),
+                      alignSelf: 'center',
+                      marginTop: normalize(8),
+                    },
+                  ]}
+                >
+                  <Text style={styles.statusText}>
+                    {attendance?.status?.charAt(0).toUpperCase() +
+                      attendance?.status?.slice(1)}
+                  </Text>
+                </View>
+              )}
             </View>
 
             {/* Attendance Details */}
@@ -318,9 +322,9 @@ const AttendenceReport = () => {
                       {formatTime(attendance?.check_in_time)}
                     </Text>
                   </View>
-                  <Text style={styles.addressText}>
+                  {/* <Text style={styles.addressText}>
                     📍 {attendance?.check_in_address || 'Address not available'}
-                  </Text>
+                  </Text> */}
                   {attendance?.check_in_photo && (
                     <Image
                       source={{ uri: attendance.check_in_photo }}
@@ -338,9 +342,9 @@ const AttendenceReport = () => {
                       {formatTime(attendance?.check_out_time)}
                     </Text>
                   </View>
-                  <Text style={styles.addressText}>
+                  {/* <Text style={styles.addressText}>
                     📍 {attendance?.check_out_address || 'Not checked out yet'}
-                  </Text>
+                  </Text> */}
                   {attendance?.check_out_photo && (
                     <Image
                       source={{ uri: attendance.check_out_photo }}
@@ -394,7 +398,7 @@ const AttendenceReport = () => {
                         </Text>
                       </View>
                       <Text style={styles.trackingAddress}>
-                        📍 {track.start_address}
+                        📍 {track.start_latitude}, {track.start_longitude}
                       </Text>
 
                       <View style={styles.trackingTimeContainer}>
@@ -404,7 +408,7 @@ const AttendenceReport = () => {
                         </Text>
                       </View>
                       <Text style={styles.trackingAddress}>
-                        📍 {track.end_address}
+                        📍 {track.end_latitude}, {track.end_longitude}
                       </Text>
 
                       {track.photo && (
@@ -769,7 +773,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   calendarFlatList: {
-    maxHeight: normalize(300),
+    flex: 1,
   },
   tableRow: {
     flexDirection: 'row',

@@ -114,7 +114,7 @@ const Signin = props => {
       case 'Auth/signInSuccess':
         status = AuthReducer.status;
         setLoading(false);
-        
+
         break;
       case 'Auth/signInFailure':
         status = AuthReducer.status;
@@ -129,144 +129,149 @@ const Signin = props => {
       style={styles.onbordingStyle}
     >
       <Loader visible={AuthReducer?.status == 'Auth/signInRequest'} />
-      <SafeAreaView style={{ flex: 1, width: '100%' }}>
-        <View style={{ width: '100%', paddingHorizontal: normalize(10) }}>
-          <View style={styles.headerContain}>
-            <Image
-              resizeMode="contain"
-              style={{
-                alignSelf: 'center',
-                height: normalize(100),
-                width: normalize(100),
-                marginTop: -30,
-              }}
-              source={Images.wb_logo}
-            />
-
-            <Text
-              style={[styles.headerText2, { fontSize: 18, fontWeight: 'bold' }]}
-            >
-              State Urban Development Agency
-            </Text>
-            <Text style={styles.headerText2}>
-              Under Department of Urban Development & Municipal Affairs
-            </Text>
-            <Text
-              style={[styles.headerText2, { fontSize: 16, fontWeight: 'bold' }]}
-            >
-              Government of West Bengal
-            </Text>
-          </View>
-        </View>
-
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS == 'ios' ? 'padding' : 'height'}
+      >
         <ScrollView
           showsVerticalScrollIndicator={false}
-          style={{
-            // paddingHorizontal: normalize(20),
-            maxHeight: windowHeight - normalize(220),
-            backgroundColor: '#FFF',
-            borderRadius: normalize(10),
-            padding: normalize(15),
-            flex: 1,
-            position: 'absolute',
-            bottom: '10%',
-            alignSelf: 'center',
-            width: '90%',
-          }}
+
+          // style={{
+          //   // paddingHorizontal: normalize(20),
+          //   maxHeight: windowHeight - normalize(220),
+          //   backgroundColor: '#FFF',
+          //   borderRadius: normalize(10),
+          //   padding: normalize(15),
+          //   flex: 1,
+          //   position: 'absolute',
+          //   bottom: '10%',
+          //   alignSelf: 'center',
+          //   width: '90%',
+          // }}
           contentContainerStyle={{
             flexGrow: 1,
+            padding:15,
             paddingBottom: isKeyboardVisible ? normalize(200) : normalize(20),
           }}
         >
-          <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS == 'ios' ? 'padding' : 'height'}
-          >
-            <View
-              style={{
-                width: '100%',
-                height: normalize(350),
-                alignSelf: 'center',
-                backgroundColor: Colors.white,
-                borderRadius: normalize(10),
-                alignItems: 'center',
-              }}
-            >
-              <Text style={styles.headerText1}>Login</Text>
-              <TextInputWithButton
-                show={true}
-                icon={true}
-                height={normalize(45)}
-                inputWidth={'100%'}
-                marginTop={normalize(25)}
-                textColor={Colors.textInputColor}
-                InputHeaderText={'User Name'}
-                placeholder={'Enter username'}
-                placeholderTextColor={Colors.black}
-                paddingLeft={normalize(25)}
-                borderColor={Colors.inputGreyBorder}
-                borderRadius={normalize(5)}
-                editable={true}
-                fontFamily={Fonts.MulishRegular}
-                isheadertext={true}
-                value={phone}
-                fontSize={normalize(14)}
-                headertxtsize={normalize(13)}
-                onChangeText={e => setPhone(e)}
-                tintColor={Colors.tintGrey}
-              />
-              <TextInputWithButton
-                show={true}
-                icon={true}
-                height={normalize(45)}
-                inputWidth={'100%'}
-                marginTop={normalize(25)}
-                textColor={Colors.textInputColor}
-                InputHeaderText={'New Password'}
-                placeholder={'Enter password'}
-                keyboardType={'email'}
-                placeholderTextColor={Colors.black}
-                paddingLeft={normalize(25)}
-                borderColor={Colors.inputGreyBorder}
-                borderRadius={normalize(5)}
-                editable={true}
-                fontFamily={Fonts.MulishRegular}
-                isheadertext={true}
-                value={password}
-                fontSize={normalize(14)}
-                headertxtsize={normalize(13)}
-                onChangeText={e => setPassword(e)}
-                isRightIconVisible
-                rightimage={Images.eyeclose}
-                rightimageheight={normalize(15)}
-                rightimagewidth={normalize(15)}
-                tintColor={Colors.tintGrey}
-                secureTextEntry={secure1}
-                onRightPress={() => {
-                  setSecure1(!secure1);
+          <View style={{ width: '100%', paddingHorizontal: normalize(10) }}>
+            <View style={styles.headerContain}>
+              <Image
+                resizeMode="contain"
+                style={{
+                  alignSelf: 'center',
+                  height: normalize(100),
+                  width: normalize(100),
+                  marginTop: -30,
                 }}
+                source={Images.wb_logo}
               />
 
-              <Button
-                height={normalize(45)}
-                marginTop={normalize(25)}
-                width={'100%'}
-                backgroundColor={Colors.skyblue}
-                title={'Signin'}
-                fontSize={normalize(15)}
-                fontFamily={Fonts.MulishSemiBold}
-                textColor={'white'}
-                onPress={() => {
-                  employeeLogin();
-                }}
-              />
+              <Text
+                style={[
+                  styles.headerText2,
+                  { fontSize: 18, fontWeight: 'bold' },
+                ]}
+              >
+                State Urban Development Agency
+              </Text>
+              <Text style={styles.headerText2}>
+                Under Department of Urban Development & Municipal Affairs
+              </Text>
+              <Text
+                style={[
+                  styles.headerText2,
+                  { fontSize: 16, fontWeight: 'bold' },
+                ]}
+              >
+                Government of West Bengal
+              </Text>
             </View>
-          </KeyboardAvoidingView>
+          </View>
+
+          <View
+            style={{
+              width: '100%',
+              flex:1,
+              alignSelf: 'center',
+              backgroundColor: Colors.white,
+              borderRadius: normalize(10),
+              alignItems: 'center',
+              padding:15,
+              marginTop:15
+            }}
+          >
+            <Text style={styles.headerText1}>Login</Text>
+            <TextInputWithButton
+              show={true}
+              icon={true}
+              height={normalize(45)}
+              inputWidth={'100%'}
+              marginTop={normalize(25)}
+              textColor={Colors.textInputColor}
+              InputHeaderText={'User Name'}
+              placeholder={'Enter username'}
+              placeholderTextColor={Colors.black}
+              paddingLeft={normalize(25)}
+              borderColor={Colors.inputGreyBorder}
+              borderRadius={normalize(5)}
+              editable={true}
+              fontFamily={Fonts.MulishRegular}
+              isheadertext={true}
+              value={phone}
+              fontSize={normalize(14)}
+              headertxtsize={normalize(13)}
+              onChangeText={e => setPhone(e)}
+              tintColor={Colors.tintGrey}
+            />
+            <TextInputWithButton
+              show={true}
+              icon={true}
+              height={normalize(45)}
+              inputWidth={'100%'}
+              marginTop={normalize(25)}
+              textColor={Colors.textInputColor}
+              InputHeaderText={'Password'}
+              placeholder={'Enter password'}
+              keyboardType={'email'}
+              placeholderTextColor={Colors.black}
+              paddingLeft={normalize(25)}
+              borderColor={Colors.inputGreyBorder}
+              borderRadius={normalize(5)}
+              editable={true}
+              fontFamily={Fonts.MulishRegular}
+              isheadertext={true}
+              value={password}
+              fontSize={normalize(14)}
+              headertxtsize={normalize(13)}
+              onChangeText={e => setPassword(e)}
+              isRightIconVisible
+              rightimage={Images.eyeclose}
+              rightimageheight={normalize(15)}
+              rightimagewidth={normalize(15)}
+              tintColor={Colors.tintGrey}
+              secureTextEntry={secure1}
+              onRightPress={() => {
+                setSecure1(!secure1);
+              }}
+            />
+
+            <Button
+              height={normalize(45)}
+              marginTop={normalize(25)}
+              width={'100%'}
+              backgroundColor={Colors.skyblue}
+              title={'Signin'}
+              fontSize={normalize(15)}
+              fontFamily={Fonts.MulishSemiBold}
+              textColor={'white'}
+              onPress={() => {
+                employeeLogin();
+              }}
+            />
+          </View>
         </ScrollView>
-
-
-       
-      </SafeAreaView>
+      </KeyboardAvoidingView>
     </ImageBackground>
   );
 };

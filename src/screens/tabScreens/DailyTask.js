@@ -37,14 +37,13 @@ import {
 } from '../../redux/reducer/ProfileReducer';
 import connectionrequest from '../../utils/helpers/NetInfo';
 import Loader from '../../utils/helpers/Loader';
-import { LocationGeocoder } from '../../components/LocationGeocoder';
 import TextInputWithButton from '../../components/TextInputWithBotton';
 import Button from '../../components/Button';
 import constants from '../../utils/helpers/constants';
 
 let status = '';
 
-const DailyTask = (props) => {
+const DailyTask = props => {
   const dispatch = useDispatch();
   const ProfileReducer = useSelector(state => state.ProfileReducer);
   // console.log("PAGE NAME===========>>>>>",props?.route?.name);
@@ -127,7 +126,7 @@ const DailyTask = (props) => {
   };
 
   useEffect(() => {
-    if (isFocused && props?.route?.name == "Daily Task") {
+    if (isFocused && props?.route?.name == 'Daily Task') {
       connectionrequest()
         .then(() => {
           dispatch(taskListRequest());
@@ -173,8 +172,7 @@ const DailyTask = (props) => {
   };
 
   const onAddNewTask = async (lat, long) => {
-    const result = await LocationGeocoder(lat, long);
-    const actualAddress = result?.address || 'Unknown Address';
+  
     setLoader(false);
     if (!selectedTaskPurpose?.id) {
       showErrorAlert('Please select task purpose');
@@ -228,7 +226,7 @@ const DailyTask = (props) => {
     formData.append('end_time', moment(endTime).format('HH:mm:ss'));
     formData.append('latitude', lat);
     formData.append('longitude', long);
-    formData.append('address', actualAddress);
+    // formData.append('address', actualAddress);
     formData.append('status', 'approved');
     formData.append('app_version', constants.APP_VERSION);
 
@@ -243,15 +241,14 @@ const DailyTask = (props) => {
       });
   };
   const onStartTask = async (lat, long, taskid) => {
-    const result = await LocationGeocoder(lat, long);
-    const actualAddress = result?.address || 'Unknown Address';
+ 
     setLoader(false);
     let obj = {
       id: taskid,
       start_time: moment().format('HH:mm:ss'),
       start_latitude: lat,
       start_longitude: long,
-      start_address: actualAddress,
+      // start_address: actualAddress,
     };
 
     connectionrequest()
@@ -283,8 +280,7 @@ const DailyTask = (props) => {
   };
 
   const onEndTask = async (lat, long, remark) => {
-    const result = await LocationGeocoder(lat, long);
-    const actualAddress = result?.address || 'Unknown Address';
+  
     setLoader(false);
     let obj = {
       id: taskTrackingId,
@@ -292,7 +288,7 @@ const DailyTask = (props) => {
       end_time: moment().format('HH:mm:ss'),
       end_latitude: lat,
       end_longitude: long,
-      end_address: actualAddress,
+      // end_address: actualAddress,
       task_tracking_remarks: remark,
     };
 

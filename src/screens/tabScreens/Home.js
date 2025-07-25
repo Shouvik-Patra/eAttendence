@@ -9,6 +9,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Linking,
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import Header from '../../components/Header';
@@ -16,7 +17,6 @@ import { Colors, Fonts, Images } from '../../themes/ThemePath';
 import showErrorAlert from '../../utils/helpers/Toast';
 import { Camera } from 'react-native-vision-camera';
 import normalize from '../../utils/helpers/normalize';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import moment from 'moment';
 import Modal from 'react-native-modal';
 import Geolocation from '@react-native-community/geolocation';
@@ -28,10 +28,11 @@ import {
 } from '../../redux/reducer/ProfileReducer';
 import { useDispatch, useSelector } from 'react-redux';
 import { useIsFocused } from '@react-navigation/native';
-import { LocationGeocoder } from '../../components/LocationGeocoder';
 import constants from '../../utils/helpers/constants';
 import UpdateModal from '../../components/UpdateModal';
+
 let status = '';
+
 const Home = props => {
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
@@ -42,8 +43,12 @@ const Home = props => {
   const [addTaskModal, setAddTaskModal] = useState(false);
   const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(null);
   const [loading, setLoading] = useState(false);
-
+  const [loadingMessage, setLoadingMessage] = useState('');
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
+
+  // Permission states
+  const [locationPermission, setLocationPermission] = useState(null);
+  const [cameraPermission, setCameraPermission] = useState(null);
 
   const [location, setLocation] = useState({
     latitude: 22.5726,
@@ -60,79 +65,213 @@ const Home = props => {
       }
     }
   }, [isFocused]);
-  const requestLocationPermission = async () => {
+
+  // Check and request location permission
+  const checkLocationPermission = async () => {
     if (Platform.OS === 'android') {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
+      try {
+        const granted = await PermissionsAndroid.check(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        );
+        
+        if (granted) {
+          setLocationPermission('granted');
+          return true;
+        } else {
+          const requestResult = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            {
+              title: 'Location Permission Required',
+              message: 'This app needs access to your location for attendance marking.',
+              buttonNeutral: 'Ask Me Later',
+              buttonNegative: 'Cancel',
+              buttonPositive: 'OK',
+            },
+          );
+          
+          if (requestResult === PermissionsAndroid.RESULTS.GRANTED) {
+            setLocationPermission('granted');
+            return true;
+          } else if (requestResult === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+            setLocationPermission('denied');
+            showSettingsAlert('Location');
+            return false;
+          } else {
+            setLocationPermission('denied');
+            return false;
+          }
+        }
+      } catch (error) {
+        console.log('Location permission error:', error);
+        setLocationPermission('denied');
+        return false;
+      }
+    } else {
+      // For iOS, you might need to check differently
+      setLocationPermission('granted');
+      return true;
     }
-    return true;
   };
-  // const getCurrentLocation = async () => {
-  //   setLoading(true);
-  //   console.log('kick====1 - Starting location request');
 
-  //   Geolocation.getCurrentPosition(
-  //     position => {
-  //       console.log('kick====2 - Location received:', position);
+  // Check and request camera permission
+  const checkCameraPermission = async () => {
+    try {
+      const permission = await Camera.getCameraPermissionStatus();
+      
+      if (permission === 'granted') {
+        setCameraPermission('granted');
+        return true;
+      } else if (permission === 'not-determined') {
+        const newPermission = await Camera.requestCameraPermission();
+        if (newPermission === 'granted') {
+          setCameraPermission('granted');
+          return true;
+        } else {
+          setCameraPermission('denied');
+          if (newPermission === 'denied') {
+            showSettingsAlert('Camera');
+          }
+          return false;
+        }
+      } else {
+        setCameraPermission('denied');
+        showSettingsAlert('Camera');
+        return false;
+      }
+    } catch (error) {
+      console.log('Camera permission error:', error);
+      setCameraPermission('denied');
+      return false;
+    }
+  };
 
-  //       const { latitude, longitude } = position.coords;
-  //       console.log('Coordinates:', latitude, longitude);
-
-  //       setLocation({ latitude, longitude });
-
-  //       // Make sure LocationGeocoder is properly imported and available
-  //       const result = LocationGeocoder(latitude, longitude);
-  //       console.log('Geocoder result:', result);
-
-  //       setCurrentAddress(result?.address || 'Unknown Address');
-  //       setLoading(false);
-  //     },
-  //     error => {
-  //       setLoading(false);
-  //       console.log('Error getting location:', error);
-  //       console.log('Error code:', error.code);
-  //       console.log('Error message:', error.message);
-
-  //       // Handle different error types
-  //       switch(error.code) {
-  //         case 1: // PERMISSION_DENIED
-  //           console.log('Location permission denied');
-  //           break;
-  //         case 2: // POSITION_UNAVAILABLE
-  //           console.log('Location position unavailable');
-  //           break;
-  //         case 3: // TIMEOUT
-  //           console.log('Location request timeout');
-  //           break;
-  //         default:
-  //           console.log('Unknown location error');
-  //       }
-  //     },
-  //     {
-  //       enableHighAccuracy: false,  // Changed to true for better accuracy
-  //       timeout: 15000,
-  //       maximumAge: 10000
-  //     }
-  //   );
-  // };
-  const getLocation = async (isInside, attendenceStatus) => {
-    setLoading(true);
-
-    Geolocation.getCurrentPosition(
-      position => {
-        const { latitude, longitude } = position.coords;
-        setLocation({ latitude, longitude });
-        handleClickPhoto(latitude, longitude, isInside, attendenceStatus);
-      },
-      error => {
-        setLoading(false);
-        console.log('Error getting location', error);
-      },
-      { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 },
+  // Show alert to navigate to settings
+  const showSettingsAlert = (permissionType) => {
+    Alert.alert(
+      `${permissionType} Permission Required`,
+      `Please enable ${permissionType.toLowerCase()} permission in settings to use this feature.`,
+      [
+        {
+          text: 'Cancel',
+          onPress: () => console.log('Permission denied'),
+          style: 'cancel',
+        },
+        {
+          text: 'Open Settings',
+          onPress: () => {
+            if (Platform.OS === 'ios') {
+              Linking.openURL('app-settings:');
+            } else {
+              Linking.openSettings();
+            }
+          },
+        },
+      ],
     );
   };
+
+const getLocation = async (isInside, attendenceStatus) => {
+  setAddTaskModal(false);
+  try {
+    setLoading(true);
+    setLoadingMessage('Checking permissions...');
+
+    const locationGranted = await checkLocationPermission();
+    const cameraGranted = await checkCameraPermission();
+
+    if (!locationGranted) {
+      setLoading(false);
+      setLoadingMessage('');
+      showErrorAlert('Location permission is required for attendance marking');
+      return;
+    }
+
+    if (!cameraGranted) {
+      setLoading(false);
+      setLoadingMessage('');
+      showErrorAlert('Camera permission is required for attendance marking');
+      return;
+    }
+
+    // Start location fetching
+    setLoadingMessage('Fetching your location...');
+
+    const locationPromise = new Promise((resolve, reject) => {
+      Geolocation.getCurrentPosition(
+        position => {
+          const { latitude, longitude } = position.coords;
+          resolve({ latitude, longitude });
+        },
+        error => {
+          console.log('Geolocation error:', error);
+          let errorMessage = 'Unable to fetch location. ';
+
+          switch (error.code) {
+            case 1:
+              errorMessage += 'Location permission denied.';
+              break;
+            case 2:
+              errorMessage += 'Location not available.';
+              break;
+            case 3:
+              errorMessage += 'Location request timed out.';
+              break;
+            default:
+              errorMessage += 'Please try again.';
+          }
+
+          reject(new Error(errorMessage));
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 15000,
+          maximumAge: 10000,
+        },
+      );
+    });
+
+    // Wait for location
+    const locationData = await locationPromise;
+    setLocation(locationData);
+
+    // Navigate to Attendence without geocoding
+    setLoading(false);
+    setLoadingMessage('');
+    setAddTaskModal(false);
+
+    props?.navigation.navigate('Attendence', {
+      latitude: locationData.latitude,
+      longitude: locationData.longitude,
+      pagename: 'Home',
+      isInsideOffice: isInside,
+      attendenceStatus: attendenceStatus,
+      status:
+        ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 1 ||
+        ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 2
+          ? 'clockout'
+          : 'clockin',
+      check_out_remarks:
+        ProfileReducer?.attendenceStatusResponse?.task_tracking_remarks,
+    });
+
+  } catch (error) {
+    setLoading(false);
+    setLoadingMessage('');
+    console.log('Location fetch error:', error);
+    showErrorAlert(error.message || 'Failed to get location. Please try again.');
+  }
+};
+
+
+  // Initial permission check on component mount
+  useEffect(() => {
+    const initializePermissions = async () => {
+      await checkLocationPermission();
+      await checkCameraPermission();
+    };
+    
+    initializePermissions();
+  }, []);
 
   useEffect(() => {
     if (props?.route?.params?.finalImageUri) {
@@ -140,9 +279,9 @@ const Home = props => {
       props?.navigation.setParams({ finalImageUri: undefined });
     }
   }, [props?.route?.params?.finalImageUri]);
+
   useEffect(() => {
     if (isFocused) {
-      // getCurrentLocation();
       connectionrequest()
         .then(() => {
           dispatch(attendenceStatusRequest());
@@ -156,35 +295,73 @@ const Home = props => {
       setAddTaskModal(false);
     }
   }, [isFocused]);
-  const handleClickPhoto = async (lat, long, isInside, attendenceStatus) => {
-    const result = await LocationGeocoder(lat, long);
-    const actualAddress = result?.address || 'Unknown Address';
-    setLoading(false);
-    props?.navigation.navigate('Attendence', {
-      currentAddress: actualAddress,
-      latitude: lat,
-      longitude: long,
-      pagename: 'Home',
-      isInsideOffice: isInside,
-      attendenceStatus: attendenceStatus,
-      status:
-        ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 1 ||
-        ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 2
-          ? 'clockout'
-          : 'clockin',
-      check_out_remarks:
-        ProfileReducer?.attendenceStatusResponse?.task_tracking_remarks,
-    });
-  };
 
-  const checkPermission = async () => {
-    const newCameraPermission = await Camera.requestCameraPermission();
-  };
+  // Handle clock in/out button press with permission validation
+  const handleClockAction = () => {
+    // Check permissions before proceeding
+    if (locationPermission !== 'granted') {
++      Alert.alert(
+        'Location Permission Required',
+        'Please grant location permission to mark attendance.',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Grant Permission',
+            onPress: () => checkLocationPermission(),
+          },
+        ],
+      );
+      return;
+    }
 
-  useEffect(() => {
-    requestLocationPermission();
-    checkPermission();
-  }, []);
+    if (cameraPermission !== 'granted') {
+      Alert.alert(
+        'Camera Permission Required',
+        'Please grant camera permission to mark attendance.',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Grant Permission',
+            onPress: () => checkCameraPermission(),
+          },
+        ],
+      );
+      return;
+    }
+
+    const { status, is_attendance_given, is_task_running } =
+      ProfileReducer?.attendenceStatusResponse || {};
+      
+    if (status === 'present') {
+      if (is_task_running) {
+        Alert.alert('Warning!', 'Please End the running task', [
+          {
+            text: 'Cancel',
+            onPress: () => console.log('Cancel Pressed'),
+            style: 'cancel',
+          },
+          {
+            text: 'OK',
+            onPress: () => {
+              props?.navigation?.navigate('DailyTask', {
+                currenLocation: 'Home',
+              });
+            },
+          },
+        ]);
+      } else {
+        getLocation('inside', 'present');
+      }
+    } else {
+      setAddTaskModal(true);
+    }
+  };
 
   if (status == '' || ProfileReducer.status != status) {
     switch (ProfileReducer.status) {
@@ -197,7 +374,6 @@ const Home = props => {
       case 'Profile/userDetailsFailure':
         status = ProfileReducer.status;
         break;
-
       case 'Profile/attendenceStatusRequest':
         status = ProfileReducer.status;
         break;
@@ -209,6 +385,7 @@ const Home = props => {
         break;
     }
   }
+
   return (
     <View style={styles.mainContainer}>
       <Header
@@ -216,19 +393,22 @@ const Home = props => {
         Title
         placeText={'Home'}
         onPress_back_button={() => {
-          // setModalVisible(true); // Make sure this function exists
+          // setModalVisible(true);
         }}
         onPress_right_button={() => {
           props.navigation.navigate('Notification');
         }}
       />
+      
       <Loader
         visible={
           loading ||
           ProfileReducer?.status == 'Profile/clockinRequest' ||
           ProfileReducer?.status == 'Profile/userDetailsRequest'
         }
+        loadingText={loadingMessage || 'Loading...'}
       />
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
@@ -239,6 +419,9 @@ const Home = props => {
           <View style={styles.userTextContainer}>
             <Text style={styles.userName}>
               {ProfileReducer?.userDetailsResponse?.name}
+            </Text>
+            <Text style={styles.phone}>
+              {ProfileReducer?.userDetailsResponse?.phone}
             </Text>
             <Text
               style={[
@@ -263,24 +446,29 @@ const Home = props => {
               </Text>
             </Text>
             <Text style={styles.blackText}>
-              Attendence :{' '}
-              <Text
-                style={[
-                  styles.redText,
-                  {
-                    color:
-                      ProfileReducer?.attendenceStatusResponse?.status ==
-                      'pending'
-                        ? Colors.red
-                        : Colors.green,
-                  },
-                ]}
-              >
-                {ProfileReducer?.attendenceStatusResponse?.status == 'pending'
-                  ? 'Pending...'
-                  : 'Clocked In'}
-              </Text>
-            </Text>
+  Attendance:{' '}
+  <Text
+    style={[
+      styles.redText,
+      {
+        color:
+          ProfileReducer?.attendenceStatusResponse?.status === 'pending'
+            ? Colors.red
+            : Colors.green,
+      },
+    ]}
+  >
+    {ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
+      'Clocked Out Outside' ||
+    ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
+      'Clocked Out Inside'
+      ? 'Clocked Out'
+      : ProfileReducer?.attendenceStatusResponse?.status === 'pending'
+      ? 'Pending...'
+      : 'Clocked In'}
+  </Text>
+</Text>
+
             <Text style={styles.blackText}>
               Today :
               <Text style={styles.todayText}>
@@ -288,20 +476,23 @@ const Home = props => {
                 {moment().format('ddd, MMM, D')}.
               </Text>
             </Text>
-            {/* <Text style={styles.blackText}>
-              Working Hour :
-              <Text style={styles.redText}> {formatTime(elapsedTime)}</Text>
-            </Text> */}
-            {/* <Text style={styles.blackText}>
-              Started :
-              <Text style={styles.redText}>
-                {' '}
-                {startTime
-                  ? new Date(startTime).toLocaleTimeString()
-                  : 'Not started'}
-              </Text>
-            </Text> */}
+            
+            {/* Permission Status Indicators */}
+            {(locationPermission === 'denied' || cameraPermission === 'denied') && (
+              <View style={styles.permissionWarning}>
+                <Text style={styles.permissionWarningText}>
+                  ⚠️ Permissions needed for attendance marking
+                </Text>
+                {locationPermission === 'denied' && (
+                  <Text style={styles.permissionText}>• Location access required</Text>
+                )}
+                {cameraPermission === 'denied' && (
+                  <Text style={styles.permissionText}>• Camera access required</Text>
+                )}
+              </View>
+            )}
           </View>
+          
           <View style={styles.imageContainer}>
             {capturedImageWithGeotag ? (
               <Image
@@ -319,39 +510,6 @@ const Home = props => {
           </View>
         </View>
 
-        {/* Map Section */}
-        {/* <View style={styles.mapSection}>
-          <View style={styles.mapContainer}>
-            {location?.latitude && location?.longitude ? (
-              <MapView
-                style={styles.map}
-                initialRegion={{
-                  latitude: location.latitude,
-                  longitude: location.longitude,
-                  latitudeDelta: 0.009,
-                  longitudeDelta: 0.004,
-                }}
-                showsUserLocation={true}
-                showsMyLocationButton={true}
-                provider={PROVIDER_GOOGLE}
-              >
-                <Marker
-                  coordinate={{
-                    latitude: location.latitude,
-                    longitude: location.longitude,
-                  }}
-                  title="My Location"
-                  description="Current Position"
-                />
-              </MapView>
-            ) : (
-              <Text style={{ textAlign: 'center', padding: 10 }}>
-                Fetching location...
-              </Text>
-            )}
-          </View>
-        </View> */}
-
         {/* Clock In/Out Button */}
         {!(
           ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
@@ -363,11 +521,12 @@ const Home = props => {
         ) && (
           <TouchableOpacity
             disabled={
-              ProfileReducer?.attendenceStatusResponse?.status === 'pending' &&
+              (ProfileReducer?.attendenceStatusResponse?.status === 'pending' &&
               ProfileReducer?.attendenceStatusResponse?.is_attendance_given ===
-                2 || ProfileReducer?.attendenceStatusResponse?.status === 'pending' &&
+                2) || 
+              (ProfileReducer?.attendenceStatusResponse?.status === 'pending' &&
               ProfileReducer?.attendenceStatusResponse?.is_attendance_given ===
-                3
+                3)
             }
             style={[
               styles.clockButton,
@@ -381,8 +540,8 @@ const Home = props => {
                     return Colors.green;
                   if (status === 'pending' && is_attendance_given === 3)
                     return Colors.green;
-                  if (status === 'present') return '#FFA500'; // Orange
-                  return Colors.grey; // fallback
+                  if (status === 'present') return '#FFA500';
+                  return Colors.grey;
                 })(),
                 opacity:
                   ProfileReducer?.attendenceStatusResponse?.status ===
@@ -393,33 +552,7 @@ const Home = props => {
                     : 1,
               },
             ]}
-            onPress={() => {
-              const { status, is_attendance_given, is_task_running } =
-                ProfileReducer?.attendenceStatusResponse || {};
-              if (status === 'present') {
-                if (is_task_running) {
-                  Alert.alert('Warning!', 'Please End the running task', [
-                    {
-                      text: 'Cancel',
-                      onPress: () => console.log('Cancel Pressed'),
-                      style: 'cancel',
-                    },
-                    {
-                      text: 'OK',
-                      onPress: () => {
-                        props?.navigation?.navigate('DailyTask', {
-                          currenLocation: 'Home',
-                        });
-                      },
-                    },
-                  ]);
-                } else {
-                  getLocation('inside', 'present');
-                }
-              } else {
-                setAddTaskModal(true);
-              }
-            }}
+            onPress={handleClockAction}
           >
             <Text style={styles.clockButtonText}>
               {(() => {
@@ -437,12 +570,13 @@ const Home = props => {
                   return 'Clock in pending...';
                 if (status === 'present' && is_attendance_given === 3)
                   return 'Clock Out';
-                // return 'Loading...';
               })()}
             </Text>
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      {/* Clock In Modal */}
       <Modal
         animationIn={'slideInUp'}
         animationOut={'slideOutDown'}
@@ -456,7 +590,6 @@ const Home = props => {
       >
         <ImageBackground
           resizeMode="stretch"
-          // source={Images.pageBackground}
           style={styles.modalContainer}
         >
           <TouchableOpacity
@@ -471,6 +604,7 @@ const Home = props => {
               style={{ height: normalize(10), width: normalize(10) }}
             />
           </TouchableOpacity>
+          
           <ScrollView
             contentContainerStyle={{ paddingTop: 50 }}
             showsVerticalScrollIndicator={false}
@@ -512,6 +646,7 @@ const Home = props => {
             >
               <Text style={styles.clockButtonText}>Office Duty</Text>
             </TouchableOpacity>
+            
             <TouchableOpacity
               style={[
                 styles.clockButton,
@@ -527,6 +662,7 @@ const Home = props => {
                 Official Visit Within ULB Jurisdiction
               </Text>
             </TouchableOpacity>
+            
             <TouchableOpacity
               style={[
                 styles.clockButton,
@@ -545,6 +681,7 @@ const Home = props => {
           </ScrollView>
         </ImageBackground>
       </Modal>
+      
       <UpdateModal
         isVisible={updateModalVisible}
         onClose={() => setUpdateModalVisible(false)}
@@ -567,7 +704,7 @@ const styles = StyleSheet.create({
   scrollViewContent: {
     paddingHorizontal: normalize(10),
     paddingVertical: normalize(10),
-    paddingBottom: normalize(100), // Extra padding at bottom
+    paddingBottom: normalize(100),
   },
   userInfoContainer: {
     flexDirection: 'row',
@@ -585,30 +722,30 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.MulishExtraBold,
     fontSize: 20,
   },
+  phone: {
+    fontFamily: Fonts.MulishSemiBold,
+    fontSize: 16,
+  },
   userAddress: {
     fontFamily: Fonts.MulishBold,
     fontSize: 16,
-    // fontWeight: '500',
     marginTop: 5,
   },
   blackText: {
     fontFamily: Fonts.MulishSemiBold,
     fontSize: 16,
-    // fontWeight: '700',
     marginTop: 5,
     color: Colors.black,
   },
   redText: {
     fontFamily: Fonts.MulishSemiBold,
     fontSize: 16,
-    // fontWeight: '700',
     marginTop: 5,
     color: Colors.red,
   },
   todayText: {
     fontFamily: Fonts.MulishSemiBold,
     fontSize: 16,
-    // fontWeight: '700',
     marginTop: 5,
     color: Colors.green,
   },
@@ -629,28 +766,6 @@ const styles = StyleSheet.create({
     height: normalize(150),
     width: normalize(110),
   },
-  mapSection: {
-    width: '100%',
-    padding: normalize(5),
-    backgroundColor: Colors.white,
-    borderRadius: normalize(8),
-    marginBottom: normalize(15),
-  },
-  mapContainer: {
-    height: normalize(300),
-    width: '100%',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    overflow: 'hidden',
-    borderRadius: 8,
-  },
-  map: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  mapImage: {
-    height: normalize(300),
-    width: '100%',
-  },
   clockButton: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -665,7 +780,6 @@ const styles = StyleSheet.create({
     width: '80%',
     color: Colors.white,
   },
-
   close: {
     position: 'absolute',
     top: 10,
@@ -686,5 +800,26 @@ const styles = StyleSheet.create({
     borderRadius: normalize(8),
     overflow: 'hidden',
     zIndex: 98,
+  },
+  // New styles for permission warnings
+  permissionWarning: {
+    marginTop: normalize(10),
+    padding: normalize(8),
+    backgroundColor: '#FFF3CD',
+    borderRadius: normalize(5),
+    borderLeftWidth: 3,
+    borderLeftColor: '#FFA500',
+  },
+  permissionWarningText: {
+    fontFamily: Fonts.MulishSemiBold,
+    fontSize: 14,
+    color: '#856404',
+    marginBottom: 5,
+  },
+  permissionText: {
+    fontFamily: Fonts.MulishRegular,
+    fontSize: 12,
+    color: '#856404',
+    marginLeft: 10,
   },
 });

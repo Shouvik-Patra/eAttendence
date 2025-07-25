@@ -31,7 +31,6 @@ import {
 } from '../../redux/reducer/ProfileReducer';
 import connectionrequest from '../../utils/helpers/NetInfo';
 import Loader from '../../utils/helpers/Loader';
-import { LocationGeocoder } from '../../components/LocationGeocoder';
 import TextInputWithButton from '../../components/TextInputWithBotton';
 import constants from '../../utils/helpers/constants';
 import MessageModal from '../../components/MessageModal';
@@ -72,8 +71,8 @@ const TaskApproval = () => {
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [supportingDocument, setSupportingDocument] = useState(null);
   const [showFileOptions, setShowFileOptions] = useState(false);
-  console.log("supportingDocument>>>>>>>",supportingDocument);
-  
+  console.log('supportingDocument>>>>>>>', supportingDocument);
+
   // Request camera permission
   const requestCameraPermission = async () => {
     if (Platform.OS === 'android') {
@@ -224,11 +223,9 @@ const TaskApproval = () => {
   };
 
   const onAddNewTask = async (lat, long) => {
-    const result = await LocationGeocoder(lat, long);
-    const actualAddress = result?.address || 'Unknown Address';
     const imageName = supportingDocument?.uri?.split('/').pop();
     const imageType = 'image/jpeg';
-    
+
     // Validation checks
     // if (!selectedTaskLocation?.id) {
     //   showErrorAlert('Please select task location');
@@ -289,15 +286,18 @@ const TaskApproval = () => {
     formData.append('end_time', moment(endTime).format('HH:mm:ss'));
     formData.append('latitude', lat);
     formData.append('longitude', long);
-    formData.append('address', actualAddress);
-    formData.append('photo', {
-      uri:
-        Platform.OS === 'android'
-          ? supportingDocument?.uri
-          : supportingDocument?.uri?.replace('file://', ''),
-      name: imageName,
-      type: imageType,
-    });
+    // formData.append('address', actualAddress);
+    {
+      supportingDocument?.uri != undefined &&
+        formData.append('photo', {
+          uri:
+            Platform.OS === 'android'
+              ? supportingDocument?.uri
+              : supportingDocument?.uri?.replace('file://', ''),
+          name: imageName,
+          type: imageType,
+        });
+    }
     formData.append('app_version', constants.APP_VERSION);
 
     connectionrequest()
