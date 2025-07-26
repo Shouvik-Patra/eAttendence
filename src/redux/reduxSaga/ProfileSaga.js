@@ -160,6 +160,7 @@ export function* clockoutSaga(action) {
     };
 
     const response = yield call(postApi, 'check_out', action.payload, Header);
+console.log("response>>>>>>>>>",response);
 
     if (response?.data?.meta?.code == 200) {
       yield put(clockoutSuccess(response?.data?.data));

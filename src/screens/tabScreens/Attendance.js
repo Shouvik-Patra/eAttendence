@@ -169,7 +169,7 @@ const Attendence = props => {
     formData.append('check_out', moment().format('HH:mm:ss'));
     formData.append('check_out_latitude', latitude);
     formData.append('check_out_longitude', longitude);
-    formData.append('check_out_address', locationData?.address);
+    // formData.append('check_out_address', locationData?.address);
     formData.append('check_out_remarks', check_out_remarks);
     formData.append('check_out_photo', {
       uri:
@@ -321,7 +321,6 @@ const Attendence = props => {
         break;
       case 'Profile/clockinFailure':
         status = ProfileReducer.status;
-        showErrorAlert('Clock In fail due to Network issue, Try again!');
 
         props?.navigation.navigate('BottomTabNav', {
           screen: 'Home',

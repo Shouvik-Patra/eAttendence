@@ -172,7 +172,6 @@ const DailyTask = props => {
   };
 
   const onAddNewTask = async (lat, long) => {
-  
     setLoader(false);
     if (!selectedTaskPurpose?.id) {
       showErrorAlert('Please select task purpose');
@@ -241,7 +240,6 @@ const DailyTask = props => {
       });
   };
   const onStartTask = async (lat, long, taskid) => {
- 
     setLoader(false);
     let obj = {
       id: taskid,
@@ -280,7 +278,6 @@ const DailyTask = props => {
   };
 
   const onEndTask = async (lat, long, remark) => {
-  
     setLoader(false);
     let obj = {
       id: taskTrackingId,
@@ -336,23 +333,19 @@ const DailyTask = props => {
           <Text style={styles.blackText}>
             Visit Purpose :{' '}
             <Text style={styles.redText}>
-              {item?.task_name ? item?.task_name : ''}
+              {item?.task_title ? item?.task_title : ''}
             </Text>
           </Text>
           <Text style={styles.blackText}>
             Start Date :{' '}
             <Text style={styles.redText}>
-              {moment(item?.createTaskDate)
-                .local()
-                .format('ddd, MMM D, YYYY • h:mm A')}
+              {moment(item?.createTaskDate).format('ddd, MMM D, YYYY')},{item?.start_time}
             </Text>
           </Text>
           <Text style={styles.blackText}>
             End Date :{' '}
             <Text style={styles.redText}>
-              {moment(item?.endTaskDate)
-                .local()
-                .format('ddd, MMM D, YYYY • h:mm A')}
+              {moment(item?.endTaskDate).format('ddd, MMM D, YYYY')},{item?.end_time}
             </Text>
           </Text>
           <Text style={styles.blackText}>

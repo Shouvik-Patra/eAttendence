@@ -73,7 +73,7 @@ const Home = props => {
         const granted = await PermissionsAndroid.check(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         );
-        
+
         if (granted) {
           setLocationPermission('granted');
           return true;
@@ -82,17 +82,20 @@ const Home = props => {
             PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
             {
               title: 'Location Permission Required',
-              message: 'This app needs access to your location for attendance marking.',
+              message:
+                'This app needs access to your location for attendance marking.',
               buttonNeutral: 'Ask Me Later',
               buttonNegative: 'Cancel',
               buttonPositive: 'OK',
             },
           );
-          
+
           if (requestResult === PermissionsAndroid.RESULTS.GRANTED) {
             setLocationPermission('granted');
             return true;
-          } else if (requestResult === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+          } else if (
+            requestResult === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN
+          ) {
             setLocationPermission('denied');
             showSettingsAlert('Location');
             return false;
@@ -117,7 +120,7 @@ const Home = props => {
   const checkCameraPermission = async () => {
     try {
       const permission = await Camera.getCameraPermissionStatus();
-      
+
       if (permission === 'granted') {
         setCameraPermission('granted');
         return true;
@@ -146,7 +149,7 @@ const Home = props => {
   };
 
   // Show alert to navigate to settings
-  const showSettingsAlert = (permissionType) => {
+  const showSettingsAlert = permissionType => {
     Alert.alert(
       `${permissionType} Permission Required`,
       `Please enable ${permissionType.toLowerCase()} permission in settings to use this feature.`,
@@ -170,98 +173,100 @@ const Home = props => {
     );
   };
 
-const getLocation = async (isInside, attendenceStatus) => {
-  setAddTaskModal(false);
-  try {
-    setLoading(true);
-    setLoadingMessage('Checking permissions...');
-
-    const locationGranted = await checkLocationPermission();
-    const cameraGranted = await checkCameraPermission();
-
-    if (!locationGranted) {
-      setLoading(false);
-      setLoadingMessage('');
-      showErrorAlert('Location permission is required for attendance marking');
-      return;
-    }
-
-    if (!cameraGranted) {
-      setLoading(false);
-      setLoadingMessage('');
-      showErrorAlert('Camera permission is required for attendance marking');
-      return;
-    }
-
-    // Start location fetching
-    setLoadingMessage('Fetching your location...');
-
-    const locationPromise = new Promise((resolve, reject) => {
-      Geolocation.getCurrentPosition(
-        position => {
-          const { latitude, longitude } = position.coords;
-          resolve({ latitude, longitude });
-        },
-        error => {
-          console.log('Geolocation error:', error);
-          let errorMessage = 'Unable to fetch location. ';
-
-          switch (error.code) {
-            case 1:
-              errorMessage += 'Location permission denied.';
-              break;
-            case 2:
-              errorMessage += 'Location not available.';
-              break;
-            case 3:
-              errorMessage += 'Location request timed out.';
-              break;
-            default:
-              errorMessage += 'Please try again.';
-          }
-
-          reject(new Error(errorMessage));
-        },
-        {
-          enableHighAccuracy: false,
-          timeout: 15000,
-          maximumAge: 10000,
-        },
-      );
-    });
-
-    // Wait for location
-    const locationData = await locationPromise;
-    setLocation(locationData);
-
-    // Navigate to Attendence without geocoding
-    setLoading(false);
-    setLoadingMessage('');
+  const getLocation = async (isInside, attendenceStatus) => {
     setAddTaskModal(false);
+    try {
+      setLoading(true);
+      setLoadingMessage('Checking permissions...');
 
-    props?.navigation.navigate('Attendence', {
-      latitude: locationData.latitude,
-      longitude: locationData.longitude,
-      pagename: 'Home',
-      isInsideOffice: isInside,
-      attendenceStatus: attendenceStatus,
-      status:
-        ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 1 ||
-        ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 2
-          ? 'clockout'
-          : 'clockin',
-      check_out_remarks:
-        ProfileReducer?.attendenceStatusResponse?.task_tracking_remarks,
-    });
+      const locationGranted = await checkLocationPermission();
+      const cameraGranted = await checkCameraPermission();
 
-  } catch (error) {
-    setLoading(false);
-    setLoadingMessage('');
-    console.log('Location fetch error:', error);
-    showErrorAlert(error.message || 'Failed to get location. Please try again.');
-  }
-};
+      if (!locationGranted) {
+        setLoading(false);
+        setLoadingMessage('');
+        showErrorAlert(
+          'Location permission is required for attendance marking',
+        );
+        return;
+      }
 
+      if (!cameraGranted) {
+        setLoading(false);
+        setLoadingMessage('');
+        showErrorAlert('Camera permission is required for attendance marking');
+        return;
+      }
+
+      // Start location fetching
+      setLoadingMessage('Fetching your location...');
+
+      const locationPromise = new Promise((resolve, reject) => {
+        Geolocation.getCurrentPosition(
+          position => {
+            const { latitude, longitude } = position.coords;
+            resolve({ latitude, longitude });
+          },
+          error => {
+            console.log('Geolocation error:', error);
+            let errorMessage = 'Unable to fetch location. ';
+
+            switch (error.code) {
+              case 1:
+                errorMessage += 'Location permission denied.';
+                break;
+              case 2:
+                errorMessage += 'Location not available.';
+                break;
+              case 3:
+                errorMessage += 'Location request timed out.';
+                break;
+              default:
+                errorMessage += 'Please try again.';
+            }
+
+            reject(new Error(errorMessage));
+          },
+          {
+            enableHighAccuracy: false,
+            timeout: 15000,
+            maximumAge: 10000,
+          },
+        );
+      });
+
+      // Wait for location
+      const locationData = await locationPromise;
+      setLocation(locationData);
+
+      // Navigate to Attendence without geocoding
+      setLoading(false);
+      setLoadingMessage('');
+      setAddTaskModal(false);
+
+      props?.navigation.navigate('Attendence', {
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+        pagename: 'Home',
+        isInsideOffice: isInside,
+        attendenceStatus: attendenceStatus,
+        status:
+          ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 1 ||
+          ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 2
+            ? 'clockout'
+            : 'clockin',
+        check_out_remarks:
+          ProfileReducer?.attendenceStatusResponse?.task_tracking_remarks,
+      });
+    } catch (error) {
+      setLoading(false);
+      setLoadingMessage('');
+      console.log('Location fetch error:', error);
+      showErrorAlert(
+        error.message || 'Failed to get location. Please try again.',
+      );
+    }
+  };
 
   // Initial permission check on component mount
   useEffect(() => {
@@ -269,7 +274,7 @@ const getLocation = async (isInside, attendenceStatus) => {
       await checkLocationPermission();
       await checkCameraPermission();
     };
-    
+
     initializePermissions();
   }, []);
 
@@ -300,7 +305,7 @@ const getLocation = async (isInside, attendenceStatus) => {
   const handleClockAction = () => {
     // Check permissions before proceeding
     if (locationPermission !== 'granted') {
-+      Alert.alert(
+      +Alert.alert(
         'Location Permission Required',
         'Please grant location permission to mark attendance.',
         [
@@ -337,7 +342,7 @@ const getLocation = async (isInside, attendenceStatus) => {
 
     const { status, is_attendance_given, is_task_running } =
       ProfileReducer?.attendenceStatusResponse || {};
-      
+
     if (status === 'present') {
       if (is_task_running) {
         Alert.alert('Warning!', 'Please End the running task', [
@@ -399,7 +404,7 @@ const getLocation = async (isInside, attendenceStatus) => {
           props.navigation.navigate('Notification');
         }}
       />
-      
+
       <Loader
         visible={
           loading ||
@@ -446,28 +451,30 @@ const getLocation = async (isInside, attendenceStatus) => {
               </Text>
             </Text>
             <Text style={styles.blackText}>
-  Attendance:{' '}
-  <Text
-    style={[
-      styles.redText,
-      {
-        color:
-          ProfileReducer?.attendenceStatusResponse?.status === 'pending'
-            ? Colors.red
-            : Colors.green,
-      },
-    ]}
-  >
-    {ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
-      'Clocked Out Outside' ||
-    ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
-      'Clocked Out Inside'
-      ? 'Clocked Out'
-      : ProfileReducer?.attendenceStatusResponse?.status === 'pending'
-      ? 'Pending...'
-      : 'Clocked In'}
-  </Text>
-</Text>
+              Attendance:{' '}
+              <Text
+                style={[
+                  styles.redText,
+                  {
+                    color:
+                      ProfileReducer?.attendenceStatusResponse?.status ===
+                      'pending'
+                        ? Colors.red
+                        : Colors.green,
+                  },
+                ]}
+              >
+                {ProfileReducer?.attendenceStatusResponse
+                  ?.attendance_status_text === 'Clocked Out Outside' ||
+                ProfileReducer?.attendenceStatusResponse
+                  ?.attendance_status_text === 'Clocked Out Inside'
+                  ? 'Clocked Out'
+                  : ProfileReducer?.attendenceStatusResponse?.status ===
+                    'pending'
+                  ? 'Pending...'
+                  : 'Clocked In'}
+              </Text>
+            </Text>
 
             <Text style={styles.blackText}>
               Today :
@@ -476,29 +483,44 @@ const getLocation = async (isInside, attendenceStatus) => {
                 {moment().format('ddd, MMM, D')}.
               </Text>
             </Text>
-            
+
             {/* Permission Status Indicators */}
-            {(locationPermission === 'denied' || cameraPermission === 'denied') && (
+            {(locationPermission === 'denied' ||
+              cameraPermission === 'denied') && (
               <View style={styles.permissionWarning}>
                 <Text style={styles.permissionWarningText}>
                   ⚠️ Permissions needed for attendance marking
                 </Text>
                 {locationPermission === 'denied' && (
-                  <Text style={styles.permissionText}>• Location access required</Text>
+                  <Text style={styles.permissionText}>
+                    • Location access required
+                  </Text>
                 )}
                 {cameraPermission === 'denied' && (
-                  <Text style={styles.permissionText}>• Camera access required</Text>
+                  <Text style={styles.permissionText}>
+                    • Camera access required
+                  </Text>
                 )}
               </View>
             )}
           </View>
-          
+
           <View style={styles.imageContainer}>
-            {capturedImageWithGeotag ? (
+            {ProfileReducer?.attendenceStatusResponse?.check_out_photo ? (
               <Image
                 resizeMode="cover"
                 style={styles.userImage}
-                source={{ uri: capturedImageWithGeotag }}
+                source={{
+                  uri: ProfileReducer.attendenceStatusResponse.check_out_photo,
+                }}
+              />
+            ) : ProfileReducer?.attendenceStatusResponse?.check_in_photo ? (
+              <Image
+                resizeMode="cover"
+                style={styles.userImage}
+                source={{
+                  uri: ProfileReducer.attendenceStatusResponse.check_in_photo,
+                }}
               />
             ) : (
               <Image
@@ -522,11 +544,11 @@ const getLocation = async (isInside, attendenceStatus) => {
           <TouchableOpacity
             disabled={
               (ProfileReducer?.attendenceStatusResponse?.status === 'pending' &&
-              ProfileReducer?.attendenceStatusResponse?.is_attendance_given ===
-                2) || 
+                ProfileReducer?.attendenceStatusResponse
+                  ?.is_attendance_given === 2) ||
               (ProfileReducer?.attendenceStatusResponse?.status === 'pending' &&
-              ProfileReducer?.attendenceStatusResponse?.is_attendance_given ===
-                3)
+                ProfileReducer?.attendenceStatusResponse
+                  ?.is_attendance_given === 3)
             }
             style={[
               styles.clockButton,
@@ -588,10 +610,7 @@ const getLocation = async (isInside, attendenceStatus) => {
         animationOutTiming={1000}
         onBackdropPress={() => setAddTaskModal(false)}
       >
-        <ImageBackground
-          resizeMode="stretch"
-          style={styles.modalContainer}
-        >
+        <ImageBackground resizeMode="stretch" style={styles.modalContainer}>
           <TouchableOpacity
             style={styles.close}
             onPress={() => {
@@ -604,7 +623,7 @@ const getLocation = async (isInside, attendenceStatus) => {
               style={{ height: normalize(10), width: normalize(10) }}
             />
           </TouchableOpacity>
-          
+
           <ScrollView
             contentContainerStyle={{ paddingTop: 50 }}
             showsVerticalScrollIndicator={false}
@@ -646,7 +665,7 @@ const getLocation = async (isInside, attendenceStatus) => {
             >
               <Text style={styles.clockButtonText}>Office Duty</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={[
                 styles.clockButton,
@@ -662,7 +681,7 @@ const getLocation = async (isInside, attendenceStatus) => {
                 Official Visit Within ULB Jurisdiction
               </Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={[
                 styles.clockButton,
@@ -681,7 +700,7 @@ const getLocation = async (isInside, attendenceStatus) => {
           </ScrollView>
         </ImageBackground>
       </Modal>
-      
+
       <UpdateModal
         isVisible={updateModalVisible}
         onClose={() => setUpdateModalVisible(false)}
