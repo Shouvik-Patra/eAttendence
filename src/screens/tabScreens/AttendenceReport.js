@@ -478,6 +478,10 @@ const AttendenceReport = () => {
           <View style={[styles.legendColor, { backgroundColor: '#FF9800' }]} />
           <Text style={styles.legendText}>Holiday</Text>
         </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendColor, { backgroundColor: '#9E9E9E' }]} />
+          <Text style={styles.legendText}>Absent</Text>
+        </View>
       </View>
     </View>
   );

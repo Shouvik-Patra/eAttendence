@@ -169,7 +169,7 @@ const Attendence = props => {
     formData.append('check_out', moment().format('HH:mm:ss'));
     formData.append('check_out_latitude', latitude);
     formData.append('check_out_longitude', longitude);
-    // formData.append('check_out_address', locationData?.address);
+    formData.append('check_out_address', "test");
     formData.append('check_out_remarks', check_out_remarks);
     formData.append('check_out_photo', {
       uri:

@@ -252,7 +252,8 @@ const Home = props => {
         attendenceStatus: attendenceStatus,
         status:
           ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 1 ||
-          ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 2
+          ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 2 ||
+          ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 3
             ? 'clockout'
             : 'clockin',
         check_out_remarks:
@@ -434,8 +435,17 @@ const Home = props => {
                 { color: Colors.orange, textTransform: 'capitalize' },
               ]}
             >
-              {ProfileReducer?.userDetailsResponse?.municipality}
+              {[
+                ProfileReducer?.userDetailsResponse?.municipality,
+                ...(
+                  ProfileReducer?.userDetailsResponse?.municipality_another ||
+                  []
+                ).map(item => item?.name),
+              ]
+                .filter(Boolean)
+                .join(', ')}
             </Text>
+
             <Text style={styles.blackText}>
               Designation :{' '}
               <Text
@@ -465,6 +475,8 @@ const Home = props => {
                 ]}
               >
                 {ProfileReducer?.attendenceStatusResponse
+                  ?.attendance_status_text === 'Clocked Out Other' ||
+                ProfileReducer?.attendenceStatusResponse
                   ?.attendance_status_text === 'Clocked Out Outside' ||
                 ProfileReducer?.attendenceStatusResponse
                   ?.attendance_status_text === 'Clocked Out Inside'
@@ -538,6 +550,8 @@ const Home = props => {
             'Clocked Out Outside' ||
           ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
             'Clocked Out Inside' ||
+          ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
+            'Clocked Out Other' ||
           ProfileReducer?.attendenceStatusResponse?.is_attendence_allowed ===
             false
         ) && (

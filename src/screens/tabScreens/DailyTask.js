@@ -339,13 +339,15 @@ const DailyTask = props => {
           <Text style={styles.blackText}>
             Start Date :{' '}
             <Text style={styles.redText}>
-              {moment(item?.createTaskDate).format('ddd, MMM D, YYYY')},{item?.start_time}
+              {moment(item?.createTaskDate).format('ddd, MMM D, YYYY')},
+              {item?.start_time}
             </Text>
           </Text>
           <Text style={styles.blackText}>
             End Date :{' '}
             <Text style={styles.redText}>
-              {moment(item?.endTaskDate).format('ddd, MMM D, YYYY')},{item?.end_time}
+              {moment(item?.endTaskDate).format('ddd, MMM D, YYYY')},
+              {item?.end_time}
             </Text>
           </Text>
           <Text style={styles.blackText}>
@@ -744,6 +746,8 @@ const DailyTask = props => {
               'Clocked Out Outside' ||
             ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
               'Clocked Out Inside' ||
+            ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
+              'Clocked Out Other' ||
             ProfileReducer?.attendenceStatusResponse?.is_attendence_allowed ===
               false
           ) {
