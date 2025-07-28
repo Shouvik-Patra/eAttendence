@@ -14,11 +14,8 @@ import {
 import React, { useEffect, useState } from 'react';
 import Header from '../../components/Header';
 import { Colors, Fonts, Images } from '../../themes/ThemePath';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import showErrorAlert from '../../utils/helpers/Toast';
-import { Camera } from 'react-native-vision-camera';
 import normalize from '../../utils/helpers/normalize';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import moment from 'moment';
 import { Dropdown } from 'react-native-element-dropdown';
 import Modal from 'react-native-modal';
