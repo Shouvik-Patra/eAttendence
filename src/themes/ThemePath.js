@@ -43,6 +43,7 @@ export const Images = {
   camera: require('../assets/images/camera.png'),
   noTask: require('../assets/images/noTask.png'),
   refreshicon: require('../assets/images/flip.png'),
+  refresh: require('../assets/images/refresh.png'),
   roadmap: require('../assets/images/roadmap.png'),
   language: require('../assets/images/language.png'),
   call: require('../assets/images/call.png'),

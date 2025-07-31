@@ -339,15 +339,13 @@ const TaskApproval = () => {
         <Text style={styles.blackText}>
           Visit Purpose :{' '}
           <Text style={styles.redText}>
-            {item?.task_name ? item?.task_name : ''}
+            {item?.task_title ? item?.task_title : ''}
           </Text>
         </Text>
         <Text style={styles.blackText}>
           Created at :{' '}
           <Text style={styles.redText}>
-            {moment(item?.created_at)
-              .local()
-              .format('ddd, MMM D, YYYY • h:mm A')}
+            {moment(item?.created_at).format('ddd, MMM D, YYYY')}
           </Text>
         </Text>
         <Text style={styles.blackText}>
@@ -471,7 +469,6 @@ const TaskApproval = () => {
         break;
       case 'Profile/addTaskSuccess':
         status = ProfileReducer.status;
-        console.log('Kick1===========>>Profile/addTaskSuccess');
         setShowMessageModal(true);
         setLoading(false);
         setAddTaskModal(false);
@@ -505,11 +502,7 @@ const TaskApproval = () => {
           ProfileReducer?.status == 'Profile/addTaskRequest'
         }
       />
-      {/* <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollViewContent}
-        showsVerticalScrollIndicator={false}
-      > */}
+
       <FlatList
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
@@ -521,7 +514,30 @@ const TaskApproval = () => {
         refreshing={refreshing}
         onRefresh={onRefresh}
       />
-      {/* </ScrollView> */}
+
+      <TouchableOpacity
+        onPress={() => {
+          onRefresh();
+        }}
+        style={{
+          position: 'absolute',
+          bottom: normalize(140),
+          right: normalize(15),
+          backgroundColor: Colors.skyblue,
+          borderRadius: normalize(50),
+          padding: normalize(10),
+        }}
+      >
+        <Image
+          resizeMode="contain"
+          style={{
+            width: normalize(22),
+            height: normalize(22),
+            tintColor: Colors.white,
+          }}
+          source={Images.refresh}
+        />
+      </TouchableOpacity>
 
       <Modal
         animationIn={'slideInUp'}

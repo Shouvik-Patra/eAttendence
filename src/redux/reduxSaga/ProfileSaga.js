@@ -56,6 +56,8 @@ import {
   remainingLeavesSuccess,
   userActivityFailure,
   userActivitySuccess,
+  resetPasswordFailure,
+  resetPasswordSuccess,
 } from '../reducer/ProfileReducer';
 import showErrorAlert from '../../utils/helpers/Toast';
 import {
@@ -739,6 +741,35 @@ export function* userActivitySaga(action) {
     yield put(userActivityFailure(error?.response?.data));
   }
 }
+
+export function* resetPasswordSaga(action) {
+  let items = yield select(getItem);
+
+  try {
+    let Header = {
+      Accept: 'application/json',
+      contenttype: 'application/json',
+      accesstoken: items?.getTokenResponse,
+    };
+
+    const response = yield call(
+      postApi,
+      'employee-reset-password',
+      action.payload,
+      Header,
+    );
+    if (response?.data?.meta?.code == 200) {
+      yield put(resetPasswordSuccess(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    } else {
+      yield put(resetPasswordFailure(response?.data?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    }
+  } catch (error) {
+    yield put(resetPasswordFailure(error?.response?.data));
+    // showErrorAlert(error?.response?.data?.meta?.message);
+  }
+}
 const watchFunction = [
   (function* () {
     yield takeLatest('Profile/userDetailsRequest', userDetailsSaga);
@@ -820,6 +851,9 @@ const watchFunction = [
   })(),
   (function* () {
     yield takeLatest('Profile/userActivityRequest', userActivitySaga);
+  })(),
+  (function* () {
+    yield takeLatest('Profile/resetPasswordRequest', resetPasswordSaga);
   })(),
 ];
 

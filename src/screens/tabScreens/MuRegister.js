@@ -148,7 +148,7 @@ const MuRegister = props => {
           setLoading(false);
           console.log('Error getting location', error);
         },
-        { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
       );
     }
   };

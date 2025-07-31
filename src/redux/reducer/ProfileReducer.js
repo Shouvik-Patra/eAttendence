@@ -28,6 +28,7 @@ const initialState = {
   taskApprovalListResponse: {},
   remainingLeavesResponse: {},
   userActivityResponse: {},
+  resetPasswordResponse: {},
 };
 
 const ProfileSlice = createSlice({
@@ -317,6 +318,18 @@ const ProfileSlice = createSlice({
       state.error = action.error;
       state.status = action.type;
     },
+
+    resetPasswordRequest(state, action) {
+      state.status = action.type;
+    },
+    resetPasswordSuccess(state, action) {
+      state.resetPasswordResponse = action.payload;
+      state.status = action.type;
+    },
+    resetPasswordFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
   },
 });
 
@@ -417,7 +430,9 @@ export const {
   userActivitySuccess,
   userActivityFailure,
 
-  
+  resetPasswordRequest,
+  resetPasswordSuccess,
+  resetPasswordFailure,
 } = ProfileSlice.actions;
 
 export default ProfileSlice.reducer;

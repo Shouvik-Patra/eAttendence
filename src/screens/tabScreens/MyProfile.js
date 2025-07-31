@@ -9,6 +9,7 @@ import {
   ScrollView,
   Alert,
   Platform,
+  Modal,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -22,6 +23,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { logoutRequest } from '../../redux/reducer/AuthReducer';
 import {
   profileUpdateRequest,
+  resetPasswordRequest,
   userDetailsRequest,
 } from '../../redux/reducer/ProfileReducer';
 import connectionrequest from '../../utils/helpers/NetInfo';
@@ -39,6 +41,8 @@ const MyProfile = props => {
   // Initialize state with userDetailsResponse data
   const userDetails = ProfileReducer?.userDetailsResponse || {};
 
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState(userDetails?.name || '');
   const [email, setEmail] = useState(userDetails?.email || '');
   const [phone, setPhone] = useState(userDetails?.phone || '');
@@ -58,6 +62,7 @@ const MyProfile = props => {
   );
 
   const [isEditing, setIsEditing] = useState(false);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
 
   console.log('isEditing>>', isEditing);
 
@@ -97,6 +102,43 @@ const MyProfile = props => {
 
   const handleEdit = () => {
     setIsEditing(true);
+  };
+
+  const openResetPasswordModal = () => {
+    setShowResetPasswordModal(true);
+    setPassword('');
+    setConfirmPassword('');
+  };
+
+  const closeResetPasswordModal = () => {
+    setShowResetPasswordModal(false);
+    setPassword('');
+    setConfirmPassword('');
+  };
+
+  const handleResetPassword = async () => {
+    if (password != confirmPassword) {
+      showErrorAlert('confirm password does not match');
+    } else if (password.length < 6) {
+      showErrorAlert('Password must be at least 6 characters long');
+    } else {
+      let obj = {
+        id: ProfileReducer?.userDetailsResponse?.id,
+        new_password: password,
+        confirm_password: confirmPassword,
+      };
+
+      connectionrequest()
+        .then(() => {
+          console.log(obj);
+          dispatch(resetPasswordRequest(obj));
+          closeResetPasswordModal();
+        })
+        .catch(err => {
+          console.log(err);
+          showErrorAlert('Please connect to internet');
+        });
+    }
   };
 
   const handleCancel = () => {
@@ -302,28 +344,6 @@ const MyProfile = props => {
               onChangeText={e => setEmail(e)}
               tintColor={Colors.tintGrey}
             />
-            {/* <TextInputWithButton
-              show={true}
-              icon={true}
-              height={normalize(45)}
-              inputWidth={'100%'}
-              marginTop={normalize(25)}
-              textColor={Colors.textInputColor}
-              InputHeaderText={'Phone'}
-              placeholder={'Enter phone number'}
-              placeholderTextColor={Colors.black}
-              paddingLeft={normalize(25)}
-              borderColor={Colors.inputGreyBorder}
-              borderRadius={normalize(5)}
-              editable={true}
-              fontFamily={Fonts.MulishRegular}
-              isheadertext={true}
-              value={phone}
-              fontSize={normalize(14)}
-              headertxtsize={normalize(13)}
-              onChangeText={e => setPhone(e)}
-              tintColor={Colors.tintGrey}
-            /> */}
             <View style={styles.datePickerContainer}>
               <Text style={styles.datePickerLabel}>Date of Birth</Text>
               <TouchableOpacity
@@ -345,72 +365,6 @@ const MyProfile = props => {
                 />
               )}
             </View>
-            {/* <TextInputWithButton
-              show={true}
-              icon={true}
-              height={normalize(45)}
-              inputWidth={'100%'}
-              marginTop={normalize(25)}
-              textColor={Colors.textInputColor}
-              InputHeaderText={'Municipality'}
-              placeholder={'Enter municipality'}
-              placeholderTextColor={Colors.black}
-              paddingLeft={normalize(25)}
-              borderColor={Colors.inputGreyBorder}
-              borderRadius={normalize(5)}
-              editable={true}
-              fontFamily={Fonts.MulishRegular}
-              isheadertext={true}
-              value={municipality}
-              fontSize={normalize(14)}
-              headertxtsize={normalize(13)}
-              onChangeText={e => setMunicipality(e)}
-              tintColor={Colors.tintGrey}
-            /> */}
-            {/* <TextInputWithButton
-              show={true}
-              icon={true}
-              height={normalize(45)}
-              inputWidth={'100%'}
-              marginTop={normalize(25)}
-              textColor={Colors.textInputColor}
-              InputHeaderText={'Ward'}
-              placeholder={'Enter ward'}
-              placeholderTextColor={Colors.black}
-              paddingLeft={normalize(25)}
-              borderColor={Colors.inputGreyBorder}
-              borderRadius={normalize(5)}
-              editable={true}
-              fontFamily={Fonts.MulishRegular}
-              isheadertext={true}
-              value={ward}
-              fontSize={normalize(14)}
-              headertxtsize={normalize(13)}
-              onChangeText={e => setWard(e)}
-              tintColor={Colors.tintGrey}
-            /> */}
-            {/* <TextInputWithButton
-              show={true}
-              icon={true}
-              height={normalize(45)}
-              inputWidth={'100%'}
-              marginTop={normalize(25)}
-              textColor={Colors.textInputColor}
-              InputHeaderText={'District'}
-              placeholder={'Enter district'}
-              placeholderTextColor={Colors.black}
-              paddingLeft={normalize(25)}
-              borderColor={Colors.inputGreyBorder}
-              borderRadius={normalize(5)}
-              editable={true}
-              fontFamily={Fonts.MulishRegular}
-              isheadertext={true}
-              value={district}
-              fontSize={normalize(14)}
-              headertxtsize={normalize(13)}
-              onChangeText={e => setDistrict(e)}
-              tintColor={Colors.tintGrey}
-            /> */}
           </View>
         ) : (
           <View style={styles.content}>
@@ -442,10 +396,6 @@ const MyProfile = props => {
                 {designation || 'Not provided'}
               </Text>
             </View>
-            {/* <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Ward</Text>
-              <Text style={styles.fieldValue}>{ward || 'Not provided'}</Text>
-            </View> */}
             <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>District</Text>
               <Text style={styles.fieldValue}>
@@ -478,6 +428,12 @@ const MyProfile = props => {
               <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
                 <Text style={styles.editButtonText}>Edit Profile</Text>
               </TouchableOpacity>
+              <TouchableOpacity style={[
+                  styles.editButton,
+                  { marginTop: normalize(10), backgroundColor: Colors.lightred },
+                ]} onPress={openResetPasswordModal}>
+                <Text style={styles.editButtonText}>Reset Password</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.editButton,
@@ -493,6 +449,93 @@ const MyProfile = props => {
           )}
         </View>
       </ScrollView>
+
+      {/* Reset Password Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showResetPasswordModal}
+        onRequestClose={closeResetPasswordModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Reset Password</Text>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={closeResetPasswordModal}
+              >
+                <Text style={styles.modalCloseText}>×</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.modalContent}>
+              <TextInputWithButton
+                show={true}
+                icon={true}
+                height={normalize(45)}
+                inputWidth={'100%'}
+                marginTop={normalize(15)}
+                textColor={Colors.textInputColor}
+                InputHeaderText={'New Password'}
+                placeholder={'Enter new password'}
+                placeholderTextColor={Colors.black}
+                paddingLeft={normalize(15)}
+                borderColor={Colors.inputGreyBorder}
+                borderRadius={normalize(5)}
+                editable={true}
+                fontFamily={Fonts.MulishRegular}
+                isheadertext={true}
+                value={password}
+                fontSize={normalize(14)}
+                headertxtsize={normalize(13)}
+                onChangeText={e => setPassword(e)}
+                tintColor={Colors.tintGrey}
+                secureTextEntry={true}
+              />
+              
+              <TextInputWithButton
+                show={true}
+                icon={true}
+                height={normalize(45)}
+                inputWidth={'100%'}
+                marginTop={normalize(15)}
+                textColor={Colors.textInputColor}
+                InputHeaderText={'Confirm Password'}
+                placeholder={'Confirm new password'}
+                placeholderTextColor={Colors.black}
+                paddingLeft={normalize(15)}
+                borderColor={Colors.inputGreyBorder}
+                borderRadius={normalize(5)}
+                editable={true}
+                fontFamily={Fonts.MulishRegular}
+                isheadertext={true}
+                value={confirmPassword}
+                fontSize={normalize(14)}
+                headertxtsize={normalize(13)}
+                onChangeText={e => setConfirmPassword(e)}
+                tintColor={Colors.tintGrey}
+                secureTextEntry={true}
+              />
+            </View>
+            
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={closeResetPasswordModal}
+              >
+                <Text style={styles.modalCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalSubmitButton}
+                onPress={handleResetPassword}
+              >
+                <Text style={styles.modalSubmitButtonText}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -647,6 +690,83 @@ const styles = StyleSheet.create({
     fontSize: normalize(14),
     color: Colors.textInputColor,
     fontFamily: Fonts.MulishRegular,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 0,
+    width: '90%',
+    maxWidth: 400,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  modalCloseButton: {
+    padding: 5,
+  },
+  modalCloseText: {
+    fontSize: 24,
+    color: '#666',
+    fontWeight: 'bold',
+  },
+  modalContent: {
+    padding: 20,
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 10,
+  },
+  modalCancelButton: {
+    backgroundColor: '#f44336',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+    flex: 0.45,
+    alignItems: 'center',
+  },
+  modalCancelButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  modalSubmitButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+    flex: 0.45,
+    alignItems: 'center',
+  },
+  modalSubmitButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
