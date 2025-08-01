@@ -56,6 +56,18 @@ const Home = props => {
   });
 
   useEffect(() => {
+    const checkPermission = async () => {
+      const status = await Camera.getCameraPermissionStatus();
+
+      if (status !== 'authorized') {
+        const newStatus = await Camera.requestCameraPermission();
+      }
+    };
+
+    checkPermission();
+  }, [isFocused]);
+
+  useEffect(() => {
     if (ProfileReducer?.userDetailsResponse?.app_info != undefined) {
       if (
         ProfileReducer?.userDetailsResponse?.app_info[0]?.value !=

@@ -268,7 +268,7 @@ const AttendenceReport = () => {
         style={styles.modalContainer}
       >
         <View style={styles.activityModalContent}>
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
             {/* Header */}
             <View style={styles.activityModalHeader}>
               <Text style={styles.activityModalTitle}>

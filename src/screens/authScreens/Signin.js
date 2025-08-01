@@ -25,10 +25,13 @@ import connectionrequest from '../../utils/helpers/NetInfo';
 import ShowMessage from '../../utils/helpers/ShowMessage';
 import constants from '../../utils/helpers/constants';
 import UpdateModal from '../../components/UpdateModal';
+import { Camera } from 'react-native-vision-camera';
+import { useIsFocused } from '@react-navigation/native';
 const windowHeight = Dimensions.get('window').height;
 let status = '';
 const Signin = props => {
   const dispatch = useDispatch();
+    const isFocused = useIsFocused();
   const AuthReducer = useSelector(state => state.AuthReducer);
   console.log('login>>', AuthReducer);
 
@@ -39,6 +42,7 @@ const Signin = props => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   console.log('loading>>>>>>', loading);
+
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -85,7 +89,6 @@ const Signin = props => {
     requestLocationPermission();
   }, []);
   const employeeLogin = () => {
-    global.user_type = 'admin';
     setLoading(true);
     if (phone === '') {
       showErrorAlert('Please Enter username');
