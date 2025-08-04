@@ -318,7 +318,7 @@ const Home = props => {
   const handleClockAction = () => {
     // Check permissions before proceeding
     if (locationPermission !== 'granted') {
-      +Alert.alert(
+      Alert.alert(
         'Location Permission Required',
         'Please grant location permission to mark attendance.',
         [
