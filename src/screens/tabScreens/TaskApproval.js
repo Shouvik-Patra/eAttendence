@@ -842,7 +842,7 @@ const TaskApproval = () => {
           testID="startTimePicker"
           value={startTime}
           mode="time"
-          is24Hour={true}
+          // is24Hour={true}
           display="default"
           onChange={onStartTimeChange}
         />
@@ -852,7 +852,7 @@ const TaskApproval = () => {
           testID="endTimePicker"
           value={endTime}
           mode="time"
-          is24Hour={true}
+          // is24Hour={true}
           display="default"
           onChange={onEndTimeChange}
         />

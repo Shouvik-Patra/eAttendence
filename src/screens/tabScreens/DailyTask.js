@@ -1069,7 +1069,7 @@ const DailyTask = props => {
           testID="startTimePicker"
           value={startTime}
           mode="time"
-          is24Hour={true}
+          // is24Hour={true}
           display="default"
           onChange={onStartTimeChange}
         />
@@ -1079,7 +1079,7 @@ const DailyTask = props => {
           testID="endTimePicker"
           value={endTime}
           mode="time"
-          is24Hour={true}
+          // is24Hour={true}
           display="default"
           onChange={onEndTimeChange}
         />
