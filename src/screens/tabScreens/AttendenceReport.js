@@ -98,6 +98,8 @@ const AttendenceReport = () => {
         return Colors.lightred || '#FFE8E8';
       case 'holiday':
         return Colors.lightYellow || '#FFF8E1';
+      case 'pending':
+        return Colors.lightBlue || '#E3F2FD';
       default:
         return Colors.white || '#F5F5F5';
     }
@@ -111,6 +113,8 @@ const AttendenceReport = () => {
         return '#F44336';
       case 'holiday':
         return '#FF9800';
+      case 'pending':
+        return '#2196F3';
       default:
         return '#9E9E9E';
     }
@@ -187,11 +191,17 @@ const AttendenceReport = () => {
             '○',
             '#FF9800',
           )}
+          {/* {renderSummaryCard(
+            'Pending',
+            summary.total_pending_days || 0,
+            '⏳',
+            '#2196F3',
+          )} */}
           {renderSummaryCard(
             'Working Hours',
             `${summary.total_working_hours}h`,
             '⏱',
-            '#2196F3',
+            '#9C27B0',
           )}
         </View>
       </View>
@@ -268,7 +278,10 @@ const AttendenceReport = () => {
         style={styles.modalContainer}
       >
         <View style={styles.activityModalContent}>
-          <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            nestedScrollEnabled={true}
+          >
             {/* Header */}
             <View style={styles.activityModalHeader}>
               <Text style={styles.activityModalTitle}>
@@ -380,6 +393,8 @@ const AttendenceReport = () => {
                             backgroundColor:
                               track.status === 'complete'
                                 ? '#4CAF50'
+                                : track.status === 'pending'
+                                ? '#2196F3'
                                 : '#FF9800',
                           },
                         ]}
@@ -477,6 +492,12 @@ const AttendenceReport = () => {
         <View style={styles.legendItem}>
           <View style={[styles.legendColor, { backgroundColor: '#FF9800' }]} />
           <Text style={styles.legendText}>Holiday</Text>
+        </View>
+      </View>
+      <View style={styles.legendRow}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendColor, { backgroundColor: '#2196F3' }]} />
+          <Text style={styles.legendText}>Pending</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendColor, { backgroundColor: '#9E9E9E' }]} />
