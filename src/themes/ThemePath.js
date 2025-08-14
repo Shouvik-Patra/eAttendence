@@ -14,6 +14,7 @@ export const Images = {
   tab5: require('../assets/images/tab5.png'),
   tab6: require('../assets/images/tab6.png'),
   tab7: require('../assets/images/tab7.png'),
+  googleplay: require('../assets/images/google-play.png'),
 
   backbutton1: require('../assets/images/backbutton1.png'),
   downArrow: require('../assets/images/downArrow.png'),

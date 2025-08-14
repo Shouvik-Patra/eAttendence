@@ -209,9 +209,9 @@ const DailyTask = props => {
     }
 
     const formData = new FormData();
-    formData.append('location_id', 4);
+    formData.append('location_id', selectedTaskPurpose?.id);
     formData.append('task_name', other_location);
-    formData.append('task_id', selectedTaskPurpose?.id);
+    // formData.append('task_id', selectedTaskPurpose?.id);
     formData.append('other_purpose', other_purpose);
     formData.append('date', moment(new Date()).format('YYYY-MM-DD'));
     formData.append('time', moment().format('HH:mm:ss'));

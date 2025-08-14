@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import Modal from 'react-native-modal';
 import { Fonts, Images, Colors } from '../themes/ThemePath'; // Adjust path as needed
+import constants from '../utils/helpers/constants';
 
 const UpdateModal = ({ isVisible, onClose }) => {
   return (
@@ -31,12 +32,12 @@ const UpdateModal = ({ isVisible, onClose }) => {
 
         <View style={styles.headerRow}>
           <View style={styles.titleRow}>
-            <Image source={Images.appicon} style={styles.appIconSmall} />
-            <Text style={styles.titleText}>Download the latest apk</Text>
+            <Image source={Images.googleplay} style={styles.appIconSmall} />
+            <Text style={styles.titleText}>Update from google play store</Text>
           </View>
         </View>
 
-        <Text style={styles.updateTitle}>Update available</Text>
+        <Text style={styles.updateTitle}>Update available (V{constants?.APP_VERSION})</Text>
         <Text style={styles.updateSubtitle}>
           To use this app, download the latest version
         </Text>
@@ -45,21 +46,6 @@ const UpdateModal = ({ isVisible, onClose }) => {
           <Image source={Images.appicon} style={styles.appIconLarge} />
           <Text style={styles.appName}>e-Attendence</Text>
         </View>
-
-        <Text
-          style={[styles.updateTitle, { textAlign: 'center', color: 'blue' }]}
-        >
-          App Installation guide:
-        </Text>
-        <Text style={[styles.updateTitle, { textAlign: 'left' }]}>
-          Step 1 : Download the latest version
-        </Text>
-        <Text style={[styles.updateTitle, { textAlign: 'left' }]}>
-          Step 2 : Uninstall the current version.
-        </Text>
-        <Text style={[styles.updateTitle, { textAlign: 'left' }]}>
-          Step 3 : Install the updated app.
-        </Text>
 
         <Text style={styles.infoText}>
           For any further information please contact to Hr.
@@ -74,14 +60,15 @@ const UpdateModal = ({ isVisible, onClose }) => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.primaryBtn}
+            style={styles.downloadBtn}
             onPress={() =>
               Linking.openURL(
-                'https://drive.google.com/drive/folders/17x4ZTExKGBLBli1GfJXvlV9S__cp91Ka?usp=sharing',
+                'https://play.google.com/store/apps/details?id=com.eattendence&pcampaignid=web_share',
               )
             }
           >
-            <Text style={styles.btnText}>Download</Text>
+            <Image source={Images.googleplay} style={styles.playstoreIcon} />
+            <Text style={styles.btnText}>Update</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -178,6 +165,23 @@ const styles = StyleSheet.create({
     marginTop: 24,
     alignItems: 'center',
     paddingVertical: 10,
+  },
+  downloadBtn: {
+    width: '48%',
+    backgroundColor: '#1d8348',
+    marginHorizontal: 12,
+    borderRadius: 30,
+    marginTop: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+  },
+  playstoreIcon: {
+    width: 20,
+    height: 20,
+    resizeMode: 'contain',
+    marginRight: 8,
   },
   btnText: {
     color: 'white',
