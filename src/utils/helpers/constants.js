@@ -2,7 +2,7 @@ export default {
   BASE_URL: 'https://suda.aswaas.org/v1/api',//----LIVE
   // BASE_URL: 'http://43.205.34.89/v1/api',//----DEV
   timeout: 10000,
-  APP_VERSION: '1.3',
+  APP_VERSION: '1.4',
   TOKEN: 'TOKEN',
   LANGUAGE: 'en',
   ROLE: 'ROLE',
