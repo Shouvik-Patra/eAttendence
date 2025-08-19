@@ -53,7 +53,7 @@ const ApplyLeave = () => {
   const [isHolidayVisible, setIsHolidayVisible] = useState(false);
   const [holidays, setHolidays] = useState([]);
   const [supportingDocument, setSupportingDocument] = useState(null);
-  console.log('leaveType>>>>>>>>>', leaveType);
+  console.log('leaveType>>>>>>>>>', selectedLeaveTypeId);
   const [showMessageModal, setShowMessageModal] = useState(false);
 
   const [showFileOptions, setShowFileOptions] = useState(false);
@@ -231,9 +231,15 @@ const ApplyLeave = () => {
     const imageType = 'image/jpeg';
     if (selectedLeaveTypeId == null) {
       showErrorAlert('Please Select a valid leave Type.');
-    } else if (reason == '') {
+    }
+     else if (reason == '') {
       showErrorAlert('Please describe reason for leave.');
-    } else {
+    }
+     else if (selectedLeaveTypeId == 11 || selectedLeaveTypeId == 13) {
+      showErrorAlert('Please upload supporting document.');
+    }
+    
+    else {
       const formData = new FormData();
       formData.append('start_date', formatDate(startDate));
       formData.append('end_date', formatDate(endDate));
@@ -440,7 +446,7 @@ const ApplyLeave = () => {
 
         {/* Supporting Document Section */}
         <View style={styles.section}>
-          <Text style={styles.label}>Supporting Document (Optional)</Text>
+          <Text style={styles.label}>Supporting Document {selectedLeaveTypeId == 11 || selectedLeaveTypeId == 13 ? '' : '(Optional)'}</Text>
 
           {supportingDocument ? (
             <View style={styles.fileContainer}>
