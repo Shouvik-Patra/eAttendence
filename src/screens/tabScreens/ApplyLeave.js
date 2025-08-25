@@ -257,7 +257,7 @@ const ApplyLeave = () => {
         });
       connectionrequest()
         .then(() => {
-          // dispatch(applyLeaveRequest(formData));
+          dispatch(applyLeaveRequest(formData));
         })
         .catch(err => {
           console.log(err);
