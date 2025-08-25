@@ -53,6 +53,7 @@ export const Images = {
   success: require('../assets/images/success.png'),
   fail: require('../assets/images/fail.png'),
   alert: require('../assets/images/alert.png'),
+  greenbg: require('../assets/images/greenbg.jpg'),
 };
 
 export const Colors = {

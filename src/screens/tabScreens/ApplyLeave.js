@@ -235,7 +235,7 @@ const ApplyLeave = () => {
      else if (reason == '') {
       showErrorAlert('Please describe reason for leave.');
     }
-     else if (selectedLeaveTypeId == 11 || selectedLeaveTypeId == 13) {
+     else if ((selectedLeaveTypeId == 11 || selectedLeaveTypeId == 13) && !supportingDocument) {
       showErrorAlert('Please upload supporting document.');
     }
     
@@ -257,7 +257,7 @@ const ApplyLeave = () => {
         });
       connectionrequest()
         .then(() => {
-          dispatch(applyLeaveRequest(formData));
+          // dispatch(applyLeaveRequest(formData));
         })
         .catch(err => {
           console.log(err);
