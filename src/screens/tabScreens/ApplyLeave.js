@@ -231,15 +231,14 @@ const ApplyLeave = () => {
     const imageType = 'image/jpeg';
     if (selectedLeaveTypeId == null) {
       showErrorAlert('Please Select a valid leave Type.');
-    }
-     else if (reason == '') {
+    } else if (reason == '') {
       showErrorAlert('Please describe reason for leave.');
-    }
-     else if ((selectedLeaveTypeId == 11 || selectedLeaveTypeId == 13) && !supportingDocument) {
+    } else if (
+      (selectedLeaveTypeId == 11 || selectedLeaveTypeId == 13) &&
+      !supportingDocument
+    ) {
       showErrorAlert('Please upload supporting document.');
-    }
-    
-    else {
+    } else {
       const formData = new FormData();
       formData.append('start_date', formatDate(startDate));
       formData.append('end_date', formatDate(endDate));
@@ -279,6 +278,8 @@ const ApplyLeave = () => {
         break;
       case 'Profile/applyLeaveSuccess':
         status = ProfileReducer.status;
+        console.log("Hello>>>=applyLeaveSuccess=>>",ProfileReducer);
+        
         setStartDate(new Date());
         setEndDate(new Date());
         setSelectedLeaveTypeId(null);
@@ -288,6 +289,8 @@ const ApplyLeave = () => {
         break;
       case 'Profile/applyLeaveFailure':
         status = ProfileReducer.status;
+        console.log("Hello>>>=applyLeaveFailure=>>",ProfileReducer);
+
         break;
       case 'Profile/holidayListRequest':
         status = ProfileReducer.status;
@@ -446,7 +449,12 @@ const ApplyLeave = () => {
 
         {/* Supporting Document Section */}
         <View style={styles.section}>
-          <Text style={styles.label}>Supporting Document {selectedLeaveTypeId == 11 || selectedLeaveTypeId == 13 ? '' : '(Optional)'}</Text>
+          <Text style={styles.label}>
+            Supporting Document{' '}
+            {selectedLeaveTypeId == 11 || selectedLeaveTypeId == 13
+              ? ''
+              : '(Optional)'}
+          </Text>
 
           {supportingDocument ? (
             <View style={styles.fileContainer}>

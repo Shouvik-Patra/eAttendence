@@ -60,6 +60,8 @@ const DailyTask = props => {
 
   const [TaskPurposeList, setTaskPurposeList] = useState([]);
   const [complitedTaskData, setComplitedTaskData] = useState([]);
+  console.log("complitedTaskData=======>>>>>",complitedTaskData);
+  
   const [isFocusTask1, setIsFocusTask1] = useState(false);
   const [isFocusTask2, setIsFocusTask2] = useState(false);
   const [selectedTaskLocation, setSelectedTasklocatio] = useState('');

@@ -52,10 +52,14 @@ const TaskApproval = () => {
   const [locationString, setLocationString] = useState('');
   const [TaskPurposeList, setTaskPurposeList] = useState([]);
   const [taskApprovalData, setTaskApprovalData] = useState([]);
+  console.log('locationString>>>>>>>>>>>>>>>', locationString);
+
   const [isFocusTask1, setIsFocusTask1] = useState(false);
   const [isFocusTask2, setIsFocusTask2] = useState(false);
   const [selectedTaskLocation, setSelectedTasklocatio] = useState('');
   const [selectedTaskPurpose, setSelectedTaskPurpose] = useState('');
+  console.log('selectedTaskLocation>>>>>>>>>--', selectedTaskLocation);
+
   const [other_location, setOther_location] = useState('');
   const [other_purpose, setOther_purpose] = useState('');
   const [showMessageModal, setShowMessageModal] = useState(false);
@@ -227,34 +231,34 @@ const TaskApproval = () => {
     const imageType = 'image/jpeg';
 
     // Validation checks
-    // if (!selectedTaskLocation?.id) {
-    //   showErrorAlert('Please select task location');
-    //   setLoading(false);
-    //   return;
-    // }
     if (!selectedTaskPurpose?.id) {
       showErrorAlert('Please select task purpose');
       setLoading(false);
       return;
     }
-    // if (
-    //   selectedTaskLocation?.location_name === 'Others' &&
-    //   other_location === ''
-    // ) {
-    //   showErrorAlert('Please enter other location details');
-    //   setLoading(false);
-    //   return;
-    // }
-    if (selectedTaskPurpose?.title === 'Others' && other_purpose === '') {
+
+    // Check if "Others" is selected in locations and other_location is empty
+    if (selectedLocations.includes('Others') && other_location.trim() === '') {
+      showErrorAlert('Please enter other location details');
+      setLoading(false);
+      return;
+    }
+
+    if (
+      selectedTaskPurpose?.title === 'Others' &&
+      other_purpose.trim() === ''
+    ) {
       showErrorAlert('Please enter other purpose details');
       setLoading(false);
       return;
     }
+
     if (!startDate) {
       showErrorAlert('Please select start date');
       setLoading(false);
       return;
     }
+
     if (!endDate) {
       showErrorAlert('Please select end date');
       setLoading(false);
@@ -277,6 +281,7 @@ const TaskApproval = () => {
     const formData = new FormData();
     formData.append('location_id', selectedTaskPurpose?.id);
     formData.append('task_name', locationString);
+    formData.append('other_location', other_location); // Add other_location to form data
     formData.append('other_purpose', other_purpose);
     formData.append('date', moment(new Date()).format('YYYY-MM-DD'));
     formData.append('time', moment().format('HH:mm:ss'));
@@ -286,7 +291,7 @@ const TaskApproval = () => {
     formData.append('end_time', moment(endTime).format('HH:mm:ss'));
     formData.append('latitude', lat);
     formData.append('longitude', long);
-    // formData.append('address', actualAddress);
+
     {
       supportingDocument?.uri != undefined &&
         formData.append('photo', {
@@ -307,6 +312,7 @@ const TaskApproval = () => {
       })
       .catch(err => {
         console.log(err);
+        setLoading(false);
         showErrorAlert('Please connect to internet');
       });
   };
@@ -336,12 +342,24 @@ const TaskApproval = () => {
             {item?.task_name ? item?.task_name : ''}
           </Text>
         </Text>
+        {item?.other_location && <Text style={styles.blackText}>
+          Other Location(s) :{' '}
+          <Text style={styles.redText}>
+            {item?.other_location ? item?.other_location : ''}
+          </Text>
+        </Text>}
         <Text style={styles.blackText}>
           Visit Purpose :{' '}
           <Text style={styles.redText}>
             {item?.task_title ? item?.task_title : ''}
           </Text>
         </Text>
+        {item?.other_location && <Text style={styles.blackText}>
+          Other Purpose(s) :{' '}
+          <Text style={styles.redText}>
+            {item?.other_purpose ? item?.other_purpose : ''}
+          </Text>
+        </Text>}
         <Text style={styles.blackText}>
           Created at :{' '}
           <Text style={styles.redText}>
@@ -475,14 +493,16 @@ const TaskApproval = () => {
         // Reset form fields
         setSelectedTasklocatio('');
         setSelectedTaskPurpose('');
-        setOther_location('');
+        setSelectedLocations([]); // Reset selected locations array
+        setLocationString(''); // Reset location string
+        setOther_location(''); // Reset other location
         setOther_purpose('');
         setStartDate(new Date());
         setEndDate(new Date());
         setStartTime(new Date());
         setEndTime(new Date());
+        setSupportingDocument(null); // Reset supporting document
         dispatch(taskApprovalListRequest(`pending,rejected`));
-
         break;
       case 'Profile/addTaskFailure':
         status = ProfileReducer.status;
@@ -603,7 +623,7 @@ const TaskApproval = () => {
                 }}
                 renderLeftIcon={() => <Text style={styles.icon}>📋</Text>}
               />
-              {selectedTaskLocation?.location_name == 'Others' && (
+              {selectedLocations.includes('Others') && (
                 <TextInputWithButton
                   show={true}
                   icon={true}
