@@ -35,7 +35,7 @@ const Leavelog = () => {
   const [loading, setLoading] = useState(false);
   const [LeavelogList, setLeavelogList] = useState([]);
   const [remainingLeaves, setRemainingLeaves] = useState([]);
-  
+
   const formatDate = date => {
     return moment(date).format('YYYY-MM-DD');
   };
@@ -62,25 +62,27 @@ const Leavelog = () => {
           </Text>
         </View>
       </View>
-      
+
       <View style={styles.leaveProgressContainer}>
         <View style={styles.leaveProgressBar}>
-          <View 
+          <View
             style={[
-              styles.leaveProgressFill, 
-              { 
+              styles.leaveProgressFill,
+              {
                 width: `${(item?.used_leaves / item?.total_leaves) * 100}%`,
-                backgroundColor: item?.remaining_leaves === 0 ? Colors.red : 
-                                item?.remaining_leaves <= 1 ? Colors.orange : Colors.primary
-              }
-            ]} 
+                backgroundColor:
+                  item?.remaining_leaves === 0
+                    ? Colors.red
+                    : item?.remaining_leaves <= 1
+                    ? Colors.orange
+                    : Colors.primary,
+              },
+            ]}
           />
         </View>
-        <Text style={styles.usedLeavesText}>
-          {item?.used_leaves} used
-        </Text>
+        <Text style={styles.usedLeavesText}>{item?.used_leaves} used</Text>
       </View>
-      
+
       <View style={styles.leaveStatsRow}>
         <View style={styles.leaveStat}>
           <Text style={styles.leaveStatNumber}>{item?.total_leaves}</Text>
@@ -91,7 +93,7 @@ const Leavelog = () => {
           <Text style={styles.leaveStatLabel}>Used</Text>
         </View>
         <View style={styles.leaveStat}>
-          <Text style={[styles.leaveStatNumber, {color: Colors.green}]}>
+          <Text style={[styles.leaveStatNumber, { color: Colors.green }]}>
             {item?.remaining_leaves}
           </Text>
           <Text style={styles.leaveStatLabel}>Remaining</Text>
@@ -209,8 +211,8 @@ const Leavelog = () => {
   }, [ProfileReducer?.leaveLogResponse]);
 
   useEffect(() => {
-    if (ProfileReducer?.remainingLeavesResponse?.length > 0) {
-      setRemainingLeaves(ProfileReducer?.remainingLeavesResponse);
+    if (ProfileReducer?.remainingLeavesResponse?.leaves?.length > 0) {
+      setRemainingLeaves(ProfileReducer?.remainingLeavesResponse?.leaves);
     }
   }, [ProfileReducer?.remainingLeavesResponse]);
 
@@ -222,7 +224,7 @@ const Leavelog = () => {
       case 'Profile/leaveLogSuccess':
         status = ProfileReducer.status;
         console.log('Kick===========>>leaveLogSuccess');
-        
+
         break;
       case 'Profile/leaveLogFailure':
         status = ProfileReducer.status;
@@ -256,7 +258,7 @@ const Leavelog = () => {
           ProfileReducer?.status == 'Profile/leaveLogRequest'
         }
       />
-      
+
       {/* Leave Summary Section */}
       {remainingLeaves.length > 0 && (
         <View style={styles.leaveSummarySection}>
@@ -271,7 +273,9 @@ const Leavelog = () => {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.leaveSummaryList}
-            ItemSeparatorComponent={() => <View style={{width: normalize(10)}} />}
+            ItemSeparatorComponent={() => (
+              <View style={{ width: normalize(10) }} />
+            )}
           />
         </View>
       )}
@@ -303,7 +307,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgColor,
     paddingHorizontal: 10,
   },
-  
+
   // Leave Summary Styles
   leaveSummarySection: {
     marginTop: normalize(10),

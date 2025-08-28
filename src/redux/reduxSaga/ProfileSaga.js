@@ -162,7 +162,7 @@ export function* clockoutSaga(action) {
     };
 
     const response = yield call(postApi, 'check_out', action.payload, Header);
-console.log("response>>>>>>>>>",response);
+    console.log('response>>>>>>>>>', response);
 
     if (response?.data?.meta?.code == 200) {
       yield put(clockoutSuccess(response?.data?.data));
@@ -452,7 +452,12 @@ export function* remainingLeaveSaga(action) {
     accesstoken: items?.getTokenResponse,
   };
   try {
-    let response = yield call(getApi, 'remaining_leaves', header);
+    let response = yield call(
+      getApi,
+      `get_remaining_leavesByAdmin/${action.payload}`,
+      header,
+    );
+console.log("response>>>>>>>>get_remaining_leavesByAdmin>>>>>>>>",response?.data?.meta?.code);
 
     if (response?.data?.meta?.code == 200) {
       yield put(remainingLeavesSuccess(response?.data?.data));
@@ -568,6 +573,7 @@ export function* startTaskSaga(action) {
     };
 
     const response = yield call(postApi, 'start-task', action.payload, Header);
+console.log("start-task>>>>>>>>>>>>",response);
 
     if (response?.data?.meta?.code == 200) {
       yield put(startTaskSuccess(response?.data?.data));

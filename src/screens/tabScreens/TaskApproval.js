@@ -37,10 +37,9 @@ import MessageModal from '../../components/MessageModal';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 let status = '';
 
-const TaskApproval = () => {
+const TaskApproval = (props) => {
   const dispatch = useDispatch();
   const ProfileReducer = useSelector(state => state.ProfileReducer);
-  // console.log("PAGE NAME===========>>>>>",props?.route?.name);
   const [refreshing, setRefreshing] = useState(false);
 
   const isFocused = useIsFocused();
@@ -52,17 +51,23 @@ const TaskApproval = () => {
   const [locationString, setLocationString] = useState('');
   const [TaskPurposeList, setTaskPurposeList] = useState([]);
   const [taskApprovalData, setTaskApprovalData] = useState([]);
-  console.log('locationString>>>>>>>>>>>>>>>', locationString);
 
   const [isFocusTask1, setIsFocusTask1] = useState(false);
   const [isFocusTask2, setIsFocusTask2] = useState(false);
   const [selectedTaskLocation, setSelectedTasklocatio] = useState('');
   const [selectedTaskPurpose, setSelectedTaskPurpose] = useState('');
-  console.log('selectedTaskLocation>>>>>>>>>--', selectedTaskLocation);
 
   const [other_location, setOther_location] = useState('');
   const [other_purpose, setOther_purpose] = useState('');
   const [showMessageModal, setShowMessageModal] = useState(false);
+
+  // Validation error states
+  const [locationError, setLocationError] = useState('');
+  const [purposeError, setPurposeError] = useState('');
+  const [otherLocationError, setOtherLocationError] = useState('');
+  const [otherPurposeError, setOtherPurposeError] = useState('');
+  const [startDateError, setStartDateError] = useState('');
+  const [endDateError, setEndDateError] = useState('');
 
   // New state variables for date/time pickers
   const [startDate, setStartDate] = useState(new Date());
@@ -75,7 +80,73 @@ const TaskApproval = () => {
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [supportingDocument, setSupportingDocument] = useState(null);
   const [showFileOptions, setShowFileOptions] = useState(false);
-  console.log('supportingDocument>>>>>>>', supportingDocument);
+
+  // Clear all validation errors
+  const clearValidationErrors = () => {
+    setLocationError('');
+    setPurposeError('');
+    setOtherLocationError('');
+    setOtherPurposeError('');
+    setStartDateError('');
+    setEndDateError('');
+  };
+
+  // Validate form
+  const validateForm = () => {
+    clearValidationErrors();
+    let isValid = true;
+
+    // Validate task purpose
+    if (!selectedTaskPurpose?.id) {
+      setPurposeError('Please select task purpose');
+      isValid = false;
+    }
+
+    // Check if "Others" is selected in locations and other_location is empty
+    if (selectedLocations.includes('Others') && other_location.trim() === '') {
+      setOtherLocationError('Please enter other location details');
+      isValid = false;
+    }
+
+    if (
+      selectedTaskPurpose?.title === 'Others' &&
+      other_purpose.trim() === ''
+    ) {
+      setOtherPurposeError('Please enter other purpose details');
+      isValid = false;
+    }
+
+    if (!startDate) {
+      setStartDateError('Please select start date');
+      isValid = false;
+    }
+
+    if (!endDate) {
+      setEndDateError('Please select end date');
+      isValid = false;
+    }
+
+    // Combine date and time for validation
+    if (startDate && endDate) {
+      const startDateTime = new Date(startDate);
+      startDateTime.setHours(
+        startTime.getHours(),
+        startTime.getMinutes(),
+        0,
+        0,
+      );
+
+      const endDateTime = new Date(endDate);
+      endDateTime.setHours(endTime.getHours(), endTime.getMinutes(), 0, 0);
+
+      if (endDateTime < startDateTime) {
+        setEndDateError('End date and time must be after start date and time');
+        isValid = false;
+      }
+    }
+
+    return isValid;
+  };
 
   // Request camera permission
   const requestCameraPermission = async () => {
@@ -134,7 +205,7 @@ const TaskApproval = () => {
   // Handle gallery option
   const handleGallery = () => {
     const options = {
-      mediaType: 'mixed', // Allow both photos and videos
+      mediaType: 'mixed',
       quality: 0.7,
       maxWidth: 1000,
       maxHeight: 1000,
@@ -155,24 +226,28 @@ const TaskApproval = () => {
   const removeFile = () => {
     setSupportingDocument(null);
   };
+
   const onRefresh = () => {
     setRefreshing(true);
     dispatch(taskApprovalListRequest('pending,rejected'));
-
-    // simulate wait or use Redux status to stop refreshing
     setTimeout(() => setRefreshing(false), 1000);
   };
+
   // Date/Time picker handlers
   const onStartDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || startDate;
     setShowStartDatePicker(Platform.OS === 'ios');
     setStartDate(currentDate);
+    // Clear start date error when user selects a date
+    if (startDateError) setStartDateError('');
   };
 
   const onEndDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || endDate;
     setShowEndDatePicker(Platform.OS === 'ios');
     setEndDate(currentDate);
+    // Clear end date error when user selects a date
+    if (endDateError) setEndDateError('');
   };
 
   const onStartTimeChange = (event, selectedTime) => {
@@ -190,10 +265,29 @@ const TaskApproval = () => {
   const handleTaskPurposeSelect = async item => {
     setSelectedTaskPurpose(item);
     setIsFocusTask2(false);
+    // Clear purpose error when user selects an item
+    if (purposeError) setPurposeError('');
   };
-  // useEffect(() => {
-  //   dispatch(taskApprovalListRequest(`pending,rejected`));
-  // }, [props?.route?.name]);
+
+  const handleLocationSelect = items => {
+    setSelectedLocations(items);
+    setLocationString(items.join(','));
+    // Clear location error when user selects locations
+    if (locationError) setLocationError('');
+  };
+
+  const handleOtherLocationChange = text => {
+    setOther_location(text);
+    // Clear other location error when user types
+    if (otherLocationError) setOtherLocationError('');
+  };
+
+  const handleOtherPurposeChange = text => {
+    setOther_purpose(text);
+    // Clear other purpose error when user types
+    if (otherPurposeError) setOtherPurposeError('');
+  };
+
   useEffect(() => {
     if (isFocused) {
       connectionrequest()
@@ -210,17 +304,24 @@ const TaskApproval = () => {
       setAddTaskModal(false);
     }
   }, [isFocused]);
+
   const buttonResRef = useRef(null);
+
   const getLocation = async (taskid, buttonRes) => {
+    // First validate the form
+    if (!validateForm()) {
+      return; // Don't proceed if validation fails, modal stays open
+    }
+
     setLoading(true);
-    setAddTaskModal(false);
     Geolocation.getCurrentPosition(
       position => {
         const { latitude, longitude } = position.coords;
         onAddNewTask(latitude, longitude);
       },
       error => {
-        console.log('Error getting location', error);
+        setLoading(false);
+        showErrorAlert('Failed to get location. Please try again.');
       },
       { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 },
     );
@@ -230,58 +331,10 @@ const TaskApproval = () => {
     const imageName = supportingDocument?.uri?.split('/').pop();
     const imageType = 'image/jpeg';
 
-    // Validation checks
-    if (!selectedTaskPurpose?.id) {
-      showErrorAlert('Please select task purpose');
-      setLoading(false);
-      return;
-    }
-
-    // Check if "Others" is selected in locations and other_location is empty
-    if (selectedLocations.includes('Others') && other_location.trim() === '') {
-      showErrorAlert('Please enter other location details');
-      setLoading(false);
-      return;
-    }
-
-    if (
-      selectedTaskPurpose?.title === 'Others' &&
-      other_purpose.trim() === ''
-    ) {
-      showErrorAlert('Please enter other purpose details');
-      setLoading(false);
-      return;
-    }
-
-    if (!startDate) {
-      showErrorAlert('Please select start date');
-      setLoading(false);
-      return;
-    }
-
-    if (!endDate) {
-      showErrorAlert('Please select end date');
-      setLoading(false);
-      return;
-    }
-
-    // Combine date and time for validation
-    const startDateTime = new Date(startDate);
-    startDateTime.setHours(startTime.getHours(), startTime.getMinutes(), 0, 0);
-
-    const endDateTime = new Date(endDate);
-    endDateTime.setHours(endTime.getHours(), endTime.getMinutes(), 0, 0);
-
-    if (endDateTime < startDateTime) {
-      showErrorAlert('End date and time must be after start date and time');
-      setLoading(false);
-      return;
-    }
-
     const formData = new FormData();
     formData.append('location_id', selectedTaskPurpose?.id);
     formData.append('task_name', locationString);
-    formData.append('other_location', other_location); // Add other_location to form data
+    formData.append('other_location', other_location);
     formData.append('other_purpose', other_purpose);
     formData.append('date', moment(new Date()).format('YYYY-MM-DD'));
     formData.append('time', moment().format('HH:mm:ss'));
@@ -292,29 +345,45 @@ const TaskApproval = () => {
     formData.append('latitude', lat);
     formData.append('longitude', long);
 
-    {
-      supportingDocument?.uri != undefined &&
-        formData.append('photo', {
-          uri:
-            Platform.OS === 'android'
-              ? supportingDocument?.uri
-              : supportingDocument?.uri?.replace('file://', ''),
-          name: imageName,
-          type: imageType,
-        });
+    if (supportingDocument?.uri != undefined) {
+      formData.append('photo', {
+        uri:
+          Platform.OS === 'android'
+            ? supportingDocument?.uri
+            : supportingDocument?.uri?.replace('file://', ''),
+        name: imageName,
+        type: imageType,
+      });
     }
     formData.append('app_version', constants.APP_VERSION);
 
     connectionrequest()
       .then(() => {
-        console.log('formdata>>>>>>>', formData);
         dispatch(addTaskRequest(formData));
+        setAddTaskModal(false);
+
       })
       .catch(err => {
         console.log(err);
         setLoading(false);
         showErrorAlert('Please connect to internet');
       });
+  };
+
+  // Reset form function
+  const resetForm = () => {
+    setSelectedTasklocatio('');
+    setSelectedTaskPurpose('');
+    setSelectedLocations([]);
+    setLocationString('');
+    setOther_location('');
+    setOther_purpose('');
+    setStartDate(new Date());
+    setEndDate(new Date());
+    setStartTime(new Date());
+    setEndTime(new Date());
+    setSupportingDocument(null);
+    clearValidationErrors();
   };
 
   const renderTaskList = ({ item, index }) => (
@@ -342,24 +411,28 @@ const TaskApproval = () => {
             {item?.task_name ? item?.task_name : ''}
           </Text>
         </Text>
-        {item?.other_location && <Text style={styles.blackText}>
-          Other Location(s) :{' '}
-          <Text style={styles.redText}>
-            {item?.other_location ? item?.other_location : ''}
+        {item?.other_location && (
+          <Text style={styles.blackText}>
+            Other Location(s) :{' '}
+            <Text style={styles.redText}>
+              {item?.other_location ? item?.other_location : ''}
+            </Text>
           </Text>
-        </Text>}
+        )}
         <Text style={styles.blackText}>
           Visit Purpose :{' '}
           <Text style={styles.redText}>
             {item?.task_title ? item?.task_title : ''}
           </Text>
         </Text>
-        {item?.other_location && <Text style={styles.blackText}>
-          Other Purpose(s) :{' '}
-          <Text style={styles.redText}>
-            {item?.other_purpose ? item?.other_purpose : ''}
+        {item?.other_purpose && (
+          <Text style={styles.blackText}>
+            Other Purpose(s) :{' '}
+            <Text style={styles.redText}>
+              {item?.other_purpose ? item?.other_purpose : ''}
+            </Text>
           </Text>
-        </Text>}
+        )}
         <Text style={styles.blackText}>
           Created at :{' '}
           <Text style={styles.redText}>
@@ -380,12 +453,6 @@ const TaskApproval = () => {
             {item?.status}
           </Text>
         </Text>
-        {/* <Text style={styles.blackText}>
-          Start Date : <Text style={styles.redText}>{item?.task_duration}</Text>
-        </Text>
-        <Text style={styles.blackText}>
-          End Date : <Text style={styles.redText}>{item?.task_duration}</Text>
-        </Text> */}
       </View>
     </View>
   );
@@ -403,6 +470,7 @@ const TaskApproval = () => {
       }}
       onPress={() => {
         setAddTaskModal(true);
+        resetForm(); // Reset form when opening modal
       }}
     >
       <Image
@@ -418,7 +486,6 @@ const TaskApproval = () => {
     if (ProfileReducer?.taskLocationResponse?.length > 0) {
       let filteredLocations = ProfileReducer.taskLocationResponse;
 
-      // Filter for high priority locations if attendance status is "Clocked In Other"
       if (
         ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
         'Clocked In Other'
@@ -447,7 +514,23 @@ const TaskApproval = () => {
       dispatch(attendenceStatusRequest());
     }
   }, [ProfileReducer.taskApprovalListResponse]);
+  // useEffect(() => {
+  //   // console.log('PAGE NAME===========>>>>>', props?.route?.name);
+  //     console.log("Shouvik>>>>>>>>>>>>>>>",ProfileReducer.status,"--",props?.route?.name);
 
+  //   if (ProfileReducer.status == 'Profile/addTaskSuccess') {
+  //     console.log("Heloooo?????????/",ProfileReducer.status);
+  //     setShowMessageModal(true);
+  //     setLoading(false);
+  //     setAddTaskModal(false);
+  //     resetForm();
+  //     dispatch(taskApprovalListRequest(`pending,rejected`));
+  //   } else if (ProfileReducer.status == 'Profile/addTaskFailure') {
+  //     setLoading(false);
+  //   } else {
+  //     console.log('hello!');
+  //   }
+  // }, [ProfileReducer.status]);
   if (status == '' || ProfileReducer.status != status) {
     switch (ProfileReducer.status) {
       case 'Profile/taskLocationRequest':
@@ -455,7 +538,6 @@ const TaskApproval = () => {
         break;
       case 'Profile/taskLocationSuccess':
         status = ProfileReducer.status;
-
         break;
       case 'Profile/taskLocationFailure':
         status = ProfileReducer.status;
@@ -465,19 +547,12 @@ const TaskApproval = () => {
         break;
       case 'Profile/taskListSuccess':
         status = ProfileReducer.status;
-
         break;
       case 'Profile/taskListFailure':
         status = ProfileReducer.status;
         break;
       case 'Profile/taskApprovalListRequest':
         status = ProfileReducer.status;
-
-        break;
-      case 'Profile/taskApprovalListSuccess':
-        status = ProfileReducer.status;
-        console.log('Kick1===========>>Profile/taskApprovalListSuccess');
-
         break;
       case 'Profile/taskApprovalListSuccess':
         status = ProfileReducer.status;
@@ -490,18 +565,7 @@ const TaskApproval = () => {
         setShowMessageModal(true);
         setLoading(false);
         setAddTaskModal(false);
-        // Reset form fields
-        setSelectedTasklocatio('');
-        setSelectedTaskPurpose('');
-        setSelectedLocations([]); // Reset selected locations array
-        setLocationString(''); // Reset location string
-        setOther_location(''); // Reset other location
-        setOther_purpose('');
-        setStartDate(new Date());
-        setEndDate(new Date());
-        setStartTime(new Date());
-        setEndTime(new Date());
-        setSupportingDocument(null); // Reset supporting document
+        resetForm();
         dispatch(taskApprovalListRequest(`pending,rejected`));
         break;
       case 'Profile/addTaskFailure':
@@ -510,6 +574,12 @@ const TaskApproval = () => {
         break;
     }
   }
+
+  // Error message component
+  const ErrorMessage = ({ error }) => {
+    if (!error) return null;
+    return <Text style={styles.errorText}>{error}</Text>;
+  };
 
   return (
     <View style={styles.mainContainer}>
@@ -583,6 +653,7 @@ const TaskApproval = () => {
               style={styles.close}
               onPress={() => {
                 setAddTaskModal(false);
+                onRefresh();
               }}
             >
               <Image
@@ -600,6 +671,7 @@ const TaskApproval = () => {
                 style={[
                   styles.dropdown,
                   isFocusTask1 && { borderColor: '#24bcf7' },
+                  locationError && { borderColor: Colors.red },
                 ]}
                 placeholderStyle={styles.placeholderStyle}
                 selectedTextStyle={styles.selectedTextStyle}
@@ -610,43 +682,46 @@ const TaskApproval = () => {
                 data={TaskLocationList}
                 maxHeight={300}
                 labelField="location_name"
-                valueField="location_name" // value will now be an array of location_name
+                valueField="location_name"
                 placeholder={!isFocusTask1 ? 'Select location(s)' : '...'}
                 searchPlaceholder="Search..."
-                value={selectedLocations} // array of selected location names
+                value={selectedLocations}
                 onFocus={() => setIsFocusTask1(true)}
                 onBlur={() => setIsFocusTask1(false)}
-                onChange={items => {
-                  // ✅ items is an array of strings like ['DM office', 'SDO']
-                  setSelectedLocations(items);
-                  setLocationString(items.join(',')); // "DM office,SDO"
-                }}
+                onChange={handleLocationSelect}
                 renderLeftIcon={() => <Text style={styles.icon}>📋</Text>}
               />
+              <ErrorMessage error={locationError} />
+
               {selectedLocations.includes('Others') && (
-                <TextInputWithButton
-                  show={true}
-                  icon={true}
-                  height={normalize(45)}
-                  inputWidth={'100%'}
-                  marginTop={normalize(25)}
-                  backgroundColor={Colors.white}
-                  textColor={Colors.textInputColor}
-                  InputHeaderText={'Other location'}
-                  placeholder={'Other location'}
-                  placeholderTextColor={Colors.black}
-                  paddingLeft={normalize(25)}
-                  borderColor={Colors.skyblue}
-                  borderRadius={normalize(5)}
-                  editable={true}
-                  fontFamily={Fonts.MulishRegular}
-                  isheadertext={true}
-                  value={other_location}
-                  fontSize={normalize(14)}
-                  headertxtsize={normalize(13)}
-                  onChangeText={e => setOther_location(e)}
-                  tintColor={Colors.tintGrey}
-                />
+                <View style={{ width: '100%' }}>
+                  <TextInputWithButton
+                    show={true}
+                    icon={true}
+                    height={normalize(45)}
+                    inputWidth={'100%'}
+                    marginTop={normalize(15)}
+                    backgroundColor={Colors.white}
+                    textColor={Colors.textInputColor}
+                    InputHeaderText={'Other location'}
+                    placeholder={'Other location'}
+                    placeholderTextColor={Colors.black}
+                    paddingLeft={normalize(25)}
+                    borderColor={
+                      otherLocationError ? Colors.red : Colors.skyblue
+                    }
+                    borderRadius={normalize(5)}
+                    editable={true}
+                    fontFamily={Fonts.MulishRegular}
+                    isheadertext={true}
+                    value={other_location}
+                    fontSize={normalize(14)}
+                    headertxtsize={normalize(13)}
+                    onChangeText={handleOtherLocationChange}
+                    tintColor={Colors.tintGrey}
+                  />
+                  <ErrorMessage error={otherLocationError} />
+                </View>
               )}
             </View>
 
@@ -656,6 +731,7 @@ const TaskApproval = () => {
                 style={[
                   styles.dropdown,
                   isFocusTask2 && { borderColor: '#24bcf7' },
+                  purposeError && { borderColor: Colors.red },
                 ]}
                 placeholderStyle={styles.placeholderStyle}
                 selectedTextStyle={styles.selectedTextStyle}
@@ -675,30 +751,37 @@ const TaskApproval = () => {
                 onChange={handleTaskPurposeSelect}
                 renderLeftIcon={() => <Text style={styles.icon}>📋</Text>}
               />
+              <ErrorMessage error={purposeError} />
+
               {selectedTaskPurpose?.title == 'Others' && (
-                <TextInputWithButton
-                  show={true}
-                  icon={true}
-                  height={normalize(45)}
-                  inputWidth={'100%'}
-                  backgroundColor={Colors.white}
-                  marginTop={normalize(25)}
-                  textColor={Colors.textInputColor}
-                  InputHeaderText={'Other purpose'}
-                  placeholder={'Other purpose'}
-                  placeholderTextColor={Colors.black}
-                  paddingLeft={normalize(25)}
-                  borderColor={Colors.skyblue}
-                  borderRadius={normalize(5)}
-                  editable={true}
-                  fontFamily={Fonts.MulishRegular}
-                  isheadertext={true}
-                  value={other_purpose}
-                  fontSize={normalize(14)}
-                  headertxtsize={normalize(13)}
-                  onChangeText={e => setOther_purpose(e)}
-                  tintColor={Colors.tintGrey}
-                />
+                <View style={{ width: '100%' }}>
+                  <TextInputWithButton
+                    show={true}
+                    icon={true}
+                    height={normalize(45)}
+                    inputWidth={'100%'}
+                    backgroundColor={Colors.white}
+                    marginTop={normalize(15)}
+                    textColor={Colors.textInputColor}
+                    InputHeaderText={'Other purpose'}
+                    placeholder={'Other purpose'}
+                    placeholderTextColor={Colors.black}
+                    paddingLeft={normalize(25)}
+                    borderColor={
+                      otherPurposeError ? Colors.red : Colors.skyblue
+                    }
+                    borderRadius={normalize(5)}
+                    editable={true}
+                    fontFamily={Fonts.MulishRegular}
+                    isheadertext={true}
+                    value={other_purpose}
+                    fontSize={normalize(14)}
+                    headertxtsize={normalize(13)}
+                    onChangeText={handleOtherPurposeChange}
+                    tintColor={Colors.tintGrey}
+                  />
+                  <ErrorMessage error={otherPurposeError} />
+                </View>
               )}
             </View>
 
@@ -706,7 +789,10 @@ const TaskApproval = () => {
             <Text style={styles.fieldLabel}>Start Date *</Text>
             <View style={styles.dateTimeContainer}>
               <TouchableOpacity
-                style={styles.dateTimeButton}
+                style={[
+                  styles.dateTimeButton,
+                  startDateError && { borderColor: Colors.red },
+                ]}
                 onPress={() => setShowStartDatePicker(true)}
               >
                 <Text style={styles.dateTimeButtonText}>
@@ -722,12 +808,16 @@ const TaskApproval = () => {
                 </Text>
               </TouchableOpacity>
             </View>
+            <ErrorMessage error={startDateError} />
 
             {/* End Date and Time Section */}
             <Text style={styles.fieldLabel}>End Date *</Text>
             <View style={styles.dateTimeContainer}>
               <TouchableOpacity
-                style={styles.dateTimeButton}
+                style={[
+                  styles.dateTimeButton,
+                  endDateError && { borderColor: Colors.red },
+                ]}
                 onPress={() => setShowEndDatePicker(true)}
               >
                 <Text style={styles.dateTimeButtonText}>
@@ -743,6 +833,8 @@ const TaskApproval = () => {
                 </Text>
               </TouchableOpacity>
             </View>
+            <ErrorMessage error={endDateError} />
+
             {/* Supporting Document Section */}
             <View style={styles.section}>
               <Text style={styles.fieldLabel}>Supporting Document </Text>
@@ -778,6 +870,7 @@ const TaskApproval = () => {
                 </TouchableOpacity>
               )}
             </View>
+
             <TouchableOpacity
               style={[
                 styles.clockButton,
@@ -794,6 +887,7 @@ const TaskApproval = () => {
           </ScrollView>
         </ImageBackground>
       </Modal>
+
       {/* File Options Modal */}
       <Modal
         animationIn={'slideInUp'}
@@ -1233,5 +1327,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#e74c3c',
     fontWeight: '600',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#660d03ff',
+    fontFamily: Fonts.MulishMedium,
+    marginLeft: 10,
   },
 });

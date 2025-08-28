@@ -42,7 +42,6 @@ let status = '';
 const DailyTask = props => {
   const dispatch = useDispatch();
   const ProfileReducer = useSelector(state => state.ProfileReducer);
-  // console.log("PAGE NAME===========>>>>>",props?.route?.name);
 
   const isFocused = useIsFocused();
   const [isClocked, setIsClocked] = useState(false);
@@ -60,8 +59,7 @@ const DailyTask = props => {
 
   const [TaskPurposeList, setTaskPurposeList] = useState([]);
   const [complitedTaskData, setComplitedTaskData] = useState([]);
-  console.log("complitedTaskData=======>>>>>",complitedTaskData);
-  
+
   const [isFocusTask1, setIsFocusTask1] = useState(false);
   const [isFocusTask2, setIsFocusTask2] = useState(false);
   const [selectedTaskLocation, setSelectedTasklocatio] = useState('');
@@ -133,7 +131,6 @@ const DailyTask = props => {
           dispatch(attendenceStatusRequest());
         })
         .catch(err => {
-          console.log(err);
           showErrorAlert('Please connect to internet');
         });
     } else {
@@ -229,7 +226,6 @@ const DailyTask = props => {
 
     connectionrequest()
       .then(() => {
-        console.log('formdata>>>>>>>', formData);
         dispatch(addTaskRequest(formData));
       })
       .catch(err => {
@@ -249,7 +245,6 @@ const DailyTask = props => {
 
     connectionrequest()
       .then(() => {
-        console.log('formdata>>>>>>>', obj);
 
         dispatch(startTaskRequest(obj));
       })
@@ -296,12 +291,78 @@ const DailyTask = props => {
         showErrorAlert('Please connect to internet');
       });
   };
-
   const renderTaskList = ({ item, index }) => {
-    // Check if any task is currently ongoing
+    // Check if any task is currently ongoing across all tasks
     const isAnyTaskOngoing = complitedTaskData.some(
-      task => task.status === 'ongoing',
+      task => task.latest_tracking_status === 'ongoing',
     );
+
+    // Check if current date is between createTaskDate and endTaskDate
+    const currentDate = moment();
+    const startDate = moment(item?.createTaskDate);
+    const endDate = moment(item?.endTaskDate);
+
+    // Condition 1: Show buttons only if current date is between task dates
+    const shouldShowButtons = currentDate.isBetween(
+      startDate,
+      endDate,
+      'day',
+      '[]',
+    );
+
+    // Additional condition: If task day is ended (has complete status for today), don't show buttons
+    const isTodayTaskEnded = item?.task_tracking?.some(
+      tracking =>
+        tracking.status === 'complete' &&
+        moment(tracking.created_at).isSame(currentDate, 'day'),
+    );
+
+    // Final condition to show buttons: shouldShowButtons is true AND today's task is not ended
+    const showButtons = shouldShowButtons && !isTodayTaskEnded;
+
+    // Get current task's tracking status
+    const currentTaskStatus = item?.latest_tracking_status;
+
+    // Button states based on conditions
+    const getButtonStates = () => {
+      // Condition 2: If latest_tracking_status is null, End button should be disabled
+      if (currentTaskStatus === null) {
+        return {
+          startButtonDisabled: isAnyTaskOngoing, // Disabled if any other task is ongoing
+          startButtonOpacity: isAnyTaskOngoing ? 0.5 : 1,
+          endButtonDisabled: true, // Always disabled when status is null
+          endButtonOpacity: 0.5,
+          doLaterButtonDisabled: true, // Can't do later if not started
+          doLaterButtonOpacity: 0.5,
+        };
+      }
+
+      // Condition 3: If latest_tracking_status is "ongoing", End button visible and Start disabled
+      if (currentTaskStatus === 'ongoing') {
+        return {
+          startButtonDisabled: true, // Start disabled when task is ongoing
+          startButtonOpacity: 0.5,
+          endButtonDisabled: false, // End button enabled
+          endButtonOpacity: 1,
+          doLaterButtonDisabled: false, // Do later enabled when task is ongoing
+          doLaterButtonOpacity: 1,
+        };
+      }
+
+      // For other statuses (complete, etc.)
+      return {
+        startButtonDisabled:
+          isAnyTaskOngoing || currentTaskStatus === 'complete',
+        startButtonOpacity:
+          isAnyTaskOngoing || currentTaskStatus === 'complete' ? 0.5 : 1,
+        endButtonDisabled: true,
+        endButtonOpacity: 0.5,
+        doLaterButtonDisabled: true,
+        doLaterButtonOpacity: 0.5,
+      };
+    };
+
+    const buttonStates = getButtonStates();
 
     return (
       <View
@@ -359,7 +420,7 @@ const DailyTask = props => {
                 },
               ]}
             >
-              {item?.status}
+              {item?.latest_tracking_status || 'Approved'}
             </Text>
           </Text>
           <Text style={styles.blackText}>
@@ -368,7 +429,10 @@ const DailyTask = props => {
               style={[
                 styles.redText,
                 {
-                  color: item?.status === 'ongoing' ? Colors.red : Colors.black,
+                  color:
+                    item?.latest_tracking_status === 'ongoing'
+                      ? Colors.red
+                      : Colors.black,
                   textTransform: 'capitalize',
                 },
               ]}
@@ -376,10 +440,31 @@ const DailyTask = props => {
               {item?.task_activity}
             </Text>
           </Text>
+
+          {/* Display task tracking history */}
+          {item?.task_tracking && item.task_tracking.length > 0 && (
+            <View style={{ marginTop: 10 }}>
+              <Text style={[styles.blackText, { fontWeight: 'bold' }]}>
+                Tracking History:
+              </Text>
+              {item.task_tracking.map((tracking, trackingIndex) => (
+                <Text
+                  key={trackingIndex}
+                  style={[styles.blackText, { fontSize: 12, marginLeft: 10 }]}
+                >
+                  • {moment(tracking.created_at).format('MMM D, YYYY')} -{' '}
+                  {tracking.status.toUpperCase()} - Start: {tracking.start_time}
+                  {tracking.end_time
+                    ? ` | End: ${tracking.end_time} | Duration: ${tracking.task_duration}`
+                    : ' (In Progress)'}
+                </Text>
+              ))}
+            </View>
+          )}
         </View>
 
-        {/* Only show buttons if current task is approved or ongoing */}
-        {(item?.status === 'approved' || item?.status === 'ongoing') && (
+        {/* Show buttons only if showButtons condition is met (shouldShowButtons is true AND today's task is not ended) */}
+        {showButtons && (
           <>
             <View
               style={{
@@ -399,16 +484,8 @@ const DailyTask = props => {
                 fontSize={normalize(15)}
                 fontFamily={Fonts.MulishSemiBold}
                 textColor={'white'}
-                opacity={
-                  item?.status === 'ongoing' ||
-                  (isAnyTaskOngoing && item?.status !== 'ongoing')
-                    ? 0.5
-                    : 1
-                }
-                disabled={
-                  item?.status === 'ongoing' ||
-                  (isAnyTaskOngoing && item?.status !== 'ongoing')
-                }
+                opacity={buttonStates.startButtonOpacity}
+                disabled={buttonStates.startButtonDisabled}
                 onPress={() => {
                   if (
                     ProfileReducer?.attendenceStatusResponse
@@ -431,19 +508,18 @@ const DailyTask = props => {
                 fontSize={normalize(15)}
                 fontFamily={Fonts.MulishSemiBold}
                 textColor={'white'}
-                opacity={
-                  item?.status === 'approved' ||
-                  (isAnyTaskOngoing && item?.status !== 'ongoing')
-                    ? 0.5
-                    : 1
-                }
-                disabled={
-                  item?.status === 'approved' ||
-                  (isAnyTaskOngoing && item?.status !== 'ongoing')
-                }
+                opacity={buttonStates.endButtonOpacity}
+                disabled={buttonStates.endButtonDisabled}
                 onPress={() => {
+                  // Get the current ongoing task tracking ID
+                  const ongoingTracking = item?.task_tracking?.find(
+                    tracking => tracking.status === 'ongoing',
+                  );
+
                   setTaskSubmitId(item?.task_submit_id);
-                  setTaskTrackingId(item?.task_tracking_id);
+                  setTaskTrackingId(
+                    ongoingTracking?.task_tracking_id || item?.task_tracking_id,
+                  );
                   setTaskAction('end');
                   setEndTaskModal(true);
                 }}
@@ -460,20 +536,18 @@ const DailyTask = props => {
               fontSize={normalize(15)}
               fontFamily={Fonts.MulishSemiBold}
               textColor={'white'}
-              opacity={
-                item?.status !== 'ongoing' ||
-                (isAnyTaskOngoing && item?.status !== 'ongoing')
-                  ? 0.5
-                  : 1
-              }
-              disabled={
-                item?.status !== 'ongoing' ||
-                (isAnyTaskOngoing && item?.status !== 'ongoing')
-              }
+              opacity={buttonStates.doLaterButtonOpacity}
+              disabled={buttonStates.doLaterButtonDisabled}
               onPress={() => {
-                console.log('bnjnbsjd0', item);
+                // Get the current ongoing task tracking ID
+                const ongoingTracking = item?.task_tracking?.find(
+                  tracking => tracking.status === 'ongoing',
+                );
+
                 setTaskSubmitId(item?.task_submit_id);
-                setTaskTrackingId(item?.task_tracking_id);
+                setTaskTrackingId(
+                  ongoingTracking?.task_tracking_id || item?.task_tracking_id,
+                );
 
                 Alert.alert('Are you sure', 'You want to do this later ?', [
                   {
@@ -486,7 +560,8 @@ const DailyTask = props => {
                     onPress: () => {
                       onDoTaskLater(
                         item?.task_submit_id,
-                        item?.task_tracking_id,
+                        ongoingTracking?.task_tracking_id ||
+                          item?.task_tracking_id,
                       );
                     },
                   },
@@ -540,7 +615,6 @@ const DailyTask = props => {
         break;
       case 'Profile/taskLocationSuccess':
         status = ProfileReducer.status;
-        console.log('Kick==========>>Profile/taskLocationSuccess');
 
         break;
       case 'Profile/taskLocationFailure':
@@ -551,7 +625,6 @@ const DailyTask = props => {
         break;
       case 'Profile/taskListSuccess':
         status = ProfileReducer.status;
-        console.log('Kick==========>>Profile/taskListSuccess');
 
         break;
       case 'Profile/taskListFailure':
@@ -565,7 +638,6 @@ const DailyTask = props => {
         break;
       case 'Profile/complitedTaskListSuccess':
         status = ProfileReducer.status;
-        console.log('Kick==========>>Profile/complitedTaskListSuccess');
 
         break;
       case 'Profile/complitedTaskListFailure':
@@ -577,7 +649,6 @@ const DailyTask = props => {
         break;
       case 'Profile/addTaskSuccess':
         status = ProfileReducer.status;
-        console.log('Kick==========>>Profile/addTaskSuccess');
 
         setLoading(false);
         setAddTaskModal(false);
@@ -605,7 +676,6 @@ const DailyTask = props => {
         break;
       case 'Profile/startTaskSuccess':
         status = ProfileReducer.status;
-        console.log('Kick==========>>Profile/startTaskSuccess');
 
         dispatch(complitedTaskListRequest(`approved,ongoing,complete`));
         dispatch(attendenceStatusRequest());
@@ -620,7 +690,6 @@ const DailyTask = props => {
         break;
       case 'Profile/endTaskSuccess':
         status = ProfileReducer.status;
-        console.log('Kick==========>>Profile/endTaskSuccess');
 
         dispatch(complitedTaskListRequest(`approved,ongoing,complete`));
         dispatch(attendenceStatusRequest());
@@ -636,7 +705,6 @@ const DailyTask = props => {
         break;
       case 'Profile/taskDoItLaterSuccess':
         status = ProfileReducer.status;
-        console.log('Kick==========>>Profile/taskDoItLaterSuccess');
         dispatch(complitedTaskListRequest(`approved,ongoing,complete`));
         dispatch(attendenceStatusRequest());
         break;

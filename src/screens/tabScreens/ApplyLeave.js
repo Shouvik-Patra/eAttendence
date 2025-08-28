@@ -53,7 +53,7 @@ const ApplyLeave = () => {
   const [isHolidayVisible, setIsHolidayVisible] = useState(false);
   const [holidays, setHolidays] = useState([]);
   const [supportingDocument, setSupportingDocument] = useState(null);
-  console.log('leaveType>>>>>>>>>', selectedLeaveTypeId);
+  console.log('leaveType>>>>>>>>>', leaveType);
   const [showMessageModal, setShowMessageModal] = useState(false);
 
   const [showFileOptions, setShowFileOptions] = useState(false);
@@ -62,7 +62,9 @@ const ApplyLeave = () => {
     if (isFocused) {
       connectionrequest()
         .then(() => {
-          dispatch(remainingLeavesRequest());
+          dispatch(
+            remainingLeavesRequest(ProfileReducer?.userDetailsResponse?.id),
+          );
 
           dispatch(
             holidayListRequest(
@@ -77,6 +79,46 @@ const ApplyLeave = () => {
     }
   }, [isFocused]);
 
+  // Add this useEffect to format the leave type data when it's received
+  useEffect(() => {
+    if (ProfileReducer?.remainingLeavesResponse?.leaves?.length > 0) {
+      const formattedLeaveTypes =
+        ProfileReducer?.remainingLeavesResponse?.leaves.map(leave => ({
+          ...leave,
+          formatted_label: `${leave.leave_type_name}`,
+        }));
+      setLeaveType(formattedLeaveTypes);
+    }
+  }, [ProfileReducer?.remainingLeavesResponse]);
+
+  // Optional: Add custom render item for dropdown if you want more styling control
+  const renderDropdownItem = item => {
+    const isLowBalance = parseInt(item.remaining_leaves) <= 2;
+    const isNoBalance = parseInt(item.remaining_leaves) === 0;
+
+    return (
+      <View style={styles.dropdownItem}>
+        <Text
+          style={[
+            styles.dropdownItemText,
+            isNoBalance && styles.noBalanceText,
+            isLowBalance && !isNoBalance && styles.lowBalanceText,
+          ]}
+        >
+          {item.leave_type_name}
+        </Text>
+        <Text
+          style={[
+            styles.balanceText,
+            isNoBalance && styles.noBalanceText,
+            isLowBalance && !isNoBalance && styles.lowBalanceText,
+          ]}
+        >
+          ({item.remaining_leaves} remaining out of {item.total_leaves})
+        </Text>
+      </View>
+    );
+  };
   // Request camera permission
   const requestCameraPermission = async () => {
     if (Platform.OS === 'android') {
@@ -265,11 +307,11 @@ const ApplyLeave = () => {
     }
   }
 
-  useEffect(() => {
-    if (ProfileReducer?.remainingLeavesResponse?.length > 0) {
-      setLeaveType(ProfileReducer?.remainingLeavesResponse);
-    }
-  }, [ProfileReducer?.remainingLeavesResponse]);
+  // useEffect(() => {
+  //   if (ProfileReducer?.remainingLeavesResponse?.leaves?.length > 0) {
+  //     setLeaveType(ProfileReducer?.remainingLeavesResponse?.leaves);
+  //   }
+  // }, [ProfileReducer?.remainingLeavesResponse]);
 
   if (status == '' || ProfileReducer.status != status) {
     switch (ProfileReducer.status) {
@@ -278,8 +320,8 @@ const ApplyLeave = () => {
         break;
       case 'Profile/applyLeaveSuccess':
         status = ProfileReducer.status;
-        console.log("Hello>>>=applyLeaveSuccess=>>",ProfileReducer);
-        
+        console.log('Hello>>>=applyLeaveSuccess=>>', ProfileReducer);
+
         setStartDate(new Date());
         setEndDate(new Date());
         setSelectedLeaveTypeId(null);
@@ -289,7 +331,7 @@ const ApplyLeave = () => {
         break;
       case 'Profile/applyLeaveFailure':
         status = ProfileReducer.status;
-        console.log("Hello>>>=applyLeaveFailure=>>",ProfileReducer);
+        console.log('Hello>>>=applyLeaveFailure=>>', ProfileReducer);
 
         break;
       case 'Profile/holidayListRequest':
@@ -379,8 +421,9 @@ const ApplyLeave = () => {
             containerStyle={styles.dropdownListContainer}
             itemTextStyle={styles.dropdownItemText}
             data={leaveType}
+            renderItem={renderDropdownItem}
             maxHeight={300}
-            labelField="leave_type_name"
+            labelField="formatted_label" 
             valueField="leave_type_id"
             placeholder={!isFocusTask ? 'Select Leave Type' : '...'}
             searchPlaceholder="Search..."
@@ -956,5 +999,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#e74c3c',
     fontWeight: '600',
+  },
+   dropdownItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  balanceText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  lowBalanceText: {
+    color: '#ff9500', // Orange for low balance
+  },
+  noBalanceText: {
+    color: '#ff3b30', // Red for no balance
   },
 });

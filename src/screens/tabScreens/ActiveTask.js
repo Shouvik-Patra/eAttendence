@@ -8,12 +8,14 @@ import TaskApproval from './TaskApproval';
 import DailyTask from './DailyTask';
 
 const Tab = createMaterialTopTabNavigator();
-
 const TaskTabs = () => {
   return (
     <Tab.Navigator
       lazy={true}
-      screenOptions={{
+      swipeEnabled={true}
+      lazyPreloadDistance={0} // Only load when actually viewed
+      screenOptions={({ route }) => ({
+        lazy: true,
         tabBarLabelStyle: {
           fontSize: 16,
           fontFamily: Fonts.MulishBold,
@@ -26,16 +28,28 @@ const TaskTabs = () => {
         tabBarStyle: {
           backgroundColor: Colors.orange,
         },
-      }}
+      })}
     >
-      <Tab.Screen name="Daily Task" component={DailyTask} />
-      <Tab.Screen name="Task Approval" component={TaskApproval} options={{ unmountOnBlur: true }}/>
+      <Tab.Screen 
+        name="Daily Task" 
+        component={DailyTask}
+        options={{
+          lazy: true,
+        }}
+      />
+      <Tab.Screen 
+        name="Task Approval" 
+        component={TaskApproval} 
+        options={{ 
+          lazy: true,
+          unmountOnBlur: true,
+        }}
+      />
     </Tab.Navigator>
   );
 };
 
 const ActiveTask = ({ navigation }) => {
-  const ProfileReducer = useSelector(state => state.ProfileReducer);
 
   return (
     <View style={styles.container}>

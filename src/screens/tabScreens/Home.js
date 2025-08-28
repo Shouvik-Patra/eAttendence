@@ -37,7 +37,7 @@ const Home = props => {
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
-  console.log('PAGE NAME===========>>>>>', props?.route?.name);
+  
 
   const isFocused = useIsFocused();
   const [addTaskModal, setAddTaskModal] = useState(false);
