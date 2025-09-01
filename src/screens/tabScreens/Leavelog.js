@@ -194,7 +194,7 @@ const Leavelog = () => {
     if (isFocused) {
       connectionrequest()
         .then(() => {
-          dispatch(remainingLeavesRequest());
+          dispatch(remainingLeavesRequest(ProfileReducer?.userDetailsResponse?.id));
           dispatch(leaveLogRequest());
         })
         .catch(err => {
