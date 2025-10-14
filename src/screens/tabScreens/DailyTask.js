@@ -245,7 +245,6 @@ const DailyTask = props => {
 
     connectionrequest()
       .then(() => {
-
         dispatch(startTaskRequest(obj));
       })
       .catch(err => {
@@ -322,6 +321,7 @@ const DailyTask = props => {
 
     // Get current task's tracking status
     const currentTaskStatus = item?.latest_tracking_status;
+    console.log('currentTaskStatus>>>', currentTaskStatus);
 
     // Button states based on conditions
     const getButtonStates = () => {
@@ -346,6 +346,17 @@ const DailyTask = props => {
           endButtonOpacity: 1,
           doLaterButtonDisabled: false, // Do later enabled when task is ongoing
           doLaterButtonOpacity: 1,
+        };
+      }
+      // Condition 4: If latest_tracking_status is "complete" but shouldShowButtons true, End button visible and Start disabled
+      if (currentTaskStatus === 'complete' && shouldShowButtons == true) {
+        return {
+          startButtonDisabled: false, // Start enabled
+          startButtonOpacity: 1,
+          endButtonDisabled: true, // End disabled
+          endButtonOpacity: 0.5,
+          doLaterButtonDisabled: true, // Do later enabled when task is ongoing
+          doLaterButtonOpacity: 0.5,
         };
       }
 
