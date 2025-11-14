@@ -27,11 +27,14 @@ import constants from '../../utils/helpers/constants';
 import UpdateModal from '../../components/UpdateModal';
 import { Camera } from 'react-native-vision-camera';
 import { useIsFocused } from '@react-navigation/native';
+import { getDeviceToken } from '../../utils/helpers/notificationService';
+
 const windowHeight = Dimensions.get('window').height;
 let status = '';
+
 const Signin = props => {
   const dispatch = useDispatch();
-    const isFocused = useIsFocused();
+  const isFocused = useIsFocused();
   const AuthReducer = useSelector(state => state.AuthReducer);
   console.log('login>>', AuthReducer);
 
@@ -41,20 +44,22 @@ const Signin = props => {
   const [keyboardShown, setKeyboardShown] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-  console.log('loading>>>>>>', loading);
+  const [fcmToken, setFcmToken] = useState('');
 
+  console.log('loading>>>>>>', loading);
+  console.log('FCM Token>>>>>>', fcmToken);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       'keyboardDidShow',
       () => {
-        setKeyboardVisible(true); // or some other action
+        setKeyboardVisible(true);
       },
     );
     const keyboardDidHideListener = Keyboard.addListener(
       'keyboardDidHide',
       () => {
-        setKeyboardVisible(false); // or some other action
+        setKeyboardVisible(false);
       },
     );
 
@@ -63,6 +68,7 @@ const Signin = props => {
       keyboardDidShowListener.remove();
     };
   }, []);
+
   const requestLocationPermission = async () => {
     try {
       if (Platform.OS === 'android') {
@@ -85,30 +91,50 @@ const Signin = props => {
       return false;
     }
   };
+
+  // Setup FCM on component mount
   useEffect(() => {
     requestLocationPermission();
+    // Setup FCM notification
+    const setupFCM = async () => {
+      const token = await getDeviceToken();
+      if (token) {
+        setFcmToken(token);
+      }
+    };
+
+    setupFCM();
   }, []);
+
   const employeeLogin = () => {
     setLoading(true);
     if (phone === '') {
       showErrorAlert('Please Enter username');
+      setLoading(false);
     } else if (password == '') {
       showErrorAlert('Please Enter Password');
+      setLoading(false);
     } else {
       let obj = {
         username: phone.trim(),
         password: password,
         app_version: constants.APP_VERSION,
+        fcm_token: fcmToken || '', // Add FCM token to login payload
       };
+
+      console.log('Login payload:', obj);
+
       connectionrequest()
         .then(() => {
           dispatch(signInRequest(obj));
         })
         .catch(err => {
           showErrorAlert('Please connect to internet');
+          setLoading(false);
         });
     }
   };
+
   if (status == '' || AuthReducer.status != status) {
     switch (AuthReducer.status) {
       case 'Auth/signInRequest':
@@ -117,7 +143,6 @@ const Signin = props => {
       case 'Auth/signInSuccess':
         status = AuthReducer.status;
         setLoading(false);
-
         break;
       case 'Auth/signInFailure':
         status = AuthReducer.status;
@@ -125,6 +150,7 @@ const Signin = props => {
         break;
     }
   }
+
   return (
     <ImageBackground
       source={Images.pageBackground}
@@ -138,22 +164,9 @@ const Signin = props => {
       >
         <ScrollView
           showsVerticalScrollIndicator={false}
-
-          // style={{
-          //   // paddingHorizontal: normalize(20),
-          //   maxHeight: windowHeight - normalize(220),
-          //   backgroundColor: '#FFF',
-          //   borderRadius: normalize(10),
-          //   padding: normalize(15),
-          //   flex: 1,
-          //   position: 'absolute',
-          //   bottom: '10%',
-          //   alignSelf: 'center',
-          //   width: '90%',
-          // }}
           contentContainerStyle={{
             flexGrow: 1,
-            padding:15,
+            padding: 15,
             paddingBottom: isKeyboardVisible ? normalize(200) : normalize(20),
           }}
         >
@@ -195,13 +208,13 @@ const Signin = props => {
           <View
             style={{
               width: '100%',
-              flex:1,
+              flex: 1,
               alignSelf: 'center',
               backgroundColor: Colors.white,
               borderRadius: normalize(10),
               alignItems: 'center',
-              padding:15,
-              marginTop:15
+              padding: 15,
+              marginTop: 15,
             }}
           >
             <Text style={styles.headerText1}>Login</Text>
@@ -289,7 +302,6 @@ const styles = StyleSheet.create({
   headerContain: {
     alignSelf: 'flex-start',
     marginTop: normalize(80),
-
     width: '100%',
   },
   underline: {
@@ -300,7 +312,6 @@ const styles = StyleSheet.create({
     marginTop: normalize(5),
   },
   headerText1: {
-    // fontFamily: Fonts.MulishRegular,
     fontSize: normalize(22),
     marginTop: normalize(15),
     color: Colors.darkblue,
@@ -311,7 +322,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.MulishSemiBold,
     fontSize: normalize(12),
     color: Colors.fontWhite,
-
     textAlign: 'center',
   },
   text1: {
@@ -324,13 +334,5 @@ const styles = StyleSheet.create({
     color: Colors.textInputColor,
     fontFamily: Fonts.MulishRegular,
   },
-  contentWrapper: {
-    // // height: normalize(370),
-    // // position: 'absolute',
-    // backgroundColor: Colors.white,
-    // borderRadius: normalize(10),
-    // width: '100%',
-    // bottom: normalize(20),
-    // padding: normalize(15)
-  },
+  contentWrapper: {},
 });

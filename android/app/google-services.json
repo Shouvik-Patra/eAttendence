@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "123162067351",
+    "project_id": "eattendance-2f217",
+    "storage_bucket": "eattendance-2f217.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:123162067351:android:86235947a6a3ac5bc904d2",
+        "android_client_info": {
+          "package_name": "com.eattendence"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAicxayaQJoIvR5XtG83c70w24t30VPZx0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
