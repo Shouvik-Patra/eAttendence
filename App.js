@@ -145,8 +145,7 @@ const App = () => {
       text1: title,
       text2: remoteMessage,
       position: 'top',
-      autoHide: false,
-      visibilityTime: 10000,
+      visibilityTime: 5000,
     });
   };
 
