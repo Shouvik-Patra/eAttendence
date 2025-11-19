@@ -35,9 +35,10 @@ import TextInputWithButton from '../../components/TextInputWithBotton';
 import constants from '../../utils/helpers/constants';
 import MessageModal from '../../components/MessageModal';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
+import { logoutRequest } from '../../redux/reducer/AuthReducer';
 let status = '';
 
-const TaskApproval = (props) => {
+const TaskApproval = props => {
   const dispatch = useDispatch();
   const ProfileReducer = useSelector(state => state.ProfileReducer);
   const [refreshing, setRefreshing] = useState(false);
@@ -289,6 +290,10 @@ const TaskApproval = (props) => {
   };
 
   useEffect(() => {
+    // if user is inactive then it will auto logout
+    if (ProfileReducer?.userDetailsResponse?.status === 'inactive') {
+      dispatch(logoutRequest());
+    }
     if (isFocused) {
       connectionrequest()
         .then(() => {
@@ -361,7 +366,6 @@ const TaskApproval = (props) => {
       .then(() => {
         dispatch(addTaskRequest(formData));
         setAddTaskModal(false);
-
       })
       .catch(err => {
         console.log(err);

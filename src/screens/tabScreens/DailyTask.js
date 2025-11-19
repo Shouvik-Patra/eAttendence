@@ -36,6 +36,8 @@ import Loader from '../../utils/helpers/Loader';
 import TextInputWithButton from '../../components/TextInputWithBotton';
 import Button from '../../components/Button';
 import constants from '../../utils/helpers/constants';
+import { logoutRequest } from '../../redux/reducer/AuthReducer';
+import UpdateModal from '../../components/UpdateModal';
 
 let status = '';
 
@@ -85,6 +87,19 @@ const DailyTask = props => {
     // simulate wait or use Redux status to stop refreshing
     setTimeout(() => setRefreshing(false), 1000);
   };
+
+  const [updateModalVisible, setUpdateModalVisible] = useState(false);
+  useEffect(() => {
+    
+    if (ProfileReducer?.userDetailsResponse?.app_info != undefined) {
+      if (
+        ProfileReducer?.userDetailsResponse?.app_info[0]?.value !=
+        constants?.APP_VERSION
+      ) {
+        setUpdateModalVisible(true);
+      }
+    }
+  }, [isFocused]);
   // Date/Time picker handlers
   const onStartDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || startDate;
@@ -122,6 +137,10 @@ const DailyTask = props => {
   };
 
   useEffect(() => {
+    // if user is inactive then it will auto logout
+    if (ProfileReducer?.userDetailsResponse?.status === 'inactive') {
+      dispatch(logoutRequest());
+    }
     if (isFocused && props?.route?.name == 'Daily Task') {
       connectionrequest()
         .then(() => {
@@ -736,6 +755,10 @@ const DailyTask = props => {
           ProfileReducer?.status == 'Profile/complitedTaskListRequest' ||
           ProfileReducer?.status == 'Profile/addTaskRequest'
         }
+      />
+      <UpdateModal
+        isVisible={updateModalVisible}
+        onClose={() => setUpdateModalVisible(false)}
       />
       <ScrollView
         style={styles.scrollView}

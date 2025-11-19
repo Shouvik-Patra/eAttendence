@@ -33,6 +33,7 @@ import { useIsFocused } from '@react-navigation/native';
 import constants from '../../utils/helpers/constants';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import MessageModal from '../../components/MessageModal';
+import { logoutRequest } from '../../redux/reducer/AuthReducer';
 
 let status = '';
 const ApplyLeave = () => {
@@ -59,6 +60,10 @@ const ApplyLeave = () => {
   const [showFileOptions, setShowFileOptions] = useState(false);
 
   useEffect(() => {
+    // if user is inactive then it will auto logout
+    if (ProfileReducer?.userDetailsResponse?.status === 'inactive') {
+      dispatch(logoutRequest());
+    }
     if (isFocused) {
       connectionrequest()
         .then(() => {
@@ -423,7 +428,7 @@ const ApplyLeave = () => {
             data={leaveType}
             renderItem={renderDropdownItem}
             maxHeight={300}
-            labelField="formatted_label" 
+            labelField="formatted_label"
             valueField="leave_type_id"
             placeholder={!isFocusTask ? 'Select Leave Type' : '...'}
             searchPlaceholder="Search..."
@@ -1000,7 +1005,7 @@ const styles = StyleSheet.create({
     color: '#e74c3c',
     fontWeight: '600',
   },
-   dropdownItem: {
+  dropdownItem: {
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',

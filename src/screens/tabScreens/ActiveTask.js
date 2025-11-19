@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import Header from '../../components/Header';
@@ -6,9 +6,6 @@ import { useSelector } from 'react-redux';
 import { Colors, Fonts } from '../../themes/ThemePath';
 import TaskApproval from './TaskApproval';
 import DailyTask from './DailyTask';
-import { useIsFocused } from '@react-navigation/native';
-import UpdateModal from '../../components/UpdateModal';
-import constants from '../../utils/helpers/constants';
 
 const Tab = createMaterialTopTabNavigator();
 const TaskTabs = () => {
@@ -33,17 +30,17 @@ const TaskTabs = () => {
         },
       })}
     >
-      <Tab.Screen
-        name="Daily Task"
+      <Tab.Screen 
+        name="Daily Task" 
         component={DailyTask}
         options={{
           lazy: true,
         }}
       />
-      <Tab.Screen
-        name="Task Approval"
-        component={TaskApproval}
-        options={{
+      <Tab.Screen 
+        name="Task Approval" 
+        component={TaskApproval} 
+        options={{ 
           lazy: true,
           unmountOnBlur: true,
         }}
@@ -53,20 +50,7 @@ const TaskTabs = () => {
 };
 
 const ActiveTask = ({ navigation }) => {
-  const isFocused = useIsFocused();
 
-  const ProfileReducer = useSelector(state => state.ProfileReducer);
-  const [updateModalVisible, setUpdateModalVisible] = useState(false);
-  useEffect(() => {
-    if (ProfileReducer?.userDetailsResponse?.app_info != undefined) {
-      if (
-        ProfileReducer?.userDetailsResponse?.app_info[0]?.value !=
-        constants?.APP_VERSION
-      ) {
-        setUpdateModalVisible(true);
-      }
-    }
-  }, [isFocused]);
   return (
     <View style={styles.container}>
       <Header
@@ -77,10 +61,6 @@ const ActiveTask = ({ navigation }) => {
         onPress_right_button={() => navigation.navigate('Notification')}
       />
       <TaskTabs />
-      <UpdateModal
-        isVisible={updateModalVisible}
-        onClose={() => setUpdateModalVisible(false)}
-      />
     </View>
   );
 };
