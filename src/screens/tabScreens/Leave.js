@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import Header from '../../components/Header';
@@ -6,6 +6,9 @@ import ApplyLeave from './ApplyLeave';
 import Leavelog from './Leavelog';
 import { useSelector } from 'react-redux';
 import { Colors, Fonts } from '../../themes/ThemePath';
+import UpdateModal from '../../components/UpdateModal';
+import { useIsFocused } from '@react-navigation/native';
+import constants from '../../utils/helpers/constants';
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -34,8 +37,20 @@ const LeaveTabs = () => {
 };
 
 const Leave = ({ navigation }) => {
-  const ProfileReducer = useSelector(state => state.ProfileReducer);
+  const isFocused = useIsFocused();
 
+  const ProfileReducer = useSelector(state => state.ProfileReducer);
+  const [updateModalVisible, setUpdateModalVisible] = useState(false);
+  useEffect(() => {
+    if (ProfileReducer?.userDetailsResponse?.app_info != undefined) {
+      if (
+        ProfileReducer?.userDetailsResponse?.app_info[0]?.value !=
+        constants?.APP_VERSION
+      ) {
+        setUpdateModalVisible(true);
+      }
+    }
+  }, [isFocused]);
   return (
     <View style={styles.container}>
       <Header
@@ -46,6 +61,10 @@ const Leave = ({ navigation }) => {
         onPress_right_button={() => navigation.navigate('Notification')}
       />
       <LeaveTabs />
+      <UpdateModal
+        isVisible={updateModalVisible}
+        onClose={() => setUpdateModalVisible(false)}
+      />
     </View>
   );
 };

@@ -22,8 +22,8 @@ const UpdateModal = ({ isVisible, onClose }) => {
       swipeDirection={['down']}
       avoidKeyboard={true}
       style={{ justifyContent: 'center', alignItems: 'center' }}
-      onBackButtonPress={onClose}
-      onBackdropPress={onClose}
+      // onBackButtonPress={onClose}
+      // onBackdropPress={onClose}
     >
       <View style={styles.modalMainConatiner}>
         <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
@@ -37,7 +37,9 @@ const UpdateModal = ({ isVisible, onClose }) => {
           </View>
         </View>
 
-        <Text style={styles.updateTitle}>Update available (V{constants?.APP_VERSION})</Text>
+        <Text style={styles.updateTitle}>
+          Update available (V{constants?.APP_VERSION})
+        </Text>
         <Text style={styles.updateSubtitle}>
           To use this app, download the latest version
         </Text>
@@ -50,8 +52,18 @@ const UpdateModal = ({ isVisible, onClose }) => {
         <Text style={styles.infoText}>
           For any further information please contact to Hr.
         </Text>
-
-        <View style={styles.btnRow}>
+        <TouchableOpacity
+          style={styles.downloadBtn}
+          onPress={() =>
+            Linking.openURL(
+              'https://play.google.com/store/apps/details?id=com.eattendence&pcampaignid=web_share',
+            )
+          }
+        >
+          <Image source={Images.googleplay} style={styles.playstoreIcon} />
+          <Text style={styles.btnText}>Update</Text>
+        </TouchableOpacity>
+        {/* <View style={styles.btnRow}>
           <TouchableOpacity
             style={[styles.primaryBtn, { backgroundColor: Colors.red }]}
             onPress={onClose}
@@ -70,7 +82,7 @@ const UpdateModal = ({ isVisible, onClose }) => {
             <Image source={Images.googleplay} style={styles.playstoreIcon} />
             <Text style={styles.btnText}>Update</Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
       </View>
     </Modal>
   );
@@ -167,15 +179,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   downloadBtn: {
-    width: '48%',
+    width: 150,
     backgroundColor: '#1d8348',
     marginHorizontal: 12,
     borderRadius: 30,
     marginTop: 24,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 10,
+    paddingHorizontal:40,
+    alignSelf:'center'
   },
   playstoreIcon: {
     width: 20,

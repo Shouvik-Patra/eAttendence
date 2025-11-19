@@ -30,6 +30,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useIsFocused } from '@react-navigation/native';
 import constants from '../../utils/helpers/constants';
 import UpdateModal from '../../components/UpdateModal';
+import { logoutRequest } from '../../redux/reducer/AuthReducer';
 
 let status = '';
 
@@ -37,7 +38,6 @@ const Home = props => {
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
-  
 
   const isFocused = useIsFocused();
   const [addTaskModal, setAddTaskModal] = useState(false);
@@ -50,12 +50,12 @@ const Home = props => {
   const [locationPermission, setLocationPermission] = useState(null);
   const [cameraPermission, setCameraPermission] = useState(null);
 
-  const [location, setLocation] = useState({
-    latitude: 22.5726,
-    longitude: 88.3639,
-  });
 
   useEffect(() => {
+    // if user is inactive then it will auto logout
+    if (ProfileReducer?.userDetailsResponse?.status === 'inactive') {
+      dispatch(logoutRequest());
+    }
     const checkPermission = async () => {
       const status = await Camera.getCameraPermissionStatus();
 
@@ -249,7 +249,7 @@ const Home = props => {
 
       // Wait for location
       const locationData = await locationPromise;
-      setLocation(locationData);
+      // setLocation(locationData);
 
       // Navigate to Attendence without geocoding
       setLoading(false);
