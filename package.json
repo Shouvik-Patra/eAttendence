@@ -28,7 +28,7 @@
     "prop-types": "^15.8.1",
     "react": "19.1.0",
     "react-native": "0.80.0",
-    "react-native-compressor": "^1.12.0",
+    "react-native-compressor": "^1.13.0",
     "react-native-date-picker": "^5.0.13",
     "react-native-element-dropdown": "^2.12.4",
     "react-native-fs": "^2.20.0",

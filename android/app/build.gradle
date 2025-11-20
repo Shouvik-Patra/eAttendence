@@ -74,7 +74,7 @@ def enableProguardInReleaseBuilds = false
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
 android {
-    ndkVersion rootProject.ext.ndkVersion
+    ndkVersion '29.0.14033849 rc4'
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
@@ -85,6 +85,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 9
         versionName "1.8"
+        ndk { abiFilters "armeabi-v7a", "arm64-v8a" }
     }
      signingConfigs {
         release {
