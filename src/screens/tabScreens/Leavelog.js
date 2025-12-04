@@ -154,7 +154,6 @@ const Leavelog = () => {
             Alert.alert('Are you sure', 'You want to cancel ?', [
               {
                 text: 'Cancel',
-                onPress: () => console.log('Cancel Pressed'),
                 style: 'cancel',
               },
               {
@@ -223,7 +222,6 @@ const Leavelog = () => {
         break;
       case 'Profile/leaveLogSuccess':
         status = ProfileReducer.status;
-        console.log('Kick===========>>leaveLogSuccess');
 
         break;
       case 'Profile/leaveLogFailure':
@@ -234,14 +232,12 @@ const Leavelog = () => {
         break;
       case 'Profile/leaveCancelSuccess':
         status = ProfileReducer.status;
-        console.log('Kick===========>>leaveCancelSuccess');
 
         connectionrequest()
           .then(() => {
             dispatch(leaveLogRequest());
           })
           .catch(err => {
-            console.log(err);
             showErrorAlert('Please connect to internet');
           });
         break;

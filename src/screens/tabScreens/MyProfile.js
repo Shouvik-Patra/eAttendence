@@ -64,7 +64,6 @@ const MyProfile = props => {
   const [isEditing, setIsEditing] = useState(false);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
 
-  console.log('isEditing>>', isEditing);
 
   const [loading, setLoading] = useState(false);
   const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(

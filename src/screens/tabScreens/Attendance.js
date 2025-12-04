@@ -169,7 +169,7 @@ const Attendence = props => {
     formData.append('check_out', moment().format('HH:mm:ss'));
     formData.append('check_out_latitude', latitude);
     formData.append('check_out_longitude', longitude);
-    formData.append('check_out_address', "test");
+    formData.append('check_out_address', 'test');
     formData.append('check_out_remarks', check_out_remarks);
     formData.append('check_out_photo', {
       uri:
@@ -190,39 +190,6 @@ const Attendence = props => {
       });
   }
 
-  // function onAddNewTask(capturedimage) {
-  //   const imageName = capturedimage.split('/').pop();
-  //   const imageType = 'image/jpeg';
-  //   const formData = new FormData();
-
-  //   formData.append('task_id', task_id);
-  //   formData.append('location_id', location_id);
-  //   formData.append('date', moment(new Date()).format('YYYY-MM-DD'));
-  //   formData.append('time', moment().format('HH:mm:ss'));
-  //   formData.append('latitude', latitude);
-  //   formData.append('longitude', longitude);
-  //   formData.append('address', locationData?.address);
-  //   formData.append('photo', {
-  //     uri:
-  //       Platform.OS === 'android'
-  //         ? capturedimage
-  //         : capturedimage.replace('file://', ''),
-  //     name: imageName,
-  //     type: imageType,
-  //   });
-  //   console.log('7777');
-
-  //   connectionrequest()
-  //     .then(() => {
-  //       console.log('formdata>>>>>>>', formData);
-
-  //       dispatch(addTaskRequest(formData));
-  //     })
-  //     .catch(err => {
-  //       console.log(err);
-  //       showErrorAlert('Please connect to internet');
-  //     });
-  // }
   function onMuRegister(capturedimage) {
     const imageName = capturedimage.split('/').pop();
     const imageType = 'image/jpeg';
@@ -247,7 +214,6 @@ const Attendence = props => {
 
     connectionrequest()
       .then(() => {
-        console.log('formdata>>>>>>>', formData);
         dispatch(municipalityRegisterRequest(formData));
       })
       .catch(err => {
@@ -274,8 +240,10 @@ const Attendence = props => {
           output: 'jpg',
         });
         setFinalImage(finalImagePath);
+
+
         if (props?.route?.params?.pagename == 'MyProfile') {
-          props?.navigation.navigate('BottomTabNav', {
+          props?.navigation.navigate('FormalAttendanceBottomTab', {
             screen: 'MyProfile',
             params: {
               finalImageUri: finalImagePath,
@@ -289,8 +257,6 @@ const Attendence = props => {
           onClockIn(finalImagePath);
         } else if (props?.route?.params?.status == 'clockout') {
           onClockOut(finalImagePath);
-        } else if (props?.route?.params?.status == 'MuRegister') {
-          onMuRegister(finalImagePath);
         } else {
           console.log('hitting else');
         }
@@ -312,7 +278,7 @@ const Attendence = props => {
       case 'Profile/clockinSuccess':
         status = ProfileReducer.status;
 
-        props?.navigation.navigate('BottomTabNav', {
+        props?.navigation.navigate('FormalAttendanceBottomTab', {
           screen: 'Home',
           params: {
             finalImageUri: finalImage,
@@ -322,7 +288,7 @@ const Attendence = props => {
       case 'Profile/clockinFailure':
         status = ProfileReducer.status;
 
-        props?.navigation.navigate('BottomTabNav', {
+        props?.navigation.navigate('FormalAttendanceBottomTab', {
           screen: 'Home',
           params: {
             finalImageUri: finalImage,
@@ -335,7 +301,7 @@ const Attendence = props => {
         break;
       case 'Profile/clockoutSuccess':
         status = ProfileReducer.status;
-        props?.navigation.navigate('BottomTabNav', {
+        props?.navigation.navigate('FormalAttendanceBottomTab', {
           screen: 'Home',
           params: {
             finalImageUri: finalImage,
@@ -346,7 +312,7 @@ const Attendence = props => {
         status = ProfileReducer.status;
         showErrorAlert('Clock Out fail due to Network issue, Try again!');
 
-        props?.navigation.navigate('BottomTabNav', {
+        props?.navigation.navigate('FormalAttendanceBottomTab', {
           screen: 'Home',
           params: {
             finalImageUri: finalImage,
@@ -361,7 +327,7 @@ const Attendence = props => {
         status = ProfileReducer.status;
         setLoading(false);
 
-        props?.navigation.navigate('BottomTabNav', {
+        props?.navigation.navigate('FormalAttendanceBottomTab', {
           screen: 'MuRegister',
           params: {
             finalImageUri: finalImage,
@@ -374,7 +340,7 @@ const Attendence = props => {
 
         showErrorAlert('Task add fail due to Network issue, Try again!');
 
-        props?.navigation.navigate('BottomTabNav', {
+        props?.navigation.navigate('FormalAttendanceBottomTab', {
           screen: 'MuRegister',
           params: {
             finalImageUri: finalImage,

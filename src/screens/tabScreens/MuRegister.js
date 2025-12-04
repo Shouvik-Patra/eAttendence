@@ -45,8 +45,7 @@ const MuRegister = props => {
   const [loading, setLoading] = useState(false);
   const [isFocusTask, setIsFocusTask] = useState(false);
   const [selectedOffice, setSelectedOffice] = useState('');
-  console.log('complitedTaskData>>>>>', complitedTaskData);
-  console.log('officeList>>>>>', officeList);
+
 
   const [location, setLocation] = useState({ latitude: null, longitude: null });
   const requestLocationPermission = async () => {
@@ -148,7 +147,12 @@ const MuRegister = props => {
           setLoading(false);
           console.log('Error getting location', error);
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
+        {
+          enableHighAccuracy: true, // Changed to true for better accuracy
+          timeout: 30000, // Increased timeout to 30 seconds
+          maximumAge: 5000, // Reduced cache age
+          distanceFilter: 10, // Optional: minimum distance (meters) to trigger update
+        },
       );
     }
   };

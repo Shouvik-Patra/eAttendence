@@ -9,7 +9,7 @@ import {
 import React, { useEffect } from 'react';
 import MainStack from './src/navigation/MainStack';
 import { useDispatch } from 'react-redux';
-import { getTokenRequest } from './src/redux/reducer/AuthReducer';
+import { getLoginTypeRequest, getTokenRequest } from './src/redux/reducer/AuthReducer';
 import {
   CustomAlertProvider,
   useCustomAlert,
@@ -93,8 +93,6 @@ const App = () => {
       const fcmToken = await messaging().getToken();
       if (fcmToken) {
         console.log('FCM Token:', fcmToken);
-        // TODO: Save token to your backend if needed
-        // You can dispatch a Redux action here to save the token
         return fcmToken;
       }
     } catch (error) {
@@ -135,6 +133,7 @@ const App = () => {
   useEffect(() => {
     requestUserPermission();
     dispatch(getTokenRequest());
+    dispatch(getLoginTypeRequest());
   }, []);
 
   const showNotificationAlert = (title, remoteMessage) => {

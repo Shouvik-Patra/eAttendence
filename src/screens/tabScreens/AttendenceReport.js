@@ -39,7 +39,6 @@ const AttendenceReport = () => {
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [activityData, setActivityData] = useState(null);
 
-  console.log('activityData::>>>>>>>', activityData);
 
   const onPressDate = date => {
     connectionrequest()

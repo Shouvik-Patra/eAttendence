@@ -32,7 +32,6 @@ export const ImageCompressor = async (path) => {
         // AsyncStorage.setItem('image',base64Image)
         return resizedImage?.uri;
     } catch (err) {
-        console.log(" ImageCompressor  > ", err);
 
     }
 

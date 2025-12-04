@@ -4,6 +4,7 @@ export default {
   timeout: 10000,
   APP_VERSION: '1.7',
   TOKEN: 'TOKEN',
+  LOGIN_TYPE: 'TYPE',
   LANGUAGE: 'en',
   ROLE: 'ROLE',
   GOOGLE_KEY: 'AIzaSyCc9bgVzA4sVCPven8PPLHjQaIgnB3gqwM',

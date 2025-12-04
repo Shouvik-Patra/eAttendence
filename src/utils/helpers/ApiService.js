@@ -26,7 +26,6 @@ class ApiService {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
-        console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
         return config;
       },
       (error) => {
@@ -38,7 +37,6 @@ class ApiService {
     // Add response interceptor for error handling
     this.api.interceptors.response.use(
       (response) => {
-        console.log(`API Response: ${response.status} ${response.config.url}`);
         return response;
       },
       async (error) => {
@@ -281,7 +279,7 @@ class ApiService {
       }
 
       const response = await this.post(ENDPOINTS.ATTENDANCE.CLOCKIN, checkInData);
-      console.log('Check-in successful:', response);
+      
       return response;
     } catch (error) {
       console.error('Check-in failed:', error);
@@ -308,7 +306,7 @@ class ApiService {
       }
 
       const response = await this.post(ENDPOINTS.ATTENDANCE.CLOCKOUT, checkOutData);
-      console.log('Check-out successful:', response);
+    
       return response;
     } catch (error) {
       console.error('Check-out failed:', error);

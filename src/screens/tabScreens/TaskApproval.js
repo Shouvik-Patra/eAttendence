@@ -518,23 +518,7 @@ const TaskApproval = props => {
       dispatch(attendenceStatusRequest());
     }
   }, [ProfileReducer.taskApprovalListResponse]);
-  // useEffect(() => {
-  //   // console.log('PAGE NAME===========>>>>>', props?.route?.name);
-  //     console.log("Shouvik>>>>>>>>>>>>>>>",ProfileReducer.status,"--",props?.route?.name);
 
-  //   if (ProfileReducer.status == 'Profile/addTaskSuccess') {
-  //     console.log("Heloooo?????????/",ProfileReducer.status);
-  //     setShowMessageModal(true);
-  //     setLoading(false);
-  //     setAddTaskModal(false);
-  //     resetForm();
-  //     dispatch(taskApprovalListRequest(`pending,rejected`));
-  //   } else if (ProfileReducer.status == 'Profile/addTaskFailure') {
-  //     setLoading(false);
-  //   } else {
-  //     console.log('hello!');
-  //   }
-  // }, [ProfileReducer.status]);
   if (status == '' || ProfileReducer.status != status) {
     switch (ProfileReducer.status) {
       case 'Profile/taskLocationRequest':

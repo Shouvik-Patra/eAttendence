@@ -162,7 +162,7 @@ export function* clockoutSaga(action) {
     };
 
     const response = yield call(postApi, 'check_out', action.payload, Header);
-    console.log('response>>>>>>>>>', response);
+
 
     if (response?.data?.meta?.code == 200) {
       yield put(clockoutSuccess(response?.data?.data));
@@ -295,7 +295,6 @@ export function* addTaskSaga(action) {
       action.payload,
       Header,
     );
-    console.log('addTaskSaga:::response>>', response);
 
     if (response?.data?.meta?.code == 200) {
       yield put(addTaskSuccess(response?.data?.data));
@@ -457,7 +456,6 @@ export function* remainingLeaveSaga(action) {
       `get_remaining_leavesByAdmin/${action.payload}`,
       header,
     );
-console.log("response>>>>>>>>get_remaining_leavesByAdmin>>>>>>>>",response?.data?.meta?.code);
 
     if (response?.data?.meta?.code == 200) {
       yield put(remainingLeavesSuccess(response?.data?.data));
@@ -573,7 +571,6 @@ export function* startTaskSaga(action) {
     };
 
     const response = yield call(postApi, 'start-task', action.payload, Header);
-console.log("start-task>>>>>>>>>>>>",response);
 
     if (response?.data?.meta?.code == 200) {
       yield put(startTaskSuccess(response?.data?.data));
@@ -697,30 +694,7 @@ export function* holidayListSaga(action) {
     yield put(holidayListFailure(error?.response?.data));
   }
 }
-// export function* userActivitySaga(action) {
-//   let items = yield select(getItem);
 
-//   try {
-//     let Header = {
-//       Accept: 'application/json',
-//       contenttype: 'application/json',
-//       accesstoken: items?.getTokenResponse,
-//     };
-
-//     const response = yield call(postApi, `user-activity?date=${action.payload}`,  Header);
-//     if (response?.data?.meta?.code == 200) {
-//       yield put(userActivitySuccess(response?.data?.data));
-//       showErrorAlert(response?.data?.meta?.message);
-//     } else {
-//       yield put(userActivityFailure(response?.data?.data));
-//       showErrorAlert(response?.data?.meta?.message);
-//     }
-//   } catch (error) {
-//     console.log('helooo>>>', error);
-//     yield put(userActivityFailure(error?.response?.data));
-//     // showErrorAlert(error?.response?.data?.meta?.message);
-//   }
-// }
 
 export function* userActivitySaga(action) {
   let items = yield select(getItem);

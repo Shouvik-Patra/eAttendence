@@ -340,7 +340,6 @@ const DailyTask = props => {
 
     // Get current task's tracking status
     const currentTaskStatus = item?.latest_tracking_status;
-    console.log('currentTaskStatus>>>', currentTaskStatus);
 
     // Button states based on conditions
     const getButtonStates = () => {

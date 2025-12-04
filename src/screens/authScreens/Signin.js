@@ -20,7 +20,10 @@ import TextInputWithButton from '../../components/TextInputWithBotton';
 import Loader from '../../utils/helpers/Loader';
 import showErrorAlert from '../../utils/helpers/Toast';
 import { useDispatch, useSelector } from 'react-redux';
-import { signInRequest } from '../../redux/reducer/AuthReducer';
+import {
+  informalsignInRequest,
+  signInRequest,
+} from '../../redux/reducer/AuthReducer';
 import connectionrequest from '../../utils/helpers/NetInfo';
 import ShowMessage from '../../utils/helpers/ShowMessage';
 import constants from '../../utils/helpers/constants';
@@ -36,7 +39,6 @@ const Signin = props => {
   const dispatch = useDispatch();
   const isFocused = useIsFocused();
   const AuthReducer = useSelector(state => state.AuthReducer);
-  console.log('login>>', AuthReducer);
 
   const [phone, setPhone] = useState(''); //8013046678//
   const [secure1, setSecure1] = useState(true);
@@ -45,9 +47,6 @@ const Signin = props => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fcmToken, setFcmToken] = useState('');
-
-  console.log('loading>>>>>>', loading);
-  console.log('FCM Token>>>>>>', fcmToken);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -121,12 +120,23 @@ const Signin = props => {
         app_version: constants.APP_VERSION,
         fcm_token: fcmToken || '', // Add FCM token to login payload
       };
-
-      console.log('Login payload:', obj);
+      let informalobj = {
+        project_code: phone.trim(),
+        password: password,
+        app_version: constants.APP_VERSION,
+        fcm_token: fcmToken || '', // Add FCM token to login payload
+      };
 
       connectionrequest()
         .then(() => {
-          dispatch(signInRequest(obj));
+          // Check if username is a phone number (contains only digits)
+          const loginType = AuthReducer?.loginTypeResponse;
+
+          if (loginType === 'formal') {
+            dispatch(signInRequest(obj));
+          } else {
+            dispatch(informalsignInRequest(informalobj));
+          }
         })
         .catch(err => {
           showErrorAlert('Please connect to internet');
@@ -135,16 +145,20 @@ const Signin = props => {
     }
   };
 
+  // Handle status changes for both formal and informal login
   if (status == '' || AuthReducer.status != status) {
     switch (AuthReducer.status) {
       case 'Auth/signInRequest':
+      case 'Auth/informalsignInRequest':
         status = AuthReducer.status;
         break;
       case 'Auth/signInSuccess':
+      case 'Auth/inFormalsignInSuccess':
         status = AuthReducer.status;
         setLoading(false);
         break;
       case 'Auth/signInFailure':
+      case 'Auth/inFormalsignInFailure':
         status = AuthReducer.status;
         setLoading(false);
         break;
@@ -157,7 +171,12 @@ const Signin = props => {
       resizeMode="cover"
       style={styles.onbordingStyle}
     >
-      <Loader visible={AuthReducer?.status == 'Auth/signInRequest'} />
+      <Loader
+        visible={
+          AuthReducer?.status === 'Auth/signInRequest' ||
+          AuthReducer?.status === 'Auth/informalsignInRequest'
+        }
+      />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS == 'ios' ? 'padding' : 'height'}

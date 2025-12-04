@@ -54,7 +54,6 @@ const ApplyLeave = () => {
   const [isHolidayVisible, setIsHolidayVisible] = useState(false);
   const [holidays, setHolidays] = useState([]);
   const [supportingDocument, setSupportingDocument] = useState(null);
-  console.log('leaveType>>>>>>>>>', leaveType);
   const [showMessageModal, setShowMessageModal] = useState(false);
 
   const [showFileOptions, setShowFileOptions] = useState(false);
@@ -325,7 +324,6 @@ const ApplyLeave = () => {
         break;
       case 'Profile/applyLeaveSuccess':
         status = ProfileReducer.status;
-        console.log('Hello>>>=applyLeaveSuccess=>>', ProfileReducer);
 
         setStartDate(new Date());
         setEndDate(new Date());

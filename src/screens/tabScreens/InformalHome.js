@@ -21,11 +21,21 @@ import Loader from '../../utils/helpers/Loader';
 import { useDispatch, useSelector } from 'react-redux';
 import { useIsFocused } from '@react-navigation/native';
 import moment from 'moment';
+import Geolocation from '@react-native-community/geolocation';
+import connectionrequest from '../../utils/helpers/NetInfo';
+import {
+  InformalProfileDetailsRequest,
+  informalUserDetailsRequest,
+} from '../../redux/reducer/InformalProfileReducer';
+import showErrorAlert from '../../utils/helpers/Toast';
 
 let status = '';
 
 const InformalHome = props => {
   const dispatch = useDispatch();
+  const InformalProfileReducer = useSelector(
+    state => state.InformalProfileReducer,
+  );
 
   const isFocused = useIsFocused();
   const [loadingMessage, setLoadingMessage] = useState('');
@@ -33,19 +43,30 @@ const InformalHome = props => {
   // Permission states
   const [locationPermission, setLocationPermission] = useState(null);
   const [cameraPermission, setCameraPermission] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [profileData, setProfileData] = useState(
+    InformalProfileReducer?.InformalProfileDetailsResponse || '',
+  );
 
-  // Sample worker data - replace with your actual data
-  const [workersData, setWorkersData] = useState([
-    { id: '1', name: 'Shouvik Patra', status: 'clocked-out' },
-    { id: '2', name: 'Koushik Pal', status: 'clocked-in' },
-    { id: '3', name: 'Ranjan Majhi', status: 'clocked-out' },
-    { id: '4', name: 'Suman Pramanik', status: 'absent' },
-    { id: '5', name: 'Soumi Ghosh Dostidar', status: 'clocked-in' },
-  ]);
+  const [workersData, setWorkersData] = useState([]);
+  useEffect(() => {
+    setWorkersData(InformalProfileReducer?.informaluserDetailsResponse || []);
+  }, [InformalProfileReducer?.informaluserDetailsResponse]);
+  function userProfileDetails() {
+    connectionrequest()
+      .then(() => {
+        dispatch(InformalProfileDetailsRequest());
+      })
+      .catch(err => {
+        console.log(err);
+        showErrorAlert('Please connect to internet');
+      });
+  }
 
   useEffect(() => {
     checkLocationPermission();
     checkCameraPermission();
+
     const checkPermission = async () => {
       const status = await Camera.getCameraPermissionStatus();
 
@@ -57,7 +78,41 @@ const InformalHome = props => {
     checkPermission();
   }, [isFocused]);
 
-  useEffect(() => {}, [isFocused]);
+  // Get current location
+  const getCurrentLocation = (status, workerId) => {
+    setLoading(true);
+
+    Geolocation.getCurrentPosition(
+      position => {
+        props?.navigation.navigate('InformalAttendance', {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          status: status,
+          pagename: 'InformalHome',
+          workerId: workerId,
+        });
+        setLoading(false);
+      },
+      error => {
+        setLoading(false);
+
+        console.log('Location error:', error);
+        Alert.alert(
+          'Location Error',
+          'Unable to get current location. Please ensure location services are enabled.',
+        );
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 60000,
+        maximumAge: 10000,
+      },
+    );
+  };
+
+  const handleClickPhoto = (status, workerId) => {
+    getCurrentLocation(status, workerId);
+  };
 
   // Check and request location permission
   const checkLocationPermission = async () => {
@@ -103,7 +158,6 @@ const InformalHome = props => {
         return false;
       }
     } else {
-      // For iOS, you might need to check differently
       setLocationPermission('granted');
       return true;
     }
@@ -167,67 +221,114 @@ const InformalHome = props => {
   };
 
   // Handle clock in/out functionality
-  const handleClockInOut = (workerId) => {
-    setWorkersData(prevData =>
-      prevData.map(worker =>
-        worker.id === workerId
-          ? {
-              ...worker,
-              status: worker.status === 'clocked-in' ? 'clocked-out' : 'clocked-in'
-            }
-          : worker
-      )
-    );
+  const handleClockInOut = (status, workerId) => {
+    handleClickPhoto(status, workerId);
   };
 
-  // Handle absent functionality
-  const handleAbsent = (workerId) => {
-    setWorkersData(prevData =>
-      prevData.map(worker =>
-        worker.id === workerId
-          ? { ...worker, status: 'absent' }
-          : worker
-      )
-    );
+  useEffect(() => {
+    userProfileDetails();
+    connectionrequest()
+      .then(() => {
+        dispatch(informalUserDetailsRequest());
+      })
+      .catch(err => {
+        console.log(err);
+        showErrorAlert('Please connect to internet');
+      });
+  }, [isFocused]);
+
+  // Helper function to determine worker status
+  const getWorkerStatus = item => {
+    if (item.check_in && item.check_out) {
+      return 'completed'; // Both clock-in and clock-out done
+    } else if (item.check_in && !item.check_out) {
+      return 'clocked-in'; // Only clock-in done
+    } else {
+      return 'pending'; // No clock-in yet
+    }
   };
 
   // Render worker item
-  const renderWorkerItem = ({ item }) => (
-    <View style={styles.workerItem}>
-      <Text style={styles.workerName}>{item.name}</Text>
-      
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[
-            styles.clockButton,
-            item.status === 'clocked-in' ? styles.clockOutButton : styles.clockInButton
-          ]}
-          onPress={() => handleClockInOut(item.id)}
-          disabled={item.status === 'absent'}
-        >
-          <Text style={styles.buttonText}>
-            {item.status === 'clocked-in' ? 'Clock-Out' : 'Clock-In'}
-          </Text>
-        </TouchableOpacity>
+  const renderWorkerItem = ({ item, index }) => {
+    const workerStatus = getWorkerStatus(item);
+    const isCompleted = workerStatus === 'completed';
+    const isClockedIn = workerStatus === 'clocked-in';
+    const isPending = workerStatus === 'pending';
 
-        <TouchableOpacity
-          style={[
-            styles.absentButton,
-            item.status === 'absent' && styles.absentActiveButton
-          ]}
-          onPress={() => handleAbsent(item.id)}
-        >
-          <Text style={[
-            styles.buttonText,
-            item.status === 'absent' && styles.absentActiveText
-          ]}>
-            Absent
-          </Text>
-        </TouchableOpacity>
+    return (
+      <View
+        key={item.id}
+        style={[styles.workerItem, isCompleted && styles.workerItemCompleted]}
+      >
+        <View style={styles.workerInfoContainer}>
+          <Text style={styles.workerName}>{item.name}</Text>
+
+          {/* Display clock-in and clock-out times */}
+          <View style={styles.timeContainer}>
+            {item.check_in && (
+              <Text style={styles.timeText}>In: {item.check_in}</Text>
+            )}
+            {item.check_out && (
+              <Text style={styles.timeText}>Out: {item.check_out}</Text>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.buttonContainer}>
+          {isCompleted ? (
+            // Show completed status when both clock-in and clock-out are done
+            <View style={styles.completedBadge}>
+              <Text style={styles.completedText}>✓ Completed</Text>
+            </View>
+          ) : (
+            // Show appropriate button based on status
+            <TouchableOpacity
+              style={[
+                styles.clockButton,
+                isClockedIn ? styles.clockOutButton : styles.clockInButton,
+                isCompleted && styles.disabledButton,
+              ]}
+              onPress={() =>
+                handleClockInOut(item.attendance_status_check, item.id)
+              }
+              disabled={isCompleted}
+            >
+              <Text style={styles.buttonText}>
+                {isClockedIn ? 'Clock-Out' : 'Clock-In'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
+  if (status == '' || InformalProfileReducer.status != status) {
+    switch (InformalProfileReducer.status) {
+      case 'InformalProfile/informalUserDetailsRequest':
+        status = InformalProfileReducer.status;
+        break;
+      case 'InformalProfile/informalUserDetailsSuccess':
+        status = InformalProfileReducer.status;
+        setWorkersData(InformalProfileReducer?.informaluserDetailsResponse);
+        break;
+      case 'InformalProfile/informalUserDetailsFailure':
+        status = InformalProfileReducer.status;
+        setWorkersData([]);
+        break;
 
+      case 'InformalProfile/InformalProfileDetailsRequest':
+        status = InformalProfileReducer.status;
+        break;
+      case 'InformalProfile/InformalProfileDetailsSuccess':
+        status = InformalProfileReducer.status;
+        setProfileData(InformalProfileReducer?.InformalProfileDetailsResponse);
+        break;
+      case 'InformalProfile/InformalProfileDetailsFailure':
+        status = InformalProfileReducer.status;
+
+        break;
+    }
+  }
   return (
     <ImageBackground source={Images.greenbg} style={styles.mainContainer}>
       <Header
@@ -242,21 +343,39 @@ const InformalHome = props => {
         }}
       />
 
-      <Loader visible={false} loadingText={loadingMessage || 'Loading...'} />
+      <Loader visible={loading} loadingText={loadingMessage || 'Loading...'} />
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* User Info Section */}
         <View style={styles.userInfoContainer}>
           <View style={styles.userTextContainer}>
-            <Text style={styles.userName}>Baidyabati Children Park</Text>
+            <Text style={styles.userName}>
+              {profileData?.park_details?.project_code}
+            </Text>
 
+            <Text
+              style={[
+                styles.userAddress,
+                { color: Colors.lightBlue, textTransform: 'capitalize' },
+              ]}
+            >
+              {profileData?.park_details?.project_type}
+            </Text>
+            <Text
+              style={[
+                styles.userAddress,
+                { color: Colors.white, textTransform: 'capitalize' },
+              ]}
+            >
+              {profileData?.district_name}
+            </Text>
             <Text
               style={[
                 styles.userAddress,
                 { color: Colors.orange, textTransform: 'capitalize' },
               ]}
             >
-              Baidyabati
+              {profileData?.municipality_name}
             </Text>
 
             <Text style={styles.whiteText}>
@@ -287,20 +406,27 @@ const InformalHome = props => {
               </View>
             )}
           </View>
+          {/* <View style={styles.imageContainer}> */}
+          <Image
+            resizeMode="contain"
+            style={styles.userImagePlaceholder}
+            source={Images.wb_logo}
+          />
         </View>
+        {/* </View> */}
 
         {/* Workers List Section */}
         <View style={styles.workersListContainer}>
           <Text style={styles.workersListHeading}>List of Workers</Text>
-          
-          <FlatList
-            data={workersData}
-            keyExtractor={(item) => item.id}
-            renderItem={renderWorkerItem}
-            showsVerticalScrollIndicator={false}
-            scrollEnabled={false} // Disable scrolling since we're inside ScrollView
-            contentContainerStyle={styles.flatListContainer}
-          />
+
+          <View style={styles.flatListContainer}>
+            <FlatList
+              data={workersData}
+              keyExtractor={item => item.id.toString()}
+              renderItem={renderWorkerItem}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
         </View>
       </ScrollView>
     </ImageBackground>
@@ -314,9 +440,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.white,
   },
-
+  imageContainer: {
+    borderWidth: normalize(2),
+    borderRadius: normalize(15),
+    borderColor: Colors.skyblue,
+    height: normalize(100),
+    width: normalize(90),
+    overflow: 'hidden',
+  },
+  userImage: {
+    height: normalize(100),
+    width: normalize(90),
+  },
+  userImagePlaceholder: {
+    alignSelf: 'center',
+    height: normalize(80),
+    width: normalize(70),
+  },
   userInfoContainer: {
-    alignSelf: "center",
+    alignSelf: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     width: '95%',
     padding: normalize(10),
     backgroundColor: Colors.bgColor,
@@ -330,7 +474,7 @@ const styles = StyleSheet.create({
   userName: {
     fontFamily: Fonts.MulishExtraBold,
     fontSize: 20,
-    color: Colors.white
+    color: Colors.white,
   },
   phone: {
     fontFamily: Fonts.MulishSemiBold,
@@ -366,7 +510,7 @@ const styles = StyleSheet.create({
     color: Colors.green,
   },
 
-  // New styles for permission warnings
+  // Permission warning styles
   permissionWarning: {
     marginTop: normalize(10),
     padding: normalize(8),
@@ -390,7 +534,7 @@ const styles = StyleSheet.create({
 
   // Workers List Styles
   workersListContainer: {
-    alignSelf: "center",
+    alignSelf: 'center',
     width: '95%',
     backgroundColor: Colors.bgColor,
     borderRadius: normalize(8),
@@ -405,10 +549,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   flatListContainer: {
-    paddingBottom: normalize(10),
+    paddingBottom: normalize(100),
   },
   workerItem: {
-    width:'100%',
+    width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -426,11 +570,29 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 1.41,
   },
+  workerItemCompleted: {
+    backgroundColor: '#E8F5E9',
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
+  },
+  workerInfoContainer: {
+    flex: 1,
+    marginRight: normalize(10),
+  },
   workerName: {
     fontFamily: Fonts.MulishSemiBold,
     fontSize: 16,
     color: Colors.black,
-    flex: 1,
+    marginBottom: normalize(4),
+  },
+  timeContainer: {
+    marginTop: normalize(2),
+  },
+  timeText: {
+    fontFamily: Fonts.MulishRegular,
+    fontSize: 12,
+    color: '#666',
+    marginTop: normalize(2),
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -449,23 +611,25 @@ const styles = StyleSheet.create({
   clockOutButton: {
     backgroundColor: '#FFC107',
   },
-  absentButton: {
+  disabledButton: {
+    backgroundColor: '#CCC',
+    opacity: 0.6,
+  },
+  completedBadge: {
     paddingHorizontal: normalize(12),
     paddingVertical: normalize(8),
     borderRadius: normalize(6),
-    minWidth: normalize(70),
+    backgroundColor: '#4CAF50',
     alignItems: 'center',
-    backgroundColor: '#6C757D',
   },
-  absentActiveButton: {
-    backgroundColor: '#DC3545',
-  },
-  buttonText: {
+  completedText: {
     fontFamily: Fonts.MulishSemiBold,
     fontSize: 14,
     color: Colors.white,
   },
-  absentActiveText: {
+  buttonText: {
+    fontFamily: Fonts.MulishSemiBold,
+    fontSize: 14,
     color: Colors.white,
   },
 });

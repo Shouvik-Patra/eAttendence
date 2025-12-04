@@ -8,7 +8,6 @@ export const getDeviceToken = () => {
         .getToken()
         .then(value => {
           if (value) {
-            console.log("Fire",value)
             resolve(value);
           } else {
             reject('Token could not be generated');

@@ -50,7 +50,6 @@ const Home = props => {
   const [locationPermission, setLocationPermission] = useState(null);
   const [cameraPermission, setCameraPermission] = useState(null);
 
-
   useEffect(() => {
     // if user is inactive then it will auto logout
     if (ProfileReducer?.userDetailsResponse?.status === 'inactive') {

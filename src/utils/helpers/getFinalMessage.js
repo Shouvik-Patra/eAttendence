@@ -12,7 +12,6 @@ async function getFinalMessage(key,AuthReducer) {
   // const AuthReducer = useSelector(state => state.AuthReducer); 
   // const reducerVal = useSelector(state => state.AuthReducer)
 
-  console.log(AuthReducer?.localizationData, ' AuthReducer?.localizationData?.data');
   try {
     const lang = await AsyncStorage.getItem(constants.LANGUAGE); 
     const filterData = AuthReducer?.localizationData?.find(
