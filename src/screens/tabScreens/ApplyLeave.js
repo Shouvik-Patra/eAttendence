@@ -280,7 +280,9 @@ const ApplyLeave = () => {
     } else if (reason == '') {
       showErrorAlert('Please describe reason for leave.');
     } else if (
-      (selectedLeaveTypeId == 11 || selectedLeaveTypeId == 13) &&
+      (selectedLeaveTypeId == 11 ||
+        selectedLeaveTypeId == 12 ||
+        selectedLeaveTypeId == 13) &&
       !supportingDocument
     ) {
       showErrorAlert('Please upload supporting document.');
@@ -385,34 +387,7 @@ const ApplyLeave = () => {
             source={Images.tab2}
           />
         </TouchableOpacity>
-
-        {/* Start Date Section */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Start Date *</Text>
-          <TouchableOpacity
-            style={styles.dateButton}
-            onPress={() => setShowStartDatePicker(true)}
-          >
-            <Text style={styles.dateText}>
-              {formatDateForDisplay(startDate)}
-            </Text>
-            <Text style={styles.dateIcon}>📅</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* End Date Section */}
-        <View style={styles.section}>
-          <Text style={styles.label}>End Date *</Text>
-          <TouchableOpacity
-            style={styles.dateButton}
-            onPress={() => setShowEndDatePicker(true)}
-          >
-            <Text style={styles.dateText}>{formatDateForDisplay(endDate)}</Text>
-            <Text style={styles.dateIcon}>📅</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Leave Type Section */}
+  {/* Leave Type Section */}
         <View style={styles.section}>
           <Text style={styles.label}>Leave Type *</Text>
           <Dropdown
@@ -446,6 +421,33 @@ const ApplyLeave = () => {
             renderLeftIcon={() => <Text style={styles.icon}>🗓️</Text>}
           />
         </View>
+        {/* Start Date Section */}
+        <View style={styles.section}>
+          <Text style={styles.label}>Start Date *</Text>
+          <TouchableOpacity
+            style={styles.dateButton}
+            onPress={() => setShowStartDatePicker(true)}
+          >
+            <Text style={styles.dateText}>
+              {formatDateForDisplay(startDate)}
+            </Text>
+            <Text style={styles.dateIcon}>📅</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* End Date Section */}
+        <View style={styles.section}>
+          <Text style={styles.label}>End Date *</Text>
+          <TouchableOpacity
+            style={styles.dateButton}
+            onPress={() => setShowEndDatePicker(true)}
+          >
+            <Text style={styles.dateText}>{formatDateForDisplay(endDate)}</Text>
+            <Text style={styles.dateIcon}>📅</Text>
+          </TouchableOpacity>
+        </View>
+
+      
         <MessageModal
           isVisible={showMessageModal}
           onClose={() => {
@@ -559,7 +561,7 @@ const ApplyLeave = () => {
         mode="date"
         onConfirm={handleStartDateConfirm}
         onCancel={handleStartDateCancel}
-        minimumDate={new Date()}
+        minimumDate={selectedLeaveTypeId === 12 ? undefined : new Date()}
         title="Select Start Date"
         confirmText="Confirm"
         cancelText="Cancel"

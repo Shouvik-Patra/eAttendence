@@ -51,12 +51,12 @@ export function* informaluUserDetailsSaga(action) {
     console.log('error>>>>>>>>>>', error);
 
     yield put(informalUserDetailsFailure(error?.response?.data));
-    // if (error?.response?.data?.meta?.message == 'Token is invalid or expired') {
-    //   yield call(AsyncStorage.removeItem, constants.TOKEN);
-    //   yield call(AsyncStorage.removeItem, constants.LOGIN_TYPE);
-    //   yield put(getTokenSuccess(null));
-    //   yield put(logoutSuccess());
-    // }
+    if (error?.response?.data?.meta?.message == 'Token is invalid or expired') {
+      yield call(AsyncStorage.removeItem, constants.TOKEN);
+      yield call(AsyncStorage.removeItem, constants.LOGIN_TYPE);
+      yield put(getTokenSuccess(null));
+      yield put(logoutSuccess());
+    }
   }
 }
 
@@ -145,12 +145,12 @@ export function* informaluProfileDetailsSaga(action) {
     console.log('error>>>>>>>>>>', error);
 
     yield put(informalUserDetailsFailure(error?.response?.data));
-    // if (error?.response?.data?.meta?.message == 'Token is invalid or expired') {
-    //   yield call(AsyncStorage.removeItem, constants.TOKEN);
-    //   yield call(AsyncStorage.removeItem, constants.LOGIN_TYPE);
-    //   yield put(getTokenSuccess(null));
-    //   yield put(logoutSuccess());
-    // }
+    if (error?.response?.data?.meta?.message == 'Token is invalid or expired') {
+      yield call(AsyncStorage.removeItem, constants.TOKEN);
+      yield call(AsyncStorage.removeItem, constants.LOGIN_TYPE);
+      yield put(getTokenSuccess(null));
+      yield put(logoutSuccess());
+    }
   }
 }
 const watchFunction = [

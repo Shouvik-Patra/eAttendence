@@ -135,19 +135,19 @@ const Leavelog = () => {
         <Text style={styles.lebelValue}>{formatDate(item?.end_date)}</Text>
       </View>
       <View style={styles.row1}>
-        <Text style={styles.lebel}>Applyed on : </Text>
+        <Text style={styles.lebel}>Applied on : </Text>
         <Text style={styles.lebelValue}>{formatDate(item?.applied_at)}</Text>
       </View>
       <View style={[styles.row1, { width: '75%', alignItems: 'baseline' }]}>
         <Text style={styles.lebel}>Leave Reason : </Text>
         <Text style={styles.lebelValue}>{item?.reason}</Text>
       </View>
-      {item?.status === 'rejected' && (
+      
         <View style={[styles.row1, { width: '75%', alignItems: 'baseline' }]}>
-          <Text style={styles.lebel}>Reject Reason : </Text>
+          <Text style={styles.lebel}>Admin Remarks : </Text>
           <Text style={styles.lebelValue}>{item?.leaves_status}</Text>
         </View>
-      )}
+     
       {item?.status === 'pending' && (
         <TouchableOpacity
           onPress={() => {
