@@ -58,6 +58,8 @@ import {
   userActivitySuccess,
   resetPasswordFailure,
   resetPasswordSuccess,
+  flashMessageSuccess,
+  flashMessageFailure,
 } from '../reducer/ProfileReducer';
 import showErrorAlert from '../../utils/helpers/Toast';
 import {
@@ -70,6 +72,32 @@ import ShowMessage from '../../utils/helpers/ShowMessage';
 let getItem = state => state.AuthReducer;
 
 //User Profile Details
+
+export function* flashMessageSaga(action) {
+  let items = yield select(getItem);
+
+  let header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: items?.getTokenResponse,
+  };
+  try {
+    let response = yield call(getApi, 'get-flash-message', header);
+
+    if (response?.data?.meta?.code == 200) {
+      yield put(flashMessageSuccess(response?.data?.data));
+    } else {
+      yield put(flashMessageFailure(response?.data));
+      showErrorAlert(response?.data?.meta?.message);
+    }
+  } catch (error) {
+    console.log('error>>>>>>>>>>', error);
+
+    yield put(flashMessageFailure(error?.response?.data));
+
+  }
+}
+
 
 export function* userDetailsSaga(action) {
   let items = yield select(getItem);
@@ -751,6 +779,9 @@ export function* resetPasswordSaga(action) {
   }
 }
 const watchFunction = [
+  (function* () {
+    yield takeLatest('Profile/flashMessageRequest', flashMessageSaga);
+  })(),
   (function* () {
     yield takeLatest('Profile/userDetailsRequest', userDetailsSaga);
   })(),

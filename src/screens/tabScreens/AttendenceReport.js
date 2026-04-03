@@ -39,7 +39,6 @@ const AttendenceReport = () => {
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [activityData, setActivityData] = useState(null);
 
-
   const onPressDate = date => {
     connectionrequest()
       .then(() => {
@@ -142,14 +141,23 @@ const AttendenceReport = () => {
 
     const sortedDates = Object.keys(calendarData).sort();
 
-    return sortedDates.map(date => ({
-      id: date,
-      date: date,
-      formattedDate: formatCalendarDate(date),
-      status: calendarData[date],
-      backgroundColor: getStatusColor(calendarData[date]),
-      badgeColor: getStatusBadgeColor(calendarData[date]),
-    }));
+   return sortedDates.map(date => {
+  const entry = calendarData[date];
+
+  // Handle both old format (string) and new format (object)
+  const statusValue = typeof entry === 'object' ? entry.status : entry;
+  const description = typeof entry === 'object' ? entry.description : '';
+
+  return {
+    id: date,
+    date: date,
+    formattedDate: formatCalendarDate(date),
+    status: statusValue,
+    description: statusValue === 'holiday' ? description : '', // only for holidays
+    backgroundColor: getStatusColor(statusValue),
+    badgeColor: getStatusBadgeColor(statusValue),
+  };
+});
   };
 
   const renderSummaryCard = (title, value, icon, color) => (
@@ -265,205 +273,287 @@ const AttendenceReport = () => {
     </Modal>
   );
 
-  const renderActivityModal = () => {
-    if (!activityData) return null;
+const renderActivityModal = () => {
+  if (!activityData) return null;
 
-    const { attendance, tracking } = activityData;
+  const { attendance, tracking } = activityData;
 
-    return (
-      <Modal
-        isVisible={showActivityModal}
-        onBackdropPress={() => setShowActivityModal(false)}
-        style={styles.modalContainer}
-      >
-        <View style={styles.activityModalContent}>
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            nestedScrollEnabled={true}
-          >
-            {/* Header */}
-            <View style={styles.activityModalHeader}>
-              <Text style={styles.activityModalTitle}>
-                Daily Activity Details
-              </Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setShowActivityModal(false)}
+  const formatDuration = val =>
+    val ? val.replace(' hr', 'h').replace(' min', 'm') : '-';
+
+  return (
+    <Modal
+      isVisible={showActivityModal}
+      onBackdropPress={() => setShowActivityModal(false)}
+      style={styles.modalContainer}
+    >
+      <View style={styles.activityModalContent}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          nestedScrollEnabled={true}
+        >
+          {/* Header */}
+          <View style={styles.activityModalHeader}>
+            <Text style={styles.activityModalTitle}>
+              Daily Activity Details
+            </Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowActivityModal(false)}
+            >
+              <Text style={styles.closeButtonText}>×</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Employee Info */}
+          <View style={styles.employeeSection}>
+            <Text style={styles.employeeName}>
+              {ProfileReducer?.userDetailsResponse?.name}
+            </Text>
+            <Text style={styles.employeeDate}>
+              {moment(attendance?.date).format('dddd, MMMM DD, YYYY')}
+            </Text>
+
+            {attendance?.status && (
+              <View
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor: getStatusBadgeColor(attendance?.status),
+                    alignSelf: 'center',
+                    marginTop: normalize(8),
+                  },
+                ]}
               >
-                <Text style={styles.closeButtonText}>×</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Employee Info */}
-            <View style={styles.employeeSection}>
-              <Text style={styles.employeeName}>
-                {ProfileReducer?.userDetailsResponse?.name}
-              </Text>
-              <Text style={styles.employeeDate}>
-                {moment(attendance?.date).format('dddd, MMMM DD, YYYY')}
-              </Text>
-              {attendance?.status && (
-                <View
-                  style={[
-                    styles.statusBadge,
-                    {
-                      backgroundColor: getStatusBadgeColor(attendance?.status),
-                      alignSelf: 'center',
-                      marginTop: normalize(8),
-                    },
-                  ]}
-                >
-                  <Text style={styles.statusText}>
-                    {attendance?.status?.charAt(0).toUpperCase() +
-                      attendance?.status?.slice(1)}
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            {/* Attendance Details */}
-            <View style={styles.attendanceSection}>
-              <Text style={styles.sectionTitle}>📍 Attendance Details</Text>
-
-              {/* Check In */}
-              <View style={styles.checkInOutContainer}>
-                <View style={styles.checkInOut}>
-                  <View style={styles.checkInOutHeader}>
-                    <Text style={styles.checkInOutTitle}>Check In</Text>
-                    <Text style={styles.checkInOutTime}>
-                      {formatTime(attendance?.check_in_time)}
-                    </Text>
-                  </View>
-                  {/* <Text style={styles.addressText}>
-                    📍 {attendance?.check_in_address || 'Address not available'}
-                  </Text> */}
-                  {attendance?.check_in_photo && (
-                    <Image
-                      source={{ uri: attendance.check_in_photo }}
-                      style={styles.attendancePhoto}
-                      resizeMode="cover"
-                    />
-                  )}
-                </View>
-
-                {/* Check Out */}
-                <View style={styles.checkInOut}>
-                  <View style={styles.checkInOutHeader}>
-                    <Text style={styles.checkInOutTitle}>Check Out</Text>
-                    <Text style={styles.checkInOutTime}>
-                      {formatTime(attendance?.check_out_time)}
-                    </Text>
-                  </View>
-                  {/* <Text style={styles.addressText}>
-                    📍 {attendance?.check_out_address || 'Not checked out yet'}
-                  </Text> */}
-                  {attendance?.check_out_photo && (
-                    <Image
-                      source={{ uri: attendance.check_out_photo }}
-                      style={styles.attendancePhoto}
-                      resizeMode="cover"
-                    />
-                  )}
-                </View>
-              </View>
-
-              {attendance?.remarks && (
-                <View style={styles.remarksContainer}>
-                  <Text style={styles.remarksLabel}>Remarks:</Text>
-                  <Text style={styles.remarksText}>{attendance.remarks}</Text>
-                </View>
-              )}
-            </View>
-
-            {/* Tracking Details */}
-            {tracking && tracking.length > 0 && (
-              <View style={styles.trackingSection}>
-                <Text style={styles.sectionTitle}>🚶‍♂️ Activity Tracking</Text>
-                {tracking.map((track, index) => (
-                  <View key={index} style={styles.trackingItem}>
-                    <View style={styles.trackingHeader}>
-                      <Text style={styles.trackingNumber}>
-                        Activity {index + 1}
-                      </Text>
-                      <View
-                        style={[
-                          styles.trackingStatusBadge,
-                          {
-                            backgroundColor:
-                              track.status === 'complete'
-                                ? '#4CAF50'
-                                : track.status === 'pending'
-                                ? '#2196F3'
-                                : '#FF9800',
-                          },
-                        ]}
-                      >
-                        <Text style={styles.trackingStatusText}>
-                          {track.status}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.trackingDetails}>
-                      <View style={styles.trackingTimeContainer}>
-                        <Text style={styles.trackingTimeLabel}>Start:</Text>
-                        <Text style={styles.trackingTimeValue}>
-                          {formatTime(track.start_time)}
-                        </Text>
-                      </View>
-                      <Text style={styles.trackingAddress}>
-                        📍 {track.start_latitude}, {track.start_longitude}
-                      </Text>
-
-                      <View style={styles.trackingTimeContainer}>
-                        <Text style={styles.trackingTimeLabel}>End:</Text>
-                        <Text style={styles.trackingTimeValue}>
-                          {formatTime(track.end_time)}
-                        </Text>
-                      </View>
-                      <Text style={styles.trackingAddress}>
-                        📍 {track.end_latitude}, {track.end_longitude}
-                      </Text>
-
-                      {track.photo && (
-                        <Image
-                          source={{ uri: track.photo }}
-                          style={styles.trackingPhoto}
-                          resizeMode="cover"
-                        />
-                      )}
-                    </View>
-                  </View>
-                ))}
+                <Text style={styles.statusText}>
+                  {attendance?.status?.charAt(0).toUpperCase() +
+                    attendance?.status?.slice(1)}
+                </Text>
               </View>
             )}
-          </ScrollView>
-        </View>
-      </Modal>
-    );
-  };
+          </View>
 
-  const renderCalendarItem = ({ item }) => (
-    <TouchableOpacity
-      style={[styles.tableRow, { backgroundColor: item.backgroundColor }]}
-      onPress={() => {
-        onPressDate(item?.id);
-      }}
-    >
-      <View style={styles.dateColumn}>
-        <Text style={styles.dateText}>{item.formattedDate}</Text>
+          {/* Office Timing */}
+          {attendance?.office_timing && (
+            <View style={styles.officeTimingBanner}>
+              <Text style={styles.officeTimingIcon}>🏢</Text>
+              <Text style={styles.officeTimingLabel}>Office Hours</Text>
+              <Text style={styles.officeTimingValue}>
+                {attendance?.office_timing}
+              </Text>
+            </View>
+          )}
+
+          {/* ✅ NEW: Work Summary */}
+          {(attendance?.total_worked ||
+            attendance?.extra_duty ||
+            attendance?.short_duty) && (
+            <View style={styles.workSummaryContainer}>
+              <Text style={styles.workSummaryTitle}>⏱ Work Summary</Text>
+
+              <View style={styles.workSummaryRow}>
+                <View style={styles.workSummaryItem}>
+                  <Text style={styles.workSummaryLabel}>Worked</Text>
+                  <Text style={styles.workSummaryValue}>
+                    {formatDuration(attendance?.total_worked)}
+                  </Text>
+                </View>
+
+                <View style={styles.workSummaryItem}>
+                  <Text style={styles.workSummaryLabel}>Extra</Text>
+                  <Text
+                    style={[
+                      styles.workSummaryValue,
+                      { color: '#4CAF50' },
+                    ]}
+                  >
+                    +{formatDuration(attendance?.extra_duty || '0 min')}
+                  </Text>
+                </View>
+
+                <View style={styles.workSummaryItem}>
+                  <Text style={styles.workSummaryLabel}>Short</Text>
+                  <Text
+                    style={[
+                      styles.workSummaryValue,
+                      { color: '#F44336' },
+                    ]}
+                  >
+                    -{formatDuration(attendance?.short_duty || '0 min')}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Attendance Details */}
+          <View style={styles.attendanceSection}>
+            <Text style={styles.sectionTitle}>📍 Attendance Details</Text>
+
+            <View style={styles.checkInOutContainer}>
+              {/* Check In */}
+              <View style={styles.checkInOut}>
+                <View style={styles.checkInOutHeader}>
+                  <Text style={styles.checkInOutTitle}>Check In</Text>
+                  <Text style={styles.checkInOutTime}>
+                    {formatTime(attendance?.check_in_time)}
+                  </Text>
+
+                  {attendance?.late_clock_in && (
+                    <View style={styles.infoTag}>
+                      <Text style={styles.infoTagLabel}>🕐 Late by</Text>
+                      <Text
+                        style={[
+                          styles.infoTagValue,
+                          { color: '#E53935' },
+                        ]}
+                      >
+                        {attendance?.late_clock_in}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                {attendance?.check_in_photo && (
+                  <Image
+                    source={{ uri: attendance.check_in_photo }}
+                    style={styles.attendancePhoto}
+                    resizeMode="stretch"
+                  />
+                )}
+              </View>
+
+              {/* Check Out */}
+              <View style={styles.checkInOut}>
+                <View style={styles.checkInOutHeader}>
+                  <Text style={styles.checkInOutTitle}>Check Out</Text>
+                  <Text style={styles.checkInOutTime}>
+                    {formatTime(attendance?.check_out_time)}
+                  </Text>
+
+                  {attendance?.early_clock_out && (
+                    <View style={styles.infoTag}>
+                      <Text style={styles.infoTagLabel}>⏰ Early by</Text>
+                      <Text
+                        style={[
+                          styles.infoTagValue,
+                          { color: '#F57C00' },
+                        ]}
+                      >
+                        {attendance?.early_clock_out}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                {attendance?.check_out_photo && (
+                  <Image
+                    source={{ uri: attendance.check_out_photo }}
+                    style={styles.attendancePhoto}
+                    resizeMode="stretch"
+                  />
+                )}
+              </View>
+            </View>
+
+            {attendance?.remarks && (
+              <View style={styles.remarksContainer}>
+                <Text style={styles.remarksLabel}>Remarks:</Text>
+                <Text style={styles.remarksText}>
+                  {attendance.remarks}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Tracking */}
+          {tracking && tracking.length > 0 && (
+            <View style={styles.trackingSection}>
+              <Text style={styles.sectionTitle}>🚶‍♂️ Activity Tracking</Text>
+
+              {tracking.map((track, index) => (
+                <View key={index} style={styles.trackingItem}>
+                  <View style={styles.trackingHeader}>
+                    <Text style={styles.trackingNumber}>
+                      Activity {index + 1}
+                    </Text>
+
+                    <View
+                      style={[
+                        styles.trackingStatusBadge,
+                        {
+                          backgroundColor:
+                            track.status === 'complete'
+                              ? '#4CAF50'
+                              : track.status === 'pending'
+                              ? '#2196F3'
+                              : '#FF9800',
+                        },
+                      ]}
+                    >
+                      <Text style={styles.trackingStatusText}>
+                        {track.status}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.trackingDetails}>
+                    <Text style={styles.trackingTimeValue}>
+                      Start: {formatTime(track.start_time)}
+                    </Text>
+                    <Text style={styles.trackingAddress}>
+                      📍 {track.start_latitude}, {track.start_longitude}
+                    </Text>
+
+                    <Text style={styles.trackingTimeValue}>
+                      End: {formatTime(track.end_time)}
+                    </Text>
+                    <Text style={styles.trackingAddress}>
+                      📍 {track.end_latitude}, {track.end_longitude}
+                    </Text>
+
+                    {track.photo && (
+                      <Image
+                        source={{ uri: track.photo }}
+                        style={styles.trackingPhoto}
+                        resizeMode="stretch"
+                      />
+                    )}
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
       </View>
-      <View style={styles.statusColumn}>
-        <View
-          style={[styles.statusBadge, { backgroundColor: item.badgeColor }]}
-        >
-          <Text style={styles.statusText}>
-            {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+    </Modal>
   );
+};
+
+ const renderCalendarItem = ({ item }) => (
+  <TouchableOpacity
+    style={[styles.tableRow, { backgroundColor: item.backgroundColor }]}
+    onPress={() => {
+      onPressDate(item?.id);
+    }}
+  >
+    <View style={styles.dateColumn}>
+      <Text style={styles.dateText}>{item.formattedDate}</Text>
+      {item.status === 'holiday' && item.description ? (
+        <Text style={styles.holidayDescription}>{item.description}</Text>
+    ) : null} 
+    </View>
+    <View style={styles.statusColumn}>
+      <View
+        style={[styles.statusBadge, { backgroundColor: item.badgeColor }]}
+      >
+        <Text style={styles.statusText}>
+          {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+        </Text>
+      </View>
+    </View>
+  </TouchableOpacity>
+);
 
   const renderTableHeader = () => (
     <View style={styles.tableHeader}>
@@ -684,6 +774,43 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.MulishSemiBold,
     color: Colors.black,
   },
+  workSummaryContainer: {
+  backgroundColor: '#F5F7FF',
+  marginHorizontal: normalize(20),
+  marginTop: normalize(12),
+  borderRadius: normalize(12),
+  padding: normalize(14),
+},
+
+workSummaryTitle: {
+  fontSize: 14,
+  fontFamily: Fonts.MulishBold,
+  color: Colors.black,
+  marginBottom: normalize(10),
+},
+
+workSummaryRow: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+},
+
+workSummaryItem: {
+  flex: 1,
+  alignItems: 'center',
+},
+
+workSummaryLabel: {
+  fontSize: 12,
+  fontFamily: Fonts.MulishRegular,
+  color: Colors.gray || '#666',
+},
+
+workSummaryValue: {
+  fontSize: 14,
+  fontFamily: Fonts.MulishBold,
+  color: Colors.blue || '#2196F3',
+  marginTop: normalize(4),
+},
   // Calendar Table Styles
   tableContainer: {
     backgroundColor: Colors.white,
@@ -1156,5 +1283,59 @@ const styles = StyleSheet.create({
     paddingVertical: normalize(4),
     borderRadius: normalize(12),
   },
-  trackingStatus: {},
+  // --- Add these to your styles ---
+
+officeTimingBanner: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#EEF2FF',
+  marginHorizontal: normalize(20),
+  marginTop: normalize(12),
+  borderRadius: normalize(10),
+  paddingHorizontal: normalize(14),
+  paddingVertical: normalize(10),
+  borderLeftWidth: 4,
+  borderLeftColor: '#1565C0',
+},
+officeTimingIcon: {
+  fontSize: 16,
+  marginRight: normalize(6),
+},
+officeTimingLabel: {
+  fontSize: 13,
+  fontFamily: Fonts.MulishSemiBold,
+  color: '#1565C0',
+  flex: 1,
+},
+officeTimingValue: {
+  fontSize: 13,
+  fontFamily: Fonts.MulishBold,
+  color: '#1565C0',
+},
+infoTag: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  borderRadius: normalize(6),
+  backgroundColor: '#FFF3F3',
+  paddingHorizontal: normalize(6),
+  paddingVertical: normalize(4),
+  marginTop: normalize(6),
+  width: '110%',
+},
+infoTagLabel: {
+  fontSize: 11,
+  fontFamily: Fonts.MulishRegular,
+  color: '#555',
+},
+infoTagValue: {
+  fontSize: 11,
+  fontFamily: Fonts.MulishBold,
+},
+holidayDescription: {
+  fontSize: 12,
+  fontFamily: Fonts.MulishSemiBold,
+  color: '#b52c0a',
+  marginTop: normalize(2),
+},
 });

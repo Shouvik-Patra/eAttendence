@@ -29,12 +29,24 @@ const initialState = {
   remainingLeavesResponse: {},
   userActivityResponse: {},
   resetPasswordResponse: {},
+  flashMessageResponse: {},
 };
 
 const ProfileSlice = createSlice({
   name: 'Profile',
   initialState,
   reducers: {
+    flashMessageRequest(state, action) {
+      state.status = action.type;
+    },
+    flashMessageSuccess(state, action) {
+      state.flashMessageResponse = action.payload;
+      state.status = action.type;
+    },
+    flashMessageFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
     userDetailsRequest(state, action) {
       state.status = action.type;
     },
@@ -334,6 +346,10 @@ const ProfileSlice = createSlice({
 });
 
 export const {
+  flashMessageRequest,
+  flashMessageSuccess,
+  flashMessageFailure,
+
   userDetailsRequest,
   userDetailsSuccess,
   userDetailsFailure,

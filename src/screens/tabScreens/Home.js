@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
   Linking,
+  Switch,
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import Header from '../../components/Header';
@@ -24,6 +25,7 @@ import Loader from '../../utils/helpers/Loader';
 import connectionrequest from '../../utils/helpers/NetInfo';
 import {
   attendenceStatusRequest,
+  flashMessageRequest,
   userDetailsRequest,
 } from '../../redux/reducer/ProfileReducer';
 import { useDispatch, useSelector } from 'react-redux';
@@ -41,6 +43,10 @@ const Home = props => {
 
   const isFocused = useIsFocused();
   const [addTaskModal, setAddTaskModal] = useState(false);
+  // Add these new states after existing useState declarations:
+  const [flashMessage, setFlashMessage] = useState('');
+  const [flashMessageModal, setFlashMessageModal] = useState(false);
+  const [currentFlashIndex, setCurrentFlashIndex] = useState(0);
   const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
@@ -49,6 +55,9 @@ const Home = props => {
   // Permission states
   const [locationPermission, setLocationPermission] = useState(null);
   const [cameraPermission, setCameraPermission] = useState(null);
+
+  // Network type toggle: true = High Accuracy (GPS), false = Battery Saver (Network)
+  const [useHighAccuracy, setUseHighAccuracy] = useState(false);
 
   useEffect(() => {
     // if user is inactive then it will auto logout
@@ -121,7 +130,7 @@ const Home = props => {
         return false;
       }
     } else {
-      // For iOS, you might need to check differently
+      // For iOS
       setLocationPermission('granted');
       return true;
     }
@@ -210,7 +219,11 @@ const Home = props => {
       }
 
       // Start location fetching
-      setLoadingMessage('Fetching your location...');
+      setLoadingMessage(
+        useHighAccuracy
+          ? 'Fetching your location (High Accuracy)...'
+          : 'Fetching your location (Battery Saver)...',
+      );
 
       const locationPromise = new Promise((resolve, reject) => {
         Geolocation.getCurrentPosition(
@@ -239,18 +252,16 @@ const Home = props => {
             reject(new Error(errorMessage));
           },
           {
-            enableHighAccuracy: false,
-            timeout: 15000,
-            maximumAge: 10000,
+            enableHighAccuracy: useHighAccuracy, // controlled by toggle
+            timeout: useHighAccuracy ? 20000 : 15000,
+            maximumAge: useHighAccuracy ? 5000 : 10000,
           },
         );
       });
 
       // Wait for location
       const locationData = await locationPromise;
-      // setLocation(locationData);
 
-      // Navigate to Attendence without geocoding
       setLoading(false);
       setLoadingMessage('');
       setAddTaskModal(false);
@@ -303,6 +314,7 @@ const Home = props => {
         .then(() => {
           dispatch(attendenceStatusRequest());
           dispatch(userDetailsRequest());
+          dispatch(flashMessageRequest());
         })
         .catch(err => {
           console.log(err);
@@ -315,16 +327,12 @@ const Home = props => {
 
   // Handle clock in/out button press with permission validation
   const handleClockAction = () => {
-    // Check permissions before proceeding
     if (locationPermission !== 'granted') {
       Alert.alert(
         'Location Permission Required',
         'Please grant location permission to mark attendance.',
         [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
+          { text: 'Cancel', style: 'cancel' },
           {
             text: 'Grant Permission',
             onPress: () => checkLocationPermission(),
@@ -339,14 +347,8 @@ const Home = props => {
         'Camera Permission Required',
         'Please grant camera permission to mark attendance.',
         [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Grant Permission',
-            onPress: () => checkCameraPermission(),
-          },
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Grant Permission', onPress: () => checkCameraPermission() },
         ],
       );
       return;
@@ -400,8 +402,31 @@ const Home = props => {
       case 'Profile/attendenceStatusFailure':
         status = ProfileReducer.status;
         break;
+      case 'Profile/flashMessageRequest':
+        status = ProfileReducer.status;
+        break;
+      case 'Profile/flashMessageSuccess':
+        status = ProfileReducer.status;
+        setFlashMessage(ProfileReducer?.flashMessageResponse);
+        if (
+          ProfileReducer?.flashMessageResponse &&
+          ProfileReducer.flashMessageResponse.length > 0
+        ) {
+          setCurrentFlashIndex(0);
+          setFlashMessageModal(true);
+        }
+        break;
+      case 'Profile/flashMessageFailure':
+        status = ProfileReducer.status;
+        break;
     }
   }
+
+  // Helper to format "0 min" display — hide if zero/irrelevant
+  const lateClockIn = ProfileReducer?.attendenceStatusResponse?.late_clock_in;
+  const earlyClockOut =
+    ProfileReducer?.attendenceStatusResponse?.early_clock_out;
+  const officeTiming = ProfileReducer?.attendenceStatusResponse?.office_timing;
 
   return (
     <View style={styles.mainContainer}>
@@ -409,149 +434,224 @@ const Home = props => {
         HeaderLogo
         Title
         placeText={'Home'}
-        onPress_back_button={() => {
-          // setModalVisible(true);
-        }}
+        onPress_back_button={() => {}}
         onPress_right_button={() => {
           props.navigation.navigate('Notification');
         }}
       />
-
       <Loader
         visible={
           loading ||
           ProfileReducer?.status == 'Profile/clockinRequest' ||
-          ProfileReducer?.status == 'Profile/userDetailsRequest'
+          ProfileReducer?.status == 'Profile/userDetailsRequest' ||
+          ProfileReducer?.status == 'Profile/flashMessageRequest'
         }
         loadingText={loadingMessage || 'Loading...'}
       />
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* User Info Section */}
-        <View style={styles.userInfoContainer}>
-          <View style={styles.userTextContainer}>
-            <Text style={styles.userName}>
-              {ProfileReducer?.userDetailsResponse?.name}
-            </Text>
-            <Text style={styles.phone}>
-              {ProfileReducer?.userDetailsResponse?.phone}
-            </Text>
-            <Text
-              style={[
-                styles.userAddress,
-                { color: Colors.orange, textTransform: 'capitalize' },
-              ]}
-            >
-              {[
-                ProfileReducer?.userDetailsResponse?.municipality,
-                ...(
-                  ProfileReducer?.userDetailsResponse?.municipality_another ||
-                  []
-                ).map(item => item?.name),
-              ]
-                .filter(Boolean)
-                .join(', ')}
-            </Text>
-
-            <Text style={styles.blackText}>
-              Designation :{' '}
-              <Text
+        {/* ── User Info Card ── */}
+        <View style={styles.userCard}>
+          {/* Main body: big photo LEFT + info RIGHT */}
+          <View style={styles.cardBody}>
+            {/* ── Photo column ── */}
+            <View style={styles.photoCol}>
+              {ProfileReducer?.attendenceStatusResponse?.check_out_photo ? (
+                <Image
+                  resizeMode="stretch"
+                  style={styles.profilePhoto}
+                  source={{
+                    uri: ProfileReducer.attendenceStatusResponse
+                      .check_out_photo,
+                  }}
+                />
+              ) : ProfileReducer?.attendenceStatusResponse?.check_in_photo ? (
+                <Image
+                  resizeMode="stretch"
+                  style={styles.profilePhoto}
+                  source={{
+                    uri: ProfileReducer.attendenceStatusResponse.check_in_photo,
+                  }}
+                />
+              ) : (
+                <Image
+                  resizeMode="contain"
+                  style={styles.profilePhoto}
+                  source={Images.profilepic}
+                />
+              )}
+              {/* Status badge below photo */}
+              <View
                 style={[
-                  styles.redText,
+                  styles.photoBadge,
                   {
-                    color: Colors.black,
-                    fontFamily: Fonts.MulishMedium,
+                    backgroundColor:
+                      ProfileReducer?.attendenceStatusResponse
+                        ?.attendance_status_text === 'Clocked Out Other' ||
+                      ProfileReducer?.attendenceStatusResponse
+                        ?.attendance_status_text === 'Clocked Out Outside' ||
+                      ProfileReducer?.attendenceStatusResponse
+                        ?.attendance_status_text === 'Clocked Out Inside'
+                        ? '#ef4444'
+                        : ProfileReducer?.attendenceStatusResponse?.status ===
+                          'pending'
+                        ? '#f59e0b'
+                        : '#22c55e',
                   },
                 ]}
               >
+                <Text style={styles.photoBadgeText}>
+                  {ProfileReducer?.attendenceStatusResponse
+                    ?.attendance_status_text === 'Clocked Out Other' ||
+                  ProfileReducer?.attendenceStatusResponse
+                    ?.attendance_status_text === 'Clocked Out Outside' ||
+                  ProfileReducer?.attendenceStatusResponse
+                    ?.attendance_status_text === 'Clocked Out Inside'
+                    ? 'CLOCKED OUT'
+                    : ProfileReducer?.attendenceStatusResponse?.status ===
+                      'pending'
+                    ? 'PENDING'
+                    : 'CLOCKED IN'}
+                </Text>
+              </View>
+            </View>
+
+            {/* ── Info column ── */}
+            <View style={styles.infoCol}>
+              {/* Name */}
+              <Text style={styles.infoName} numberOfLines={2}>
+                {ProfileReducer?.userDetailsResponse?.name}
+              </Text>
+
+              {/* Designation */}
+              <Text style={styles.infoDesignation} numberOfLines={1}>
                 {ProfileReducer?.userDetailsResponse?.designation}
               </Text>
-            </Text>
-            <Text style={styles.blackText}>
-              Attendance:{' '}
+
+              {/* Phone */}
+              <View style={styles.infoRow}>
+                <Text style={styles.infoRowIcon}>📞</Text>
+                <Text style={styles.infoRowText}>
+                  {ProfileReducer?.userDetailsResponse?.phone}
+                </Text>
+              </View>
+
+              {/* Municipality */}
+              <View style={styles.infoRow}>
+                <Text style={styles.infoRowIcon}>📍</Text>
+                <Text style={styles.infoRowText} numberOfLines={2}>
+                  {[
+                    ProfileReducer?.userDetailsResponse?.municipality,
+                    ...(
+                      ProfileReducer?.userDetailsResponse
+                        ?.municipality_another || []
+                    ).map(i => i?.name),
+                  ]
+                    .filter(Boolean)
+                    .join(', ') || '—'}
+                </Text>
+              </View>
+
+              {/* Today */}
+              <View style={styles.infoRow}>
+                <Text style={styles.infoRowIcon}>📅</Text>
+                <Text style={styles.infoRowText}>
+                  {moment().format('ddd, D MMM YYYY')}
+                </Text>
+              </View>
+
+              {/* Office timing */}
+              <View style={styles.infoRow}>
+                <Text style={styles.infoRowIcon}>🕐</Text>
+                <Text style={styles.infoRowText}>{officeTiming || '—'}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* ── Bottom stats strip ── */}
+          <View style={styles.statsStrip}>
+            <View style={styles.stripCell}>
+              <Text style={styles.stripLabel}>Late Clock In</Text>
               <Text
                 style={[
-                  styles.redText,
+                  styles.stripValue,
                   {
                     color:
-                      ProfileReducer?.attendenceStatusResponse?.status ===
-                      'pending'
-                        ? Colors.red
-                        : Colors.green,
+                      lateClockIn && lateClockIn !== '0 min'
+                        ? '#ef4444'
+                        : '#22c55e',
                   },
                 ]}
               >
-                {ProfileReducer?.attendenceStatusResponse
-                  ?.attendance_status_text === 'Clocked Out Other' ||
-                ProfileReducer?.attendenceStatusResponse
-                  ?.attendance_status_text === 'Clocked Out Outside' ||
-                ProfileReducer?.attendenceStatusResponse
-                  ?.attendance_status_text === 'Clocked Out Inside'
-                  ? 'Clocked Out'
-                  : ProfileReducer?.attendenceStatusResponse?.status ===
-                    'pending'
-                  ? 'Pending...'
-                  : 'Clocked In'}
+                {lateClockIn && lateClockIn !== '0 min'
+                  ? lateClockIn
+                  : '✓ On Time'}
               </Text>
-            </Text>
+            </View>
 
-            <Text style={styles.blackText}>
-              Today :
-              <Text style={styles.todayText}>
-                {' '}
-                {moment().format('ddd, MMM, D')}.
+            <View style={styles.stripDivider} />
+
+            <View style={styles.stripCell}>
+              <Text style={styles.stripLabel}>Early Clock Out</Text>
+              <Text
+                style={[
+                  styles.stripValue,
+                  {
+                    color:
+                      earlyClockOut && earlyClockOut !== '0 min'
+                        ? '#ef4444'
+                        : '#22c55e',
+                  },
+                ]}
+              >
+                {earlyClockOut && earlyClockOut !== '0 min'
+                  ? earlyClockOut
+                  : '✓ None'}
               </Text>
-            </Text>
-
-            {/* Permission Status Indicators */}
-            {(locationPermission === 'denied' ||
-              cameraPermission === 'denied') && (
-              <View style={styles.permissionWarning}>
-                <Text style={styles.permissionWarningText}>
-                  ⚠️ Permissions needed for attendance marking
-                </Text>
-                {locationPermission === 'denied' && (
-                  <Text style={styles.permissionText}>
-                    • Location access required
-                  </Text>
-                )}
-                {cameraPermission === 'denied' && (
-                  <Text style={styles.permissionText}>
-                    • Camera access required
-                  </Text>
-                )}
-              </View>
-            )}
+            </View>
           </View>
 
-          <View style={styles.imageContainer}>
-            {ProfileReducer?.attendenceStatusResponse?.check_out_photo ? (
-              <Image
-                resizeMode="cover"
-                style={styles.userImage}
-                source={{
-                  uri: ProfileReducer.attendenceStatusResponse.check_out_photo,
-                }}
-              />
-            ) : ProfileReducer?.attendenceStatusResponse?.check_in_photo ? (
-              <Image
-                resizeMode="cover"
-                style={styles.userImage}
-                source={{
-                  uri: ProfileReducer.attendenceStatusResponse.check_in_photo,
-                }}
-              />
-            ) : (
-              <Image
-                resizeMode="contain"
-                style={styles.userImagePlaceholder}
-                source={Images.profilepic}
-              />
-            )}
+          {/* Permission warning */}
+          {(locationPermission === 'denied' ||
+            cameraPermission === 'denied') && (
+            <View style={styles.permissionWarning}>
+              <Text style={styles.permissionWarningText}>
+                ⚠️ Permissions needed for attendance
+              </Text>
+              {locationPermission === 'denied' && (
+                <Text style={styles.permissionText}>
+                  • Location access required
+                </Text>
+              )}
+              {cameraPermission === 'denied' && (
+                <Text style={styles.permissionText}>
+                  • Camera access required
+                </Text>
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* Network Type Toggle */}
+        <View style={styles.networkToggleContainer}>
+          <View style={styles.networkToggleRow}>
+            <View style={styles.networkToggleLeft}>
+              <Text style={styles.networkToggleTitle}>📡 Location Mode</Text>
+              <Text style={styles.networkToggleSubtitle}>
+                {useHighAccuracy
+                  ? '🛰️ High Accuracy (GPS) — More precise location'
+                  : '📶 Network Mode — Faster location detection'}
+              </Text>
+            </View>
+            <Switch
+              value={useHighAccuracy}
+              onValueChange={val => setUseHighAccuracy(val)}
+              thumbColor={useHighAccuracy ? Colors.white : Colors.white}
+              trackColor={{ false: Colors.grey || '#ccc', true: Colors.green }}
+            />
           </View>
         </View>
 
@@ -622,7 +722,6 @@ const Home = props => {
           </TouchableOpacity>
         )}
       </ScrollView>
-
       {/* Clock In Modal */}
       <Modal
         animationIn={'slideInUp'}
@@ -638,9 +737,7 @@ const Home = props => {
         <ImageBackground resizeMode="stretch" style={styles.modalContainer}>
           <TouchableOpacity
             style={styles.close}
-            onPress={() => {
-              setAddTaskModal(false);
-            }}
+            onPress={() => setAddTaskModal(false)}
           >
             <Image
               resizeMode="contain"
@@ -678,29 +775,15 @@ const Home = props => {
             </Text>
 
             <TouchableOpacity
-              style={[
-                styles.clockButton,
-                {
-                  backgroundColor: Colors.green,
-                },
-              ]}
-              onPress={() => {
-                getLocation('inside', 'present');
-              }}
+              style={[styles.clockButton, { backgroundColor: Colors.green }]}
+              onPress={() => getLocation('inside', 'present')}
             >
               <Text style={styles.clockButtonText}>Office Duty</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[
-                styles.clockButton,
-                {
-                  backgroundColor: Colors.skyblue,
-                },
-              ]}
-              onPress={() => {
-                getLocation('outside', 'pending');
-              }}
+              style={[styles.clockButton, { backgroundColor: Colors.skyblue }]}
+              onPress={() => getLocation('outside', 'pending')}
             >
               <Text style={styles.clockButtonText}>
                 Official Visit Within ULB Jurisdiction
@@ -708,15 +791,8 @@ const Home = props => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[
-                styles.clockButton,
-                {
-                  backgroundColor: Colors.red,
-                },
-              ]}
-              onPress={() => {
-                getLocation('other', 'pending');
-              }}
+              style={[styles.clockButton, { backgroundColor: Colors.red }]}
+              onPress={() => getLocation('other', 'pending')}
             >
               <Text style={styles.clockButtonText}>
                 Official Visit Outside ULB Jurisdiction
@@ -725,7 +801,105 @@ const Home = props => {
           </ScrollView>
         </ImageBackground>
       </Modal>
+      // Add this Flash Message Modal just before the UpdateModal component at
+      the bottom:
+      {/* Flash Message Modal */}
+      <Modal
+        animationIn={'zoomIn'}
+        animationOut={'zoomOut'}
+        backdropTransitionOutTiming={0}
+        backdropOpacity={0.75}
+        hideModalContentWhileAnimating={true}
+        isVisible={flashMessageModal}
+        animationInTiming={400}
+        animationOutTiming={400}
+        onBackdropPress={() => {
+          setFlashMessageModal(false);
+          setCurrentFlashIndex(0);
+        }}
+      >
+        <View style={styles.flashModalContainer}>
+          <ScrollView>
+            {/* Header */}
+            <View style={styles.flashModalHeader}>
+              <View style={styles.flashIconCircle}>
+                <Text style={{ fontSize: 20 }}>📢</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.flashCloseBtn}
+                onPress={() => {
+                  setFlashMessageModal(false);
+                  setCurrentFlashIndex(0);
+                }}
+              >
+                <Image
+                  resizeMode="contain"
+                  source={Images.close}
+                  style={{ height: normalize(10), width: normalize(10) }}
+                />
+              </TouchableOpacity>
+            </View>
 
+            {/* Message count indicator */}
+            {flashMessage?.length > 1 && (
+              <View style={styles.flashDotRow}>
+                {flashMessage.map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.flashDot,
+                      {
+                        backgroundColor:
+                          i === currentFlashIndex ? Colors.green : '#ccc',
+                        width:
+                          i === currentFlashIndex
+                            ? normalize(18)
+                            : normalize(8),
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+            )}
+
+            {/* Title */}
+            <Text style={styles.flashModalTitle}>
+              {flashMessage?.[currentFlashIndex]?.title || ''}
+            </Text>
+
+            {/* Message */}
+            <Text style={styles.flashModalMessage}>
+              {flashMessage?.[currentFlashIndex]?.message || ''}
+            </Text>
+
+            {/* Counter */}
+            {flashMessage?.length > 1 && (
+              <Text style={styles.flashCounter}>
+                {currentFlashIndex + 1} / {flashMessage.length}
+              </Text>
+            )}
+
+            {/* Action button */}
+            <TouchableOpacity
+              style={styles.flashActionBtn}
+              onPress={() => {
+                if (currentFlashIndex < (flashMessage?.length || 1) - 1) {
+                  setCurrentFlashIndex(prev => prev + 1);
+                } else {
+                  setFlashMessageModal(false);
+                  setCurrentFlashIndex(0);
+                }
+              }}
+            >
+              <Text style={styles.flashActionText}>
+                {currentFlashIndex < (flashMessage?.length || 1) - 1
+                  ? 'Next →'
+                  : 'Got it ✓'}
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
       <UpdateModal
         isVisible={updateModalVisible}
         onClose={() => setUpdateModalVisible(false)}
@@ -750,65 +924,114 @@ const styles = StyleSheet.create({
     paddingVertical: normalize(10),
     paddingBottom: normalize(100),
   },
-  userInfoContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    padding: normalize(10),
+  // ── User Card ────────────────────────────────────────────
+  userCard: {
     backgroundColor: Colors.white,
-    borderRadius: normalize(8),
+    borderRadius: normalize(16),
     marginBottom: normalize(10),
-  },
-  userTextContainer: {
-    width: '60%',
-  },
-  userName: {
-    fontFamily: Fonts.MulishExtraBold,
-    fontSize: 20,
-  },
-  phone: {
-    fontFamily: Fonts.MulishSemiBold,
-    fontSize: 16,
-  },
-  userAddress: {
-    fontFamily: Fonts.MulishBold,
-    fontSize: 16,
-    marginTop: 5,
-  },
-  blackText: {
-    fontFamily: Fonts.MulishSemiBold,
-    fontSize: 16,
-    marginTop: 5,
-    color: Colors.black,
-  },
-  redText: {
-    fontFamily: Fonts.MulishSemiBold,
-    fontSize: 16,
-    marginTop: 5,
-    color: Colors.red,
-  },
-  todayText: {
-    fontFamily: Fonts.MulishSemiBold,
-    fontSize: 16,
-    marginTop: 5,
-    color: Colors.green,
-  },
-  imageContainer: {
-    borderWidth: normalize(2),
-    borderRadius: normalize(15),
-    borderColor: Colors.skyblue,
-    height: normalize(150),
-    width: normalize(110),
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 5,
+    paddingTop: normalize(10),
+    padding: normalize(5),
   },
-  userImage: {
-    height: normalize(150),
-    width: normalize(110),
+  cardBody: {
+    flexDirection: 'row',
   },
-  userImagePlaceholder: {
-    alignSelf: 'center',
-    height: normalize(150),
-    width: normalize(110),
+  // ── Photo column (left) ──
+  photoCol: {
+    width: normalize(115),
+    backgroundColor: '#1e293b',
+    borderTopRightRadius: normalize(10),
+    borderTopLeftRadius: normalize(10),
+  },
+  profilePhoto: {
+    width: normalize(115),
+    height: normalize(155),
+    borderTopRightRadius: normalize(10),
+    borderTopLeftRadius: normalize(10),
+  },
+  photoBadge: {
+    paddingVertical: normalize(5),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoBadgeText: {
+    fontFamily: Fonts.MulishExtraBold,
+    fontSize: 9,
+    color: Colors.white,
+    letterSpacing: 0.8,
+  },
+  // ── Info column (right) ──
+  infoCol: {
+    flex: 1,
+    paddingHorizontal: normalize(12),
+    paddingTop: normalize(12),
+    paddingBottom: normalize(10),
+    justifyContent: 'center',
+  },
+  infoName: {
+    fontFamily: Fonts.MulishExtraBold,
+    fontSize: 18,
+    color: '#0f172a',
+    lineHeight: 22,
+    marginBottom: normalize(2),
+  },
+  infoDesignation: {
+    fontFamily: Fonts.MulishSemiBold,
+    fontSize: 13,
+    color: Colors.orange,
+    marginBottom: normalize(8),
+    textTransform: 'capitalize',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: normalize(5),
+  },
+  infoRowIcon: {
+    fontSize: 13,
+    marginRight: normalize(5),
+    marginTop: 1,
+  },
+  infoRowText: {
+    fontFamily: Fonts.MulishSemiBold,
+    fontSize: 13,
+    color: '#334155',
+    flex: 1,
+    lineHeight: 18,
+  },
+  // ── Stats strip (bottom) ──
+  statsStrip: {
+    flexDirection: 'row',
+    backgroundColor: '#f8fafc',
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+  },
+  stripCell: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: normalize(10),
+  },
+  stripDivider: {
+    width: 1,
+    backgroundColor: '#e2e8f0',
+    marginVertical: normalize(8),
+  },
+  stripLabel: {
+    fontFamily: Fonts.MulishRegular,
+    fontSize: 11,
+    color: '#94a3b8',
+    marginBottom: normalize(3),
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  stripValue: {
+    fontFamily: Fonts.MulishBold,
+    fontSize: 13,
   },
   clockButton: {
     justifyContent: 'center',
@@ -845,7 +1068,34 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     zIndex: 98,
   },
-  // New styles for permission warnings
+  // Network toggle styles
+  networkToggleContainer: {
+    backgroundColor: Colors.white,
+    borderRadius: normalize(8),
+    padding: normalize(12),
+    marginBottom: normalize(10),
+  },
+  networkToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  networkToggleLeft: {
+    flex: 1,
+    marginRight: normalize(10),
+  },
+  networkToggleTitle: {
+    fontFamily: Fonts.MulishBold,
+    fontSize: 15,
+    color: Colors.black,
+  },
+  networkToggleSubtitle: {
+    fontFamily: Fonts.MulishRegular,
+    fontSize: 12,
+    color: '#555',
+    marginTop: 3,
+  },
+  // Permission warning styles
   permissionWarning: {
     marginTop: normalize(10),
     padding: normalize(8),
@@ -865,5 +1115,87 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#856404',
     marginLeft: 10,
+  },
+
+  // Add these styles to your StyleSheet.create({...}):
+
+  flashModalContainer: {
+    backgroundColor: Colors.white,
+    borderRadius: normalize(16),
+    padding: normalize(20),
+    marginHorizontal: normalize(10),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  flashModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: normalize(10),
+  },
+  flashIconCircle: {
+    width: normalize(44),
+    height: normalize(44),
+    borderRadius: normalize(22),
+    backgroundColor: '#f0fdf4',
+    borderWidth: 2,
+    borderColor: Colors.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flashCloseBtn: {
+    backgroundColor: '#f1f5f9',
+    borderRadius: 50,
+    padding: 6,
+    height: normalize(24),
+    width: normalize(24),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  flashDotRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: normalize(12),
+    gap: 5,
+  },
+  flashDot: {
+    height: normalize(8),
+    borderRadius: normalize(4),
+  },
+  flashModalTitle: {
+    fontFamily: Fonts.MulishExtraBold,
+    fontSize: 18,
+    color: '#0f172a',
+    marginBottom: normalize(10),
+    lineHeight: 24,
+  },
+  flashModalMessage: {
+    fontFamily: Fonts.MulishRegular,
+    fontSize: 14,
+    color: '#475569',
+    lineHeight: 22,
+    marginBottom: normalize(16),
+  },
+  flashCounter: {
+    fontFamily: Fonts.MulishRegular,
+    fontSize: 12,
+    color: '#94a3b8',
+    textAlign: 'right',
+    marginBottom: normalize(8),
+  },
+  flashActionBtn: {
+    backgroundColor: Colors.green,
+    borderRadius: normalize(8),
+    paddingVertical: normalize(12),
+    alignItems: 'center',
+  },
+  flashActionText: {
+    fontFamily: Fonts.MulishBold,
+    fontSize: 15,
+    color: Colors.white,
   },
 });
