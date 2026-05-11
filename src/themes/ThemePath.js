@@ -1,6 +1,6 @@
 export const Images = {
   earth: require('../assets/images/earth.png'),
-  pageBackground: require('../assets/images/pageBG.png'),
+  pageBackground: require('../assets/images/pageBG.jpg'),
   appicon: require('../assets/images/E-Attendance.png'),
   drawerNav: require('../assets/images/drawerNav.png'),
   eyeclose: require('../assets/images/eyeclose.png'),

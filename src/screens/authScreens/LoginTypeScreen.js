@@ -167,18 +167,21 @@ const styles = StyleSheet.create({
   headerText2: {
     fontFamily: Fonts.MulishSemiBold,
     fontSize: normalize(12),
-    color: Colors.fontWhite,
+    color: Colors.darkblue,
     textAlign: 'center',
     marginVertical: normalize(2),
   },
   boldHeader: {
     fontSize: normalize(16),
     fontWeight: 'bold',
+    color:Colors.darkblue
   },
   boldSubHeader: {
     fontSize: normalize(14),
     fontWeight: 'bold',
     marginTop: normalize(5),
+    color:Colors.darkblue
+
   },
   optionsContainer: {
     flex: 1,
@@ -187,7 +190,7 @@ const styles = StyleSheet.create({
   selectText: {
     fontSize: normalize(24),
     fontFamily: Fonts.MulishBold,
-    color: Colors.white,
+    color: Colors.darkblue,
     textAlign: 'center',
     marginBottom: normalize(30),
   },

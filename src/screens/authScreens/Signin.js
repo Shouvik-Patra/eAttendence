@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
   headerText2: {
     fontFamily: Fonts.MulishSemiBold,
     fontSize: normalize(12),
-    color: Colors.fontWhite,
+    color: Colors.darkblue,
     textAlign: 'center',
   },
   text1: {
